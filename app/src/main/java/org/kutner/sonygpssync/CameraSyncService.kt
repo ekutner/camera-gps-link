@@ -81,6 +81,11 @@ class CameraSyncService : Service() {
     private val _isManualScanning = MutableStateFlow(false)
     val isManualScanning: StateFlow<Boolean> = _isManualScanning
 
+    private var _connected = false
+    private var _autoScanning = false
+
+
+
     inner class LocalBinder : Binder() {
         fun getService(): CameraSyncService = this@CameraSyncService
     }
@@ -97,6 +102,14 @@ class CameraSyncService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         log("Service received start command.")
+
+        if (!hasRequiredPermissions()) {
+            log("Permissions not granted. Posting notification and stopping.")
+            showPermissionsRequiredNotification()
+            stopSelf()
+            return START_NOT_STICKY
+        }
+
         val savedAddress = sharedPreferences.getString(PREF_KEY_DEVICE_ADDRESS, null)
         if (savedAddress == null) {
             log("No saved device, stopping service.")
@@ -104,13 +117,17 @@ class CameraSyncService : Service() {
             return START_NOT_STICKY
         }
 
-        startForeground(1, createNotification("Searching for saved camera..."))
-        if (hasRequiredPermissions()) {
-            startAutoScan()
-        } else {
-            log("Permissions not granted. Service will stop.")
-            stopSelf()
+
+        var message = ""
+        if (_connected) {
+            val savedName = sharedPreferences.getString(PREF_KEY_DEVICE_NAME, null)
+            message = "Connected to $savedName"
         }
+        else {
+            message = "Searching for saved camera..."
+        }
+        startForeground(1, createNotification(message, true))
+        startAutoScan()
         return START_STICKY
     }
 
@@ -122,7 +139,7 @@ class CameraSyncService : Service() {
         log("Service destroyed.")
     }
 
-    private fun createNotification(contentText: String): Notification {
+    private fun createNotification(contentText: String, isOngoing: Boolean): Notification {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel("camera_sync_channel", "Camera Sync", NotificationManager.IMPORTANCE_DEFAULT)
             getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
@@ -138,13 +155,20 @@ class CameraSyncService : Service() {
             .setContentText(contentText)
             .setSmallIcon(R.drawable.appicon)
             .setContentIntent(pendingIntent)
-            .setOngoing(true)
+            .setOngoing(isOngoing)
+            .setAutoCancel(!isOngoing)
             .build()
+    }
+
+    private fun showPermissionsRequiredNotification() {
+        val notification = createNotification("Permissions required. Tap to open the app.", false)
+        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.notify(2, notification) // Use a different ID
     }
 
     private fun updateNotification(contentText: String) {
         _status.value = contentText
-        val notification = createNotification(contentText)
+        val notification = createNotification(contentText, true)
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.notify(1, notification)
     }
@@ -183,10 +207,13 @@ class CameraSyncService : Service() {
         override fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {
             if (newState == BluetoothProfile.STATE_CONNECTED) {
                 updateNotification("Connected to ${gatt.device.name}")
+                _connected = true
                 log("Connected. Requesting MTU...")
                 handler.postDelayed({ gatt.requestMtu(REQUEST_MTU_SIZE) }, 600)
+                saveDeviceAndStartService(gatt.device)
             } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
                 log("Disconnected.")
+                _connected = false
                 disconnectFromDevice(false)
             }
         }
@@ -205,7 +232,7 @@ class CameraSyncService : Service() {
         @SuppressLint("MissingPermission")
         override fun onServicesDiscovered(gatt: BluetoothGatt, status: Int) {
             log("Services discovered. Saving device and locking endpoint...")
-            saveDeviceAndStartService(gatt.device)
+//            saveDeviceAndStartService(gatt.device)
             lockLocationEndpoint(gatt)
         }
 
@@ -236,14 +263,15 @@ class CameraSyncService : Service() {
         @SuppressLint("MissingPermission")
         override fun onScanResult(callbackType: Int, result: ScanResult) {
             log("Found saved device. Connecting...")
+            _autoScanning = false
             bleScanner.stopScan(this)
             connectToDevice(result.device)
         }
 
         override fun onScanFailed(errorCode: Int) {
-            log("Auto-scan failed: $errorCode. Retrying...")
-            updateNotification("Auto-scan failed. Retrying...")
-            handler.postDelayed({ startAutoScan() }, 5000)
+//            log("Auto-scan failed: $errorCode. Retrying...")
+//            updateNotification("Auto-scan failed. Retrying...")
+            handler.postDelayed({ startAutoScan() }, 3000)
         }
     }
 
@@ -278,8 +306,11 @@ class CameraSyncService : Service() {
         if (!hasRequiredPermissions() || !isAdapterAndScannerReady() || bluetoothGatt != null) return
         val savedAddress = sharedPreferences.getString(PREF_KEY_DEVICE_ADDRESS, null) ?: return
 
-        log("Starting auto-scan for $savedAddress")
-        updateNotification("Searching for saved camera...")
+        if (!_autoScanning) {
+            log("Starting auto-scan for $savedAddress")
+            _autoScanning = true
+            updateNotification("Searching for saved camera...")
+        }
 
         val scanFilter = ScanFilter.Builder().setDeviceAddress(savedAddress).build()
         val scanSettings = ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_POWER).build()
@@ -298,7 +329,6 @@ class CameraSyncService : Service() {
             _rememberedDevice.value = null
             stopSelf()
         } else {
-            // Don't stop the service, just restart the scan for the remembered device
             updateNotification("Disconnected. Searching for camera...")
             startAutoScan()
         }
@@ -407,8 +437,8 @@ class CameraSyncService : Service() {
         buffer.put(utcCalendar.get(Calendar.MINUTE).toByte())
         buffer.put(utcCalendar.get(Calendar.SECOND).toByte())
         buffer.position(91)
-        buffer.putShort((localTimezone.rawOffset / 60000).toShort())
-        buffer.putShort(0)
+        buffer.putShort((localTimezone.rawOffset / 60 / 1000).toShort())
+        buffer.putShort((localTimezone.dstSavings / 60 / 1000).toShort())
 
         val payload = buffer.array()
 
