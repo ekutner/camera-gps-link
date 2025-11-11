@@ -32,6 +32,7 @@ import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.text.SimpleDateFormat
 import java.util.*
+import kotlin.math.abs
 
 class CameraSyncService : Service() {
 
@@ -43,7 +44,9 @@ class CameraSyncService : Service() {
         private const val PREF_KEY_DEVICE_NAME = "device_name"
         private const val SONY_MANUFACTURER_ID = 0x012D
         private val PICT_SERVICE_UUID = UUID.fromString("8000DD00-DD00-FFFF-FFFF-FFFFFFFFFFFF")
-        private val TIME_CHARACTERISTIC_UUID = UUID.fromString("0000DD02-0000-1000-8000-00805F9B34FB")
+
+        private val TIME_SERVICE_UUID = UUID.fromString("8000CC00-CC00-FFFF-FFFF-FFFFFFFFFFFF")
+        private val TIME_CHARACTERISTIC_UUID = UUID.fromString("0000CC13-0000-1000-8000-00805F9B34FB")
         private val LOCATION_CHARACTERISTIC_UUID = UUID.fromString("0000DD11-0000-1000-8000-00805F9B34FB")
         private val LOCK_LOCATION_ENDPOINT_UUID = UUID.fromString("0000DD30-0000-1000-8000-00805F9B34FB")
         private val ENABLE_LOCATION_UPDATES_UUID = UUID.fromString("0000DD31-0000-1000-8000-00805F9B34FB")
@@ -406,26 +409,62 @@ class CameraSyncService : Service() {
 
     @SuppressLint("MissingPermission")
     private fun synchronizeTime(gatt: BluetoothGatt) {
-        val timeChar = gatt.getService(PICT_SERVICE_UUID)?.getCharacteristic(TIME_CHARACTERISTIC_UUID)
+        val timeChar = gatt.getService(TIME_SERVICE_UUID)?.getCharacteristic(TIME_CHARACTERISTIC_UUID)
         if (timeChar == null) {
             log("Time characteristic not found! Skipping sync.")
             startLocationUpdates()
             return
         }
         val cal = Calendar.getInstance()
-        val offset = TimeZone.getDefault().getOffset(cal.timeInMillis) / 60000
-        val payload = ByteBuffer.allocate(9).order(ByteOrder.LITTLE_ENDIAN)
+        // Calculate total offset including DST in minutes
+        val localTimezone = TimeZone.getDefault()
+        val currentTimeMillis = System.currentTimeMillis()
+        val dstActive = if (localTimezone.inDaylightTime(Date(currentTimeMillis))) {
+            1.toShort()
+        } else {
+            0.toShort()
+        }
+
+        var (tzOffsetHours, tzOffsetMinutes) = getRawUtcOffset()
+        if (tzOffsetHours < 0 ) {
+            tzOffsetHours = 24 + tzOffsetHours
+        }
+        val payload = ByteBuffer.allocate(13).order(ByteOrder.BIG_ENDIAN)
+            .put(byteArrayOf(0x0c, 0x00, 0x00.toByte()))
             .putShort(cal.get(Calendar.YEAR).toShort())
             .put((cal.get(Calendar.MONTH) + 1).toByte())
             .put(cal.get(Calendar.DAY_OF_MONTH).toByte())
             .put(cal.get(Calendar.HOUR_OF_DAY).toByte())
             .put(cal.get(Calendar.MINUTE).toByte())
             .put(cal.get(Calendar.SECOND).toByte())
-            .putShort(offset.toShort()).array()
+            .put(dstActive.toByte())
+            .put(tzOffsetHours.toByte())
+            .put(tzOffsetMinutes.toByte())
+            .array()
+
 
         writeCharacteristic(gatt, timeChar, payload, BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT)
     }
 
+    /**
+     * Gets the RAW time zone offset from UTC (Standard Time offset, ignoring DST).
+     * @return A Pair of (hours: Int, minutes: Int) for the raw offset.
+     */
+    fun getRawUtcOffset(): Pair<Int, Int> {
+        val timeZone: TimeZone = TimeZone.getDefault()
+        // getRawOffset() returns the offset in milliseconds without DST applied.
+        val rawOffsetMillis: Int = timeZone.rawOffset
+
+        val totalSeconds = (rawOffsetMillis / 1000)
+
+        val sign = if (totalSeconds < 0) -1 else 1
+        val absSeconds = abs(totalSeconds)
+
+        val hours = (absSeconds / 3600) * sign
+        val minutes = (absSeconds % 3600) / 60
+
+        return Pair(hours, minutes)
+    }
     @SuppressLint("MissingPermission")
     private fun startLocationUpdates() {
         if (!hasRequiredPermissions()) return
@@ -452,6 +491,7 @@ class CameraSyncService : Service() {
         val buffer = ByteBuffer.allocate(95).order(ByteOrder.BIG_ENDIAN)
         val utcCalendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
         val localTimezone = TimeZone.getDefault()
+        val currentTimeMillis = System.currentTimeMillis()
 
         buffer.putShort(0x005D)
         buffer.put(byteArrayOf(0x08, 0x02, 0xFC.toByte()))
@@ -466,8 +506,15 @@ class CameraSyncService : Service() {
         buffer.put(utcCalendar.get(Calendar.MINUTE).toByte())
         buffer.put(utcCalendar.get(Calendar.SECOND).toByte())
         buffer.position(91)
-        buffer.putShort((localTimezone.rawOffset / 60 / 1000).toShort())
-        buffer.putShort((localTimezone.dstSavings / 60 / 1000).toShort())
+        // Raw offset in minutes (standard time offset)
+        buffer.putShort((localTimezone.rawOffset / 60000).toShort())
+        // DST offset in minutes (0 if not in DST, typically 60 if in DST)
+        val dstOffset = if (localTimezone.inDaylightTime(Date(currentTimeMillis))) {
+            (localTimezone.dstSavings / 60000).toShort()
+        } else {
+            0.toShort()
+        }
+        buffer.putShort(dstOffset)
 
         val payload = buffer.array()
 
