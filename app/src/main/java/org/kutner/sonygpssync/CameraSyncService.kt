@@ -47,6 +47,8 @@ class CameraSyncService : Service() {
         private val LOCATION_CHARACTERISTIC_UUID = UUID.fromString("0000DD11-0000-1000-8000-00805F9B34FB")
         private val LOCK_LOCATION_ENDPOINT_UUID = UUID.fromString("0000DD30-0000-1000-8000-00805F9B34FB")
         private val ENABLE_LOCATION_UPDATES_UUID = UUID.fromString("0000DD31-0000-1000-8000-00805F9B34FB")
+        private val SHUTTER_SERVICE_UUID = UUID.fromString("8000FF00-FF00-FFFF-FFFF-FFFFFFFFFFFF")
+        private val SHUTTER_CHARACTERISTIC_UUID = UUID.fromString("0000FF01-0000-1000-8000-00805F9B34FB")
         private const val MANUAL_SCAN_PERIOD: Long = 10000
         private const val LOCATION_UPDATE_INTERVAL: Long = 5000
         private const val REQUEST_MTU_SIZE = 517
@@ -201,6 +203,31 @@ class CameraSyncService : Service() {
         disconnectFromDevice(true)
     }
 
+    @SuppressLint("MissingPermission")
+    fun triggerShutter() {
+        val gatt = bluetoothGatt
+        if (gatt == null) {
+            log("Cannot trigger shutter: Not connected to camera")
+            return
+        }
+
+        val shutterChar = gatt.getService(SHUTTER_SERVICE_UUID)?.getCharacteristic(SHUTTER_CHARACTERISTIC_UUID)
+        if (shutterChar == null) {
+            log("Shutter characteristic not found!")
+            return
+        }
+
+        log("Triggering shutter...")
+        // Send 0x0109 (start shutter)
+        writeCharacteristic(gatt, shutterChar, byteArrayOf(0x01, 0x09), BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT)
+
+        // Send 0x0108 (release shutter) after a short delay
+        handler.postDelayed({
+            writeCharacteristic(gatt, shutterChar, byteArrayOf(0x01, 0x08), BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT)
+            log("Shutter triggered")
+        }, 100)
+    }
+
     // --- Core Logic ---
     private val gattCallback = object : BluetoothGattCallback() {
         @SuppressLint("MissingPermission")
@@ -347,7 +374,7 @@ class CameraSyncService : Service() {
             .apply()
         _rememberedDevice.value = address
         log("Saved device: $name ($address)")
-        
+
         val intent = Intent(this, CameraSyncService::class.java)
         startService(intent)
     }
@@ -442,7 +469,7 @@ class CameraSyncService : Service() {
 
         val payload = buffer.array()
 
-        writeCharacteristic(gatt, locationChar, payload, BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE)
+        writeCharacteristic(gatt, locationChar, payload, BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT)
     }
 
     @SuppressLint("MissingPermission")
@@ -458,7 +485,7 @@ class CameraSyncService : Service() {
             gatt.writeCharacteristic(characteristic)
         }
     }
-    
+
     // --- Utility Methods ---
     private fun initializeBluetoothAndLocation() {
         bluetoothManager = getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
@@ -475,7 +502,7 @@ class CameraSyncService : Service() {
         }
         return requiredPermissions.all { ContextCompat.checkSelfPermission(this, it) == PackageManager.PERMISSION_GRANTED }
     }
-    
+
     private fun isAdapterAndScannerReady(): Boolean {
         if (!::bluetoothAdapter.isInitialized || !bluetoothAdapter.isEnabled) {
             log("Bluetooth adapter not initialized or not enabled.")

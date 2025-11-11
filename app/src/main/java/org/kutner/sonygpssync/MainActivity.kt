@@ -24,6 +24,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import kotlinx.coroutines.flow.StateFlow
 
@@ -84,7 +85,8 @@ class MainActivity : ComponentActivity() {
                             isManualScanning = service.isManualScanning,
                             onForgetDevice = { service.forgetDevice() },
                             onStartScan = { service.startManualScan() },
-                            onConnectToDevice = { service.connectToDevice(it) }
+                            onConnectToDevice = { service.connectToDevice(it) },
+                            onTriggerShutter = { service.triggerShutter() }
                         )
                     }
                 } else {
@@ -142,7 +144,8 @@ fun MainScreen(
     isManualScanning: StateFlow<Boolean>,
     onForgetDevice: () -> Unit,
     onStartScan: () -> Unit,
-    onConnectToDevice: (BluetoothDevice) -> Unit
+    onConnectToDevice: (BluetoothDevice) -> Unit,
+    onTriggerShutter: () -> Unit
 ) {
     val currentStatus by status.collectAsState()
     val logMessages by log.collectAsState()
@@ -153,6 +156,22 @@ fun MainScreen(
     Scaffold(topBar = { TopAppBar(title = { Text("Sony Camera Sync") }) }) { padding ->
         Column(modifier = Modifier.padding(padding).padding(16.dp).fillMaxSize()) {
             Text(currentStatus)
+            Spacer(Modifier.height(16.dp))
+
+            // Large Shutter Button
+            Button(
+                onClick = onTriggerShutter,
+                enabled = rememberedDeviceAddress != null,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(80.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary
+                )
+            ) {
+                Text("SHUTTER", fontSize = 24.sp)
+            }
+
             Spacer(Modifier.height(16.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
                 Button(onClick = onStartScan, enabled = rememberedDeviceAddress == null) {
