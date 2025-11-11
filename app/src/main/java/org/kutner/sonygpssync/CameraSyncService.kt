@@ -55,6 +55,8 @@ class CameraSyncService : Service() {
         private const val MANUAL_SCAN_PERIOD: Long = 10000
         private const val LOCATION_UPDATE_INTERVAL: Long = 5000
         private const val REQUEST_MTU_SIZE = 517
+
+        const val ACTION_TRIGGER_SHUTTER = "org.kutner.sonygpssync.ACTION_TRIGGER_SHUTTER"
     }
 
     // --- Service components ---
@@ -110,6 +112,12 @@ class CameraSyncService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         log("Service received start command.")
 
+        // Handle shutter action from notification
+        if (intent?.action == ACTION_TRIGGER_SHUTTER) {
+            triggerShutter()
+            return START_STICKY
+        }
+
         if (!hasRequiredPermissions()) {
             log("Permissions not granted. Posting notification and stopping.")
             showPermissionsRequiredNotification()
@@ -148,7 +156,7 @@ class CameraSyncService : Service() {
 
     private fun createNotification(contentText: String, isOngoing: Boolean): Notification {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel("camera_sync_channel", "Camera Sync", NotificationManager.IMPORTANCE_DEFAULT)
+            val channel = NotificationChannel("camera_sync_channel", "Camera Sync", NotificationManager.IMPORTANCE_HIGH)
             getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
         }
 
@@ -157,14 +165,34 @@ class CameraSyncService : Service() {
                 PendingIntent.getActivity(this, 0, notificationIntent, PendingIntent.FLAG_IMMUTABLE)
             }
 
-        return NotificationCompat.Builder(this, "camera_sync_channel")
+        val builder = NotificationCompat.Builder(this, "camera_sync_channel")
             .setContentTitle("Sony Camera Sync")
             .setContentText(contentText)
             .setSmallIcon(R.drawable.appicon)
             .setContentIntent(pendingIntent)
             .setOngoing(isOngoing)
             .setAutoCancel(!isOngoing)
-            .build()
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+
+        // Add shutter button if connected
+        if (_isConnected.value) {
+            val shutterIntent = Intent(this, CameraSyncService::class.java).apply {
+                action = ACTION_TRIGGER_SHUTTER
+            }
+            val shutterPendingIntent = PendingIntent.getService(
+                this,
+                1,
+                shutterIntent,
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+            )
+            builder.addAction(
+                R.drawable.appicon,
+                "Shutter",
+                shutterPendingIntent
+            )
+        }
+
+        return builder.build()
     }
 
     private fun showPermissionsRequiredNotification() {

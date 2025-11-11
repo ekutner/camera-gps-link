@@ -2,6 +2,7 @@ package org.kutner.sonygpssync
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.app.NotificationManager
 import android.bluetooth.BluetoothDevice
 import android.content.ComponentName
 import android.content.Context
@@ -49,6 +50,17 @@ class MainActivity : ComponentActivity() {
     private val permissionLauncher = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissions ->
         if (permissions.values.all { it }) {
             bindToService()
+            // Check if we need to start the service (e.g., from boot notification)
+            if (intent?.getBooleanExtra("start_service_on_launch", false) == true) {
+                startCameraService()
+            } else {
+                // Always start the service if there's a saved device
+                val prefs = getSharedPreferences("SonyGpsSyncPrefs", Context.MODE_PRIVATE)
+                val savedAddress = prefs.getString("device_address", null)
+                if (savedAddress != null) {
+                    startCameraService()
+                }
+            }
         } else {
             // You can show a rationale to the user here
         }
@@ -56,8 +68,22 @@ class MainActivity : ComponentActivity() {
 
     override fun onStart() {
         super.onStart()
+        // Dismiss the boot notification if it's showing
+        dismissBootNotification()
+
         if (hasRequiredPermissions()) {
             bindToService()
+            // Check if we need to start the service (e.g., from boot notification)
+            if (intent?.getBooleanExtra("start_service_on_launch", false) == true) {
+                startCameraService()
+            } else {
+                // Always start the service if there's a saved device
+                val prefs = getSharedPreferences("SonyGpsSyncPrefs", Context.MODE_PRIVATE)
+                val savedAddress = prefs.getString("device_address", null)
+                if (savedAddress != null) {
+                    startCameraService()
+                }
+            }
         } else {
             requestRequiredPermissions()
         }
@@ -99,6 +125,15 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private fun startCameraService() {
+        val serviceIntent = Intent(this, CameraSyncService::class.java)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            startForegroundService(serviceIntent)
+        } else {
+            startService(serviceIntent)
+        }
+    }
+
     private fun hasRequiredPermissions(): Boolean {
         val permissions = mutableListOf(
             Manifest.permission.ACCESS_FINE_LOCATION
@@ -131,6 +166,11 @@ class MainActivity : ComponentActivity() {
         Intent(this, CameraSyncService::class.java).also { intent ->
             bindService(intent, connection, Context.BIND_AUTO_CREATE)
         }
+    }
+
+    private fun dismissBootNotification() {
+        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.cancel(1000) // Cancel the boot notification (ID 1000 from BootReceiver)
     }
 }
 
