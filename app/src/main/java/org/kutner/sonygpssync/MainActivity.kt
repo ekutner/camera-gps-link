@@ -83,6 +83,7 @@ class MainActivity : ComponentActivity() {
                             rememberedDevice = service.rememberedDevice,
                             foundDevices = service.foundDevices,
                             isManualScanning = service.isManualScanning,
+                            isConnected = service.isConnected,
                             onForgetDevice = { service.forgetDevice() },
                             onStartScan = { service.startManualScan() },
                             onConnectToDevice = { service.connectToDevice(it) },
@@ -142,6 +143,7 @@ fun MainScreen(
     rememberedDevice: StateFlow<String?>,
     foundDevices: StateFlow<List<BluetoothDevice>>,
     isManualScanning: StateFlow<Boolean>,
+    isConnected: StateFlow<Boolean>,
     onForgetDevice: () -> Unit,
     onStartScan: () -> Unit,
     onConnectToDevice: (BluetoothDevice) -> Unit,
@@ -152,6 +154,7 @@ fun MainScreen(
     val rememberedDeviceAddress by rememberedDevice.collectAsState()
     val scanning by isManualScanning.collectAsState()
     val devices by foundDevices.collectAsState()
+    val connected by isConnected.collectAsState()
 
     Scaffold(topBar = { TopAppBar(title = { Text("Sony Camera Sync") }) }) { padding ->
         Column(modifier = Modifier.padding(padding).padding(16.dp).fillMaxSize()) {
@@ -161,7 +164,7 @@ fun MainScreen(
             // Large Shutter Button
             Button(
                 onClick = onTriggerShutter,
-                enabled = rememberedDeviceAddress != null,
+                enabled = connected,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(80.dp),

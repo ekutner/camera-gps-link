@@ -83,7 +83,9 @@ class CameraSyncService : Service() {
     private val _isManualScanning = MutableStateFlow(false)
     val isManualScanning: StateFlow<Boolean> = _isManualScanning
 
-    private var _connected = false
+    private val _isConnected = MutableStateFlow(false)
+    val isConnected: StateFlow<Boolean> = _isConnected
+
     private var _autoScanning = false
 
 
@@ -121,7 +123,7 @@ class CameraSyncService : Service() {
 
 
         var message = ""
-        if (_connected) {
+        if (_isConnected.value) {
             val savedName = sharedPreferences.getString(PREF_KEY_DEVICE_NAME, null)
             message = "Connected to $savedName"
         }
@@ -234,13 +236,13 @@ class CameraSyncService : Service() {
         override fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {
             if (newState == BluetoothProfile.STATE_CONNECTED) {
                 updateNotification("Connected to ${gatt.device.name}")
-                _connected = true
+                _isConnected.value = true
                 log("Connected. Requesting MTU...")
                 handler.postDelayed({ gatt.requestMtu(REQUEST_MTU_SIZE) }, 600)
                 saveDeviceAndStartService(gatt.device)
             } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
                 log("Disconnected.")
-                _connected = false
+                _isConnected.value = false
                 disconnectFromDevice(false)
             }
         }
@@ -469,7 +471,7 @@ class CameraSyncService : Service() {
 
         val payload = buffer.array()
 
-        writeCharacteristic(gatt, locationChar, payload, BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT)
+        writeCharacteristic(gatt, locationChar, payload, BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE)
     }
 
     @SuppressLint("MissingPermission")
