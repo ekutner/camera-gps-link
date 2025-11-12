@@ -221,7 +221,7 @@ fun MainScreen(
                     Text(if (scanning) "Scanning..." else "Scan for New Camera")
                 }
                 Button(onClick = onForgetDevice, enabled = rememberedDeviceAddress != null) {
-                    Text("Disconnect & Forget")
+                    Text("Disconnect")
                 }
             }
             if (scanning || devices.isNotEmpty()) {
