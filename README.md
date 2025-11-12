@@ -62,6 +62,15 @@ able to start working after the phone is restarted without it being opened by th
 Therefor, after a restart the app will display a notification reminding you
 to open it, which will disappear once you do.
 
+### Acknowledgements
+This app is inspired by previous work done by:  
+[@whc2001](https://github.com/whc2001/ILCE7M3ExternalGps/blob/main/PROTOCOL_EN.md)  
+[@XDjackieXD](https://github.com/whc2001/ILCE7M3ExternalGps/issues/3)  
+[Greg Leeds](https://gregleeds.com/reverse-engineering-sony-camera-bluetooth/)  
+Without them proving that this was even a possible task I never would have spent 
+the time on trying to get it to work
+
+
 
 ## License
 MIT license
