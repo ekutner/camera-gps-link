@@ -30,8 +30,8 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: camera-gps-link
-          path: app/build/outputs/apk/release/camera-gps-link.apk
+          name: camera-gps-link-unsigned
+          path: app/build/outputs/apk/release/app-release-unsigned.apk
 
       - name: Build Debug APK
         run: ./gradlew assembleDebug
@@ -40,4 +40,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: camera-gps-link-debug
-          path: app/build/outputs/apk/debug/camera-gps-link-debug.apk
+          path: app/build/outputs/apk/debug/app-debug.apk
