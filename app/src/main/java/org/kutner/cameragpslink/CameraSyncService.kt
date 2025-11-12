@@ -204,7 +204,7 @@ class CameraSyncService : Service() {
 //            .setContentTitle("Camera Gps Link")
 //            .setContentText(contentText)
             .setContentTitle(contentText)
-            .setSmallIcon(R.drawable.appicon)
+            .setSmallIcon(R.drawable.ic_notification) // Use monochrome icon for status bar
             .setContentIntent(pendingIntent)
             .setOngoing(isOngoing)
             .setAutoCancel(!isOngoing)
