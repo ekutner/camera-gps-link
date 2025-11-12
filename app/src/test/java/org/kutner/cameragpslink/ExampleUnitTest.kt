@@ -1,4 +1,4 @@
-package org.kutner.sonygpssync
+package org.kutner.cameragpslink
 
 import org.junit.Test
 

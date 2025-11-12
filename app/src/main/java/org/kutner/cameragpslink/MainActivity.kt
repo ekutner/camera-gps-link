@@ -1,4 +1,4 @@
-package org.kutner.sonygpssync
+package org.kutner.cameragpslink
 
 import android.Manifest
 import android.annotation.SuppressLint
@@ -55,7 +55,7 @@ class MainActivity : ComponentActivity() {
                 startCameraService()
             } else {
                 // Always start the service if there's a saved device
-                val prefs = getSharedPreferences("SonyGpsSyncPrefs", Context.MODE_PRIVATE)
+                val prefs = getSharedPreferences("cameragpslinkPrefs", Context.MODE_PRIVATE)
                 val savedAddress = prefs.getString("device_address", null)
                 if (savedAddress != null) {
                     startCameraService()
@@ -78,7 +78,7 @@ class MainActivity : ComponentActivity() {
                 startCameraService()
             } else {
                 // Always start the service if there's a saved device
-                val prefs = getSharedPreferences("SonyGpsSyncPrefs", Context.MODE_PRIVATE)
+                val prefs = getSharedPreferences("cameragpslinkPrefs", Context.MODE_PRIVATE)
                 val savedAddress = prefs.getString("device_address", null)
                 if (savedAddress != null) {
                     startCameraService()
@@ -196,7 +196,7 @@ fun MainScreen(
     val devices by foundDevices.collectAsState()
     val connected by isConnected.collectAsState()
 
-    Scaffold(topBar = { TopAppBar(title = { Text("Sony Camera Sync") }) }) { padding ->
+    Scaffold(topBar = { TopAppBar(title = { Text("Camera GPS Link") }) }) { padding ->
         Column(modifier = Modifier.padding(padding).padding(16.dp).fillMaxSize()) {
             Text(currentStatus)
             Spacer(Modifier.height(16.dp))

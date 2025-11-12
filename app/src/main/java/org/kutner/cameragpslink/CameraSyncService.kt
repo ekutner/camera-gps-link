@@ -1,4 +1,4 @@
-package org.kutner.sonygpssync
+package org.kutner.cameragpslink
 
 import android.Manifest
 import android.annotation.SuppressLint
@@ -39,7 +39,7 @@ class CameraSyncService : Service() {
     // --- Constants ---
     companion object {
         private const val TAG = "CameraSyncService"
-        private const val PREFS_NAME = "SonyGpsSyncPrefs"
+        private const val PREFS_NAME = "cameragpslinkPrefs"
         private const val PREF_KEY_DEVICE_ADDRESS = "device_address"
         private const val PREF_KEY_DEVICE_NAME = "device_name"
         private const val SONY_MANUFACTURER_ID = 0x012D
@@ -56,7 +56,7 @@ class CameraSyncService : Service() {
         private const val LOCATION_UPDATE_INTERVAL: Long = 5000
         private const val REQUEST_MTU_SIZE = 517
 
-        const val ACTION_TRIGGER_SHUTTER = "org.kutner.sonygpssync.ACTION_TRIGGER_SHUTTER"
+        const val ACTION_TRIGGER_SHUTTER = "org.kutner.cameragpslink.ACTION_TRIGGER_SHUTTER"
     }
 
     // --- Service components ---
@@ -166,7 +166,7 @@ class CameraSyncService : Service() {
             }
 
         val builder = NotificationCompat.Builder(this, "camera_sync_channel")
-            .setContentTitle("Sony Camera Sync")
+            .setContentTitle("Camera Gps Link")
             .setContentText(contentText)
             .setSmallIcon(R.drawable.appicon)
             .setContentIntent(pendingIntent)

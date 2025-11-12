@@ -1,4 +1,4 @@
-package org.kutner.sonygpssync
+package org.kutner.cameragpslink
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -12,7 +12,7 @@ import androidx.core.app.NotificationCompat
 class BootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action == Intent.ACTION_BOOT_COMPLETED) {
-            val prefs = context.getSharedPreferences("SonyGpsSyncPrefs", Context.MODE_PRIVATE)
+            val prefs = context.getSharedPreferences("cameragpslinkPrefs", Context.MODE_PRIVATE)
             val savedAddress = prefs.getString("device_address", null)
 
             if (savedAddress != null) {
@@ -49,7 +49,7 @@ class BootReceiver : BroadcastReceiver() {
         )
 
         val notification = NotificationCompat.Builder(context, "camera_sync_boot_channel")
-            .setContentTitle("Sony Camera Sync")
+            .setContentTitle("Camera Gps Link")
             .setContentText("Tap to connect to your saved camera")
             .setSmallIcon(R.drawable.appicon)
             .setContentIntent(pendingIntent)

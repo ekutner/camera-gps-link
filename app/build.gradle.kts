@@ -5,13 +5,13 @@ plugins {
 }
 
 android {
-    namespace = "org.kutner.sonygpssync"
+    namespace = "org.kutner.cameragpslink"
     compileSdk {
         version = release(36)
     }
 
     defaultConfig {
-        applicationId = "org.kutner.sonygpssync"
+        applicationId = "org.kutner.cameragpslink"
         minSdk = 24
         targetSdk = 36
         versionCode = 1

@@ -19,6 +19,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Sony Location Link"
+rootProject.name = "Camera GPS Link"
 include(":app")
  

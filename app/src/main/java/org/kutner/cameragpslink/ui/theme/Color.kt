@@ -1,4 +1,4 @@
-package org.kutner.sonygpssync.ui.theme
+package org.kutner.cameragpslink.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
