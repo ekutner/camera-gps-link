@@ -6,9 +6,7 @@ plugins {
 
 android {
     namespace = "org.kutner.cameragpslink"
-    compileSdk {
-        version = release(36)
-    }
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "org.kutner.cameragpslink"
@@ -50,6 +48,10 @@ dependencies {
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
+
+    // Explicitly add Fragment dependency to fix ActivityResult API issue
+    implementation("androidx.fragment:fragment-ktx:1.8.5")
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -57,6 +59,7 @@ dependencies {
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
+
     // Google Play Services Location
     implementation("com.google.android.gms:play-services-location:21.0.1")
 }
