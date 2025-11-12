@@ -50,7 +50,7 @@ dependencies {
     implementation(libs.androidx.compose.material3)
 
     // Explicitly add Fragment dependency to fix ActivityResult API issue
-    implementation("androidx.fragment:fragment-ktx:1.8.5")
+    implementation(libs.androidx.fragment.ktx)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
@@ -61,5 +61,5 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.test.manifest)
 
     // Google Play Services Location
-    implementation("com.google.android.gms:play-services-location:21.0.1")
+    implementation(libs.play.services.location)
 }
