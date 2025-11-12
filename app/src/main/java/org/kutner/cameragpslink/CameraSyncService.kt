@@ -92,6 +92,7 @@ class CameraSyncService : Service() {
     val isConnected: StateFlow<Boolean> = _isConnected
 
     private var _autoScanning = false
+    private var isForegroundServiceStarted = false
 
 
 
@@ -132,17 +133,22 @@ class CameraSyncService : Service() {
             return START_NOT_STICKY
         }
 
+        // Only start foreground service if not already started
+        if (!isForegroundServiceStarted) {
+            var message = ""
+            if (_isConnected.value) {
+                val savedName = sharedPreferences.getString(PREF_KEY_DEVICE_NAME, null)
+                message = "Connected to $savedName"
+            } else {
+                message = "Searching for saved camera..."
+            }
+            startForeground(1, createNotification(message, true))
+            isForegroundServiceStarted = true
+            if (!_isConnected.value) {
+                startAutoScan()
+            }
+        }
 
-        var message = ""
-        if (_isConnected.value) {
-            val savedName = sharedPreferences.getString(PREF_KEY_DEVICE_NAME, null)
-            message = "Connected to $savedName"
-        }
-        else {
-            message = "Searching for saved camera..."
-        }
-        startForeground(1, createNotification(message, true))
-        startAutoScan()
         return START_STICKY
     }
 
@@ -151,13 +157,40 @@ class CameraSyncService : Service() {
         stopLocationUpdates()
         bluetoothGatt?.close()
         bluetoothGatt = null
+        isForegroundServiceStarted = false
         log("Service destroyed.")
     }
 
     private fun createNotification(contentText: String, isOngoing: Boolean): Notification {
+        // Use different channels for connected vs searching states
+        val channelId = if (_isConnected.value) "camera_sync_channel_high" else "camera_sync_channel_low"
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel("camera_sync_channel", "Camera Sync", NotificationManager.IMPORTANCE_HIGH)
-            getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
+            val notificationManager = getSystemService(NotificationManager::class.java)
+
+            // Create high priority channel for connected state
+            val highChannel = NotificationChannel(
+                "camera_sync_channel_high",
+                "Camera Link - Connected",
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                setShowBadge(true)
+                enableLights(true)
+                enableVibration(true)
+            }
+            notificationManager.createNotificationChannel(highChannel)
+
+            // Create low priority channel for searching state
+            val lowChannel = NotificationChannel(
+                "camera_sync_channel_low",
+                "Camera Link - Searching",
+                NotificationManager.IMPORTANCE_LOW
+            ).apply {
+                setShowBadge(false)
+                enableLights(false)
+                enableVibration(false)
+            }
+            notificationManager.createNotificationChannel(lowChannel)
         }
 
         val pendingIntent: PendingIntent =
@@ -165,14 +198,18 @@ class CameraSyncService : Service() {
                 PendingIntent.getActivity(this, 0, notificationIntent, PendingIntent.FLAG_IMMUTABLE)
             }
 
-        val builder = NotificationCompat.Builder(this, "camera_sync_channel")
-            .setContentTitle("Camera Gps Link")
-            .setContentText(contentText)
+        val priority = if (_isConnected.value) NotificationCompat.PRIORITY_HIGH else NotificationCompat.PRIORITY_LOW
+
+        val builder = NotificationCompat.Builder(this, channelId)
+//            .setContentTitle("Camera Gps Link")
+//            .setContentText(contentText)
+            .setContentTitle(contentText)
             .setSmallIcon(R.drawable.appicon)
             .setContentIntent(pendingIntent)
             .setOngoing(isOngoing)
             .setAutoCancel(!isOngoing)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setPriority(priority)
+            .setCategory(NotificationCompat.CATEGORY_SERVICE)
 
         // Add shutter button if connected
         if (_isConnected.value) {
@@ -205,6 +242,11 @@ class CameraSyncService : Service() {
         _status.value = contentText
         val notification = createNotification(contentText, true)
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
+        // Cancel the existing notification to ensure channel switch takes effect
+        notificationManager.cancel(1)
+
+        // Post the new notification
         notificationManager.notify(1, notification)
     }
 
@@ -266,8 +308,8 @@ class CameraSyncService : Service() {
         @SuppressLint("MissingPermission")
         override fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {
             if (newState == BluetoothProfile.STATE_CONNECTED) {
-                updateNotification("Connected to ${gatt.device.name}")
                 _isConnected.value = true
+                updateNotification("Connected to ${gatt.device.name}")
                 log("Connected. Requesting MTU...")
                 handler.postDelayed({ gatt.requestMtu(REQUEST_MTU_SIZE) }, 600)
                 saveDeviceAndStartService(gatt.device)
@@ -387,6 +429,7 @@ class CameraSyncService : Service() {
             log("Forgetting device...")
             sharedPreferences.edit().clear().apply()
             _rememberedDevice.value = null
+            isForegroundServiceStarted = false
             stopSelf()
         } else {
             updateNotification("Disconnected. Searching for camera...")
