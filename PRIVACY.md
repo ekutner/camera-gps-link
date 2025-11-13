@@ -1,4 +1,4 @@
-This application does not collect, store or shares personal data.
+This application does not collect, store or share personal data.
 
 If you installed this application from Google Play, 
 then Google Play does collect some personal data. 
