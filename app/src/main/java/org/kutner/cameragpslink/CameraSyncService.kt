@@ -142,7 +142,7 @@ class CameraSyncService : Service() {
             } else {
                 message = "Searching for saved camera..."
             }
-            startForeground(1, createNotification(message, true))
+            startForeground(1, createNotification(message, isOngoing = true))
             isForegroundServiceStarted = true
             if (!_isConnected.value) {
                 startAutoScan()
@@ -161,7 +161,7 @@ class CameraSyncService : Service() {
         log("Service destroyed.")
     }
 
-    private fun createNotification(contentText: String, isOngoing: Boolean): Notification {
+    private fun createNotification(title: String, text: String? = null, isOngoing: Boolean = true): Notification {
         // Use different channels for connected vs searching states
         val channelId = if (_isConnected.value) "camera_sync_channel_high" else "camera_sync_channel_low"
 
@@ -201,15 +201,17 @@ class CameraSyncService : Service() {
         val priority = if (_isConnected.value) NotificationCompat.PRIORITY_HIGH else NotificationCompat.PRIORITY_LOW
 
         val builder = NotificationCompat.Builder(this, channelId)
-//            .setContentTitle("Camera Gps Link")
-//            .setContentText(contentText)
-            .setContentTitle(contentText)
+            .setContentTitle(title)
             .setSmallIcon(R.drawable.ic_notification) // Use monochrome icon for status bar
             .setContentIntent(pendingIntent)
             .setOngoing(isOngoing)
             .setAutoCancel(!isOngoing)
             .setPriority(priority)
             .setCategory(NotificationCompat.CATEGORY_SERVICE)
+
+        if (text != null) {
+            builder.setContentText(text)
+        }
 
         // Add shutter button if connected
         if (_isConnected.value) {
@@ -233,14 +235,14 @@ class CameraSyncService : Service() {
     }
 
     private fun showPermissionsRequiredNotification() {
-        val notification = createNotification("Permissions required. Tap to open the app.", false)
+        val notification = createNotification("Permissions required. Tap to open the app.",  isOngoing = false)
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.notify(2, notification) // Use a different ID
     }
 
-    private fun updateNotification(contentText: String) {
-        _status.value = contentText
-        val notification = createNotification(contentText, true)
+    private fun updateNotification(title: String, text: String? = null) {
+        _status.value = title
+        val notification = createNotification(title, text, true)
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
         // Cancel the existing notification to ensure channel switch takes effect
@@ -309,7 +311,7 @@ class CameraSyncService : Service() {
         override fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {
             if (newState == BluetoothProfile.STATE_CONNECTED) {
                 _isConnected.value = true
-                updateNotification("Connected to ${gatt.device.name}")
+                updateNotification("Connected to ${gatt.device.name}", "Syncing location with camera")
                 log("Connected. Requesting MTU...")
                 handler.postDelayed({ gatt.requestMtu(REQUEST_MTU_SIZE) }, 600)
                 saveDeviceAndStartService(gatt.device)
