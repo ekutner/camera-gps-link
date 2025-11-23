@@ -216,7 +216,7 @@ fun MainScreen(
             }
 
             Spacer(Modifier.height(16.dp))
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+            FlowRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
                 Button(onClick = onStartScan, enabled = rememberedDeviceAddress == null) {
                     Text(if (scanning) "Scanning..." else "Scan for New Camera")
                 }
