@@ -13,9 +13,10 @@ class BootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action == Intent.ACTION_BOOT_COMPLETED) {
             val prefs = context.getSharedPreferences("cameragpslinkPrefs", Context.MODE_PRIVATE)
-            val savedAddress = prefs.getString("device_address", null)
+            val savedCameras = prefs.getString("saved_cameras", null)
 
-            if (savedAddress != null) {
+            // And update the check:
+            if (!savedCameras.isNullOrEmpty()) {
                 // Instead of starting the service, show a notification
                 showStartServiceNotification(context)
             }
