@@ -11,22 +11,18 @@ unable, or unwilling, to fix it.
 ### **This app is not associated with or endorsed by Sony**
 
 ## Features
-* GPS synchronization, aka Location Linking
-* Time synchronization - the camera will always be synchronized with the 
-  Phone's time, time zone and daylight savings status
-* Remote control - A simple shutter release remote control
+* GPS synchronization (Location Linking) that just works
+* Time synchronization - keeps the camera time always be synchronized with the 
+  Phone's time, including time zone and daylight savings status, 
+  which can't be synced automatically when using the Creator's App
+* Remote shutter release - A simple and quick shutter release remote control (similar to the shutter button on Sony's RMT-P1BT)   
+* Support for connecting multiple cameras
 
-## Privacy
-The app doesn't collect any information so obviously it doesn't send anything to anyone.  
-The GPS location is only used locally by the app to send to the camera, it is never collected or shared with anyone.  
-The app doesn't connect to the Internet.
+## Screenshots
+| ![](assets/two-cameras-dark.jpeg) | ![](assets/one-camera-light.jpg) | ![](assets/found-camera-dark.jpg) | ![](assets/notifications.jpg) |
+|-----------------------------------|----------------------------------|-----------------------------------|-------------------------------|
 
-## Permissions
-The app requires the following permission:  
-**Precise Location** - Must be set to "When using the app" - required for providing location information to the camera  
-**Bluetooth** - Required for pairing the camera with the app  
-**Notifications** - Required for showing a persistent notification while the 
-    app is running in the background, waiting to connect with the camera
+
 
 
 ## Usage
@@ -35,13 +31,13 @@ The app requires the following permission:
    * Go to MENU → Network → Bluetooth → Bluetooth Function - Set to "On"
    * Go to MENU → Network → Bluetooth → Pairing - The camera will enter pairing mode
 2. In the app:
-   * Press the "Scan for New Camera" button
-   * The camera should be discovered like this:
-   * Press the name of the camera 
-3. On the the camera confirm the pairing request
-4. On the phone confirm the pairing action
-5. Once paired the app will continuously look for the camera and
+   * Press the "+" button to start searching for cameras
+   * when the camera is discovered press the "Connect" button to connect to it   
+3. Confirm the pairing request on both the camera and the phone
+4. Once paired the app will continuously look for the camera and
    will automatically connect to it when it is near by
+5. After restarting the phone you have to open the app once for it to work properly.
+   The app will show a notification reminding you to open it, which will disappear once you do. 
 
 ### Remote Control
 1. Enable remote control on the camera:
@@ -53,14 +49,27 @@ The app requires the following permission:
 
 
 ### Unpairing
-Just press the "Disconnect" button for the app to disconnect and stop trying to
-automatically connect to the camera.
+Select the "Remove camera" option from the three dots menu (aka kebab menu) next to the camera.
 
 ### After phone restart
 Due to the way location permissions work on Android the app is not 
 able to start working after the phone is restarted without it being opened by the user.
 Therefor, after a restart the app will display a notification reminding you
 to open it, which will disappear once you do.
+
+
+## Privacy
+The app doesn't collect any information so obviously it doesn't send anything to anyone.  
+The GPS location is only used locally by the app to send to the camera, it is never collected or shared with anyone.  
+The app doesn't connect to the Internet.
+
+## Permissions
+The app requires the following permission:  
+**Precise Location** - Must be set to "When using the app" - required for providing location information to the camera    
+**Nearby Devices** - Required for using bluetooth to connect to the camera    
+**Notifications** - Required for showing a persistent notification while the
+app is running in the background, waiting to connect with the camera
+
 
 ### Acknowledgements
 This app is inspired by previous work done by:  
