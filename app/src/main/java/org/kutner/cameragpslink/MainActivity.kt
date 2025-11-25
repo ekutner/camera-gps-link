@@ -24,6 +24,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -660,14 +662,18 @@ fun FoundCameraCard(
             containerColor = MaterialTheme.colorScheme.surfaceVariant
         )
     ) {
-        Row(
+        FlowRow(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            // 1. Text Section
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                // Note: No weight here, allowing text to determine the row height
+            ) {
                 Box(
                     modifier = Modifier
                         .size(40.dp)
@@ -698,13 +704,24 @@ fun FoundCameraCard(
                 }
             }
 
-            Button(
-                onClick = onConnect,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary
-                )
+            // 2. Button Section
+            Box(
+                modifier = Modifier
+                    // FIX: This aligns the button vertically within the FlowRow line
+                    .align(Alignment.CenterVertically)
+                    .weight(1f)
+                    .padding(start = 12.dp),
+                contentAlignment = Alignment.CenterEnd
             ) {
-                Text("Connect")
+                Button(
+                    onClick = onConnect,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary
+                    )
+                ) {
+                    Text(text = "Connect")
+                }
             }
         }
     }
