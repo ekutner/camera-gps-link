@@ -284,7 +284,7 @@ fun MainScreen(
         modifier = Modifier.fillMaxSize(),
         topBar = {
             TopAppBar(
-                title = { Text("Camera GPS Link") },
+                title = { Text(Constants.APP_NAME) },
                 actions = {
                     IconButton(onClick = { showMenu = true }) {
                         Icon(
