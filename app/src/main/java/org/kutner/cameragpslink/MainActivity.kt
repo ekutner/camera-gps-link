@@ -46,6 +46,7 @@ import androidx.compose.material.icons.filled.CheckBox
 import androidx.compose.material.icons.filled.CheckBoxOutlineBlank
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -152,6 +153,7 @@ class MainActivity : ComponentActivity() {
                         connectedCameras = service.connectedCameras,
                         foundDevices = service.foundDevices,
                         isManualScanning = service.isManualScanning,
+                        shutterErrorMessage = service.shutterErrorMessage,
                         onStartScan = { service.startManualScan() },
                         onCancelScan = { service.stopManualScan() },
                         onConnectToDevice = {
@@ -162,7 +164,8 @@ class MainActivity : ComponentActivity() {
                         onTriggerShutter = { address -> service.triggerShutter(address) },
                         onForgetDevice = { address -> service.forgetDevice(address) },
                         onClearLog = { service.clearLog() },
-                        onShareLog = { shareLog(service.getLogAsString()) }
+                        onShareLog = { shareLog(service.getLogAsString()) },
+                        onDismissShutterError = { service.clearShutterError() }
                     )
                 } else {
                     Box(
@@ -241,13 +244,15 @@ fun MainScreen(
     connectedCameras: StateFlow<List<CameraConnection>>,
     foundDevices: StateFlow<List<BluetoothDevice>>,
     isManualScanning: StateFlow<Boolean>,
+    shutterErrorMessage: StateFlow<String?>,
     onStartScan: () -> Unit,
     onCancelScan: () -> Unit,
     onConnectToDevice: (BluetoothDevice) -> Unit,
     onTriggerShutter: (String) -> Unit,
     onForgetDevice: (String) -> Unit,
     onClearLog: () -> Unit,
-    onShareLog: () -> Unit
+    onShareLog: () -> Unit,
+    onDismissShutterError: () -> Unit
 ) {
     val context = LocalContext.current
     val prefs = remember { context.getSharedPreferences("cameragpslinkPrefs", Context.MODE_PRIVATE) }
@@ -256,11 +261,25 @@ fun MainScreen(
     val cameras by connectedCameras.collectAsState()
     val scanning by isManualScanning.collectAsState()
     val devices by foundDevices.collectAsState()
+    val errorMessage by shutterErrorMessage.collectAsState()
 
     var showLog by remember { mutableStateOf(prefs.getBoolean("show_log", false)) }
     var showMenu by remember { mutableStateOf(false) }
     var showSearchDialog by remember { mutableStateOf(false) }
 
+    // Show error dialog when there's an error message
+    if (errorMessage != null) {
+        AlertDialog(
+            onDismissRequest = onDismissShutterError,
+            title = { Text(Constants.ERROR_SHUTTER_TITLE) },
+            text = { Text(errorMessage ?: "") },
+            confirmButton = {
+                TextButton(onClick = onDismissShutterError) {
+                    Text("OK")
+                }
+            }
+        )
+    }
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         topBar = {
@@ -546,7 +565,7 @@ fun ConnectedCameraCard(
                 )
             ) {
                 Text(
-                    text = "Shutter",
+                    text = Constants.ACTION_SHUTTER,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Medium
                 )
@@ -669,10 +688,8 @@ fun FoundCameraCard(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // 1. Text Section
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                // Note: No weight here, allowing text to determine the row height
             ) {
                 Box(
                     modifier = Modifier
@@ -692,7 +709,7 @@ fun FoundCameraCard(
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = device.name ?: "Unknown Camera",
+                        text = device.name ?: Constants.UNKNOWN_CAMERA_NAME,
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.SemiBold
                     )
@@ -704,10 +721,8 @@ fun FoundCameraCard(
                 }
             }
 
-            // 2. Button Section
             Box(
                 modifier = Modifier
-                    // FIX: This aligns the button vertically within the FlowRow line
                     .align(Alignment.CenterVertically)
                     .weight(1f)
                     .padding(start = 12.dp),

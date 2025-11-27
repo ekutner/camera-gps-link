@@ -63,24 +63,7 @@ class CameraSyncService : Service() {
     // --- Constants ---
     companion object {
         private const val TAG = "CameraSyncService"
-        private const val PREFS_NAME = "cameragpslinkPrefs"
-        private const val PREF_KEY_SAVED_CAMERAS = "saved_cameras"
-        private const val SONY_MANUFACTURER_ID = 0x012D
-        private val PICT_SERVICE_UUID = UUID.fromString("8000DD00-DD00-FFFF-FFFF-FFFFFFFFFFFF")
-
-        private val TIME_SERVICE_UUID = UUID.fromString("8000CC00-CC00-FFFF-FFFF-FFFFFFFFFFFF")
-        private val TIME_CHARACTERISTIC_UUID = UUID.fromString("0000CC13-0000-1000-8000-00805F9B34FB")
-        private val LOCATION_CHARACTERISTIC_UUID = UUID.fromString("0000DD11-0000-1000-8000-00805F9B34FB")
-        private val LOCK_LOCATION_ENDPOINT_UUID = UUID.fromString("0000DD30-0000-1000-8000-00805F9B34FB")
-        private val ENABLE_LOCATION_UPDATES_UUID = UUID.fromString("0000DD31-0000-1000-8000-00805F9B34FB")
-        private val SHUTTER_SERVICE_UUID = UUID.fromString("8000FF00-FF00-FFFF-FFFF-FFFFFFFFFFFF")
-        private val SHUTTER_CHARACTERISTIC_UUID = UUID.fromString("0000FF01-0000-1000-8000-00805F9B34FB")
-        private const val MANUAL_SCAN_PERIOD: Long = 15000
-        private const val LOCATION_UPDATE_INTERVAL: Long = 10000
-        private const val REQUEST_MTU_SIZE = 517
-
-        const val ACTION_TRIGGER_SHUTTER = "org.kutner.cameragpslink.ACTION_TRIGGER_SHUTTER"
-        const val EXTRA_DEVICE_ADDRESS = "device_address"
+        // All other constants have been moved to Constants.kt
     }
 
     // --- Service components ---
@@ -114,6 +97,12 @@ class CameraSyncService : Service() {
     private val _isManualScanning = MutableStateFlow(false)
     val isManualScanning: StateFlow<Boolean> = _isManualScanning
 
+    private val _shutterTriggeredFromNotification = MutableStateFlow<String?>(null)
+    private val shutterTriggeredFromNotification: StateFlow<String?> = _shutterTriggeredFromNotification
+
+    private val _shutterErrorMessage = MutableStateFlow<String?>(null)
+    val shutterErrorMessage: StateFlow<String?> = _shutterErrorMessage
+
     private var isForegroundServiceStarted = false
 
     inner class LocalBinder : Binder() {
@@ -124,7 +113,7 @@ class CameraSyncService : Service() {
 
     override fun onCreate() {
         super.onCreate()
-        sharedPreferences = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        sharedPreferences = getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
         initializeBluetoothAndLocation()
         loadSavedCameras()
         if (cameraConnections.isNotEmpty()) {
@@ -140,15 +129,15 @@ class CameraSyncService : Service() {
         startService()
 
         // Handle shutter action from notification
-        if (intent?.action == ACTION_TRIGGER_SHUTTER) {
-            val deviceAddress = intent.getStringExtra(EXTRA_DEVICE_ADDRESS)
+        if (intent?.action == Constants.ACTION_TRIGGER_SHUTTER) {
+            val deviceAddress = intent.getStringExtra(Constants.EXTRA_DEVICE_ADDRESS)
             if (deviceAddress != null) {
-                triggerShutter(deviceAddress)
+                triggerShutter(deviceAddress, fromNotification = true)
             } else {
                 // Trigger all connected cameras
                 cameraConnections.values.forEach { connection ->
                     if (connection.isConnected) {
-                        triggerShutter(connection.device.address)
+                        triggerShutter(connection.device.address, fromNotification = true)
                     }
                 }
             }
@@ -193,7 +182,7 @@ class CameraSyncService : Service() {
     private fun startService() {
         if (!isForegroundServiceStarted) {
             log("Starting foreground service...")
-            startForeground(1, createSearchingNotification())
+            startForeground(Constants.NOTIFICATION_ID_FOREGROUND, createSearchingNotification())
             isForegroundServiceStarted = true
         }
         else {
@@ -212,14 +201,14 @@ class CameraSyncService : Service() {
 
     private fun createNotification(): Notification {
         val connectedCount = cameraConnections.values.count { it.isConnected }
-        val channelId = if (connectedCount > 0) "camera_sync_channel_high" else "camera_sync_channel_low"
+        val channelId = if (connectedCount > 0) Constants.NOTIFICATION_CHANNEL_HIGH_ID else Constants.NOTIFICATION_CHANNEL_LOW_ID
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val notificationManager = getSystemService(NotificationManager::class.java)
 
             val highChannel = NotificationChannel(
-                "camera_sync_channel_high",
-                "Camera Link - Connected",
+                Constants.NOTIFICATION_CHANNEL_HIGH_ID,
+                Constants.NOTIFICATION_CHANNEL_HIGH_NAME,
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
                 setShowBadge(true)
@@ -229,8 +218,8 @@ class CameraSyncService : Service() {
             notificationManager.createNotificationChannel(highChannel)
 
             val lowChannel = NotificationChannel(
-                "camera_sync_channel_low",
-                "Camera Link - Searching",
+                Constants.NOTIFICATION_CHANNEL_LOW_ID,
+                Constants.NOTIFICATION_CHANNEL_LOW_NAME,
                 NotificationManager.IMPORTANCE_LOW
             ).apply {
                 setShowBadge(false)
@@ -264,7 +253,7 @@ class CameraSyncService : Service() {
         // Add shutter button if at least one camera is connected
         if (connectedCount > 0) {
             val shutterIntent = Intent(this, CameraSyncService::class.java).apply {
-                action = ACTION_TRIGGER_SHUTTER
+                action = Constants.ACTION_TRIGGER_SHUTTER
             }
             val shutterPendingIntent = PendingIntent.getService(
                 this,
@@ -286,8 +275,8 @@ class CameraSyncService : Service() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val notificationManager = getSystemService(NotificationManager::class.java)
             val lowChannel = NotificationChannel(
-                "camera_sync_channel_low",
-                "Camera GPS Link - Searching",
+                Constants.NOTIFICATION_CHANNEL_LOW_ID,
+                Constants.NOTIFICATION_CHANNEL_LOW_NAME,
                 NotificationManager.IMPORTANCE_LOW
             ).apply {
                 setShowBadge(false)
@@ -302,10 +291,7 @@ class CameraSyncService : Service() {
                 PendingIntent.getActivity(this, 0, notificationIntent, PendingIntent.FLAG_IMMUTABLE)
             }
 
-        val connectedCount = cameraConnections.values.count { it.isConnected || it.isConnecting }
-
-        return NotificationCompat.Builder(this, "camera_sync_channel_low")
-//            .setContentTitle(if (connectedCount > 0) "Connected to camera" else "Searching for cameras...")
+        return NotificationCompat.Builder(this, Constants.NOTIFICATION_CHANNEL_LOW_ID)
             .setContentText("Searching for cameras...")
             .setSmallIcon(R.drawable.ic_notification)
             .setContentIntent(pendingIntent)
@@ -319,8 +305,8 @@ class CameraSyncService : Service() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val notificationManager = getSystemService(NotificationManager::class.java)
             val highChannel = NotificationChannel(
-                "camera_sync_channel_high",
-                "Camera Link - Connected",
+                Constants.NOTIFICATION_CHANNEL_HIGH_ID,
+                Constants.NOTIFICATION_CHANNEL_HIGH_NAME,
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
                 setShowBadge(true)
@@ -336,8 +322,8 @@ class CameraSyncService : Service() {
             }
 
         val shutterIntent = Intent(this, CameraSyncService::class.java).apply {
-            action = ACTION_TRIGGER_SHUTTER
-            putExtra(EXTRA_DEVICE_ADDRESS, connection.device.address)
+            action = Constants.ACTION_TRIGGER_SHUTTER
+            putExtra(Constants.EXTRA_DEVICE_ADDRESS, connection.device.address)
         }
         val shutterPendingIntent = PendingIntent.getService(
             this,
@@ -353,7 +339,7 @@ class CameraSyncService : Service() {
             "Camera"
         }
 
-        return NotificationCompat.Builder(this, "camera_sync_channel_high")
+        return NotificationCompat.Builder(this, Constants.NOTIFICATION_CHANNEL_HIGH_ID)
             .setContentTitle("Connected to $cameraName")
             .setSmallIcon(R.drawable.ic_notification)
             .setContentIntent(pendingIntent)
@@ -371,7 +357,7 @@ class CameraSyncService : Service() {
     private fun showPermissionsRequiredNotification() {
         val notification = createNotification()
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        notificationManager.notify(2, notification)
+        notificationManager.notify(Constants.NOTIFICATION_ID_PERMISSIONS_REQUIRED, notification)
     }
 
     private fun createAutoScanCallback(deviceAddress: String): ScanCallback {
@@ -428,29 +414,80 @@ class CameraSyncService : Service() {
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
         if (isForegroundServiceStarted) {
-            // Update or cancel the main searching notification
-//            notificationManager.notify(1, createSearchingNotification())
-
             // Create individual notifications for each connected camera
-            cameraConnections.values.forEachIndexed { index, connection ->
+            cameraConnections.values.forEach { connection ->
+                val notificationId = connection.device.address.hashCode()
                 if (connection.isConnected || connection.isConnecting) {
-                    notificationManager.notify(connection.device.address.hashCode(), createCameraNotification(connection, connection.device.address.hashCode()))
-                    log("Created notification for ${connection.device.address.hashCode()}")
+                    notificationManager.notify(notificationId, createCameraNotification(connection, notificationId))
+                    log("Created/Updated notification for ${connection.device.address}")
                 } else {
-                    notificationManager.cancel(connection.device.address.hashCode())
-                    log("Cancelled notification for ${connection.device.address.hashCode()}")
+                    notificationManager.cancel(notificationId)
+                    log("Cancelled notification for ${connection.device.address}")
                 }
             }
-        }
-        else {
-            log("Service not started cancelling all notifications")
+        } else {
+            log("Service not started, cancelling all notifications")
             notificationManager.cancelAll()
         }
     }
+
     private fun cancelNotification(notificationId: Int) {
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.cancel(notificationId)
         log("Cancelled notification with ID $notificationId")
+    }
+
+    private fun showShutterErrorNotification(deviceAddress: String) {
+        val connection = cameraConnections[deviceAddress] ?: return
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val notificationManager = getSystemService(NotificationManager::class.java)
+            val errorChannel = NotificationChannel(
+                Constants.NOTIFICATION_CHANNEL_ERROR_ID,
+                Constants.NOTIFICATION_CHANNEL_ERROR_NAME,
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                setShowBadge(true)
+                enableLights(true)
+                enableVibration(true)
+            }
+            notificationManager.createNotificationChannel(errorChannel)
+        }
+
+        val pendingIntent: PendingIntent =
+            Intent(this, MainActivity::class.java).let { notificationIntent ->
+                PendingIntent.getActivity(this, 0, notificationIntent, PendingIntent.FLAG_IMMUTABLE)
+            }
+
+        val cameraName = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+            ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED) {
+            connection.device.name ?: "Camera"
+        } else {
+            "Camera"
+        }
+
+        val notification = NotificationCompat.Builder(this, Constants.NOTIFICATION_CHANNEL_ERROR_ID)
+            .setContentTitle("Shutter Release Failed - $cameraName")
+            .setContentText("Enable \"Bluetooth Rmt Ctrl\" in camera settings")
+            .setStyle(NotificationCompat.BigTextStyle()
+                .bigText("Enable \"Bluetooth Rmt Ctrl\" in the camera settings to use remote shutter control."))
+            .setSmallIcon(R.drawable.ic_notification)
+            .setContentIntent(pendingIntent)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setAutoCancel(true)
+            .build()
+
+        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val notificationId = deviceAddress.hashCode() + Constants.NOTIFICATION_ID_SHUTTER_ERROR_OFFSET
+        notificationManager.notify(notificationId, notification)
+
+        log("Showed error notification for $deviceAddress")
+    }
+
+    private fun clearShutterErrorNotification(deviceAddress: String) {
+        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val notificationId = deviceAddress.hashCode() + Constants.NOTIFICATION_ID_SHUTTER_ERROR_OFFSET
+        notificationManager.cancel(notificationId)
     }
 
     // --- Public Functions for UI to Call ---
@@ -463,11 +500,11 @@ class CameraSyncService : Service() {
         _isManualScanning.value = true
         _foundDevices.value = emptyList()
 
-        val scanFilter = ScanFilter.Builder().setManufacturerData(SONY_MANUFACTURER_ID, byteArrayOf()).build()
+        val scanFilter = ScanFilter.Builder().setManufacturerData(Constants.SONY_MANUFACTURER_ID, byteArrayOf()).build()
         val scanSettings = ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).build()
         bleScanner.startScan(listOf(scanFilter), scanSettings, manualScanCallback)
 
-        handler.postDelayed({ stopManualScan() }, MANUAL_SCAN_PERIOD)
+        handler.postDelayed({ stopManualScan() }, Constants.MANUAL_SCAN_PERIOD)
     }
 
 
@@ -518,6 +555,7 @@ class CameraSyncService : Service() {
             }
             connection.gatt = null
             cancelNotification(connection.device.address.hashCode())
+            clearShutterErrorNotification(deviceAddress)
 
             // Stop auto-scan for this device
             autoScanCallbacks[deviceAddress]?.let { callback ->
@@ -539,9 +577,6 @@ class CameraSyncService : Service() {
             // Update UI
             updateConnectionsList()
 
-
-            // Check if any camera is still connected
-
             log("Device $deviceAddress forgotten successfully")
 
             // Stop service if no more cameras
@@ -554,7 +589,7 @@ class CameraSyncService : Service() {
     }
 
     @SuppressLint("MissingPermission")
-    fun triggerShutter(deviceAddress: String? = null) {
+    fun triggerShutter(deviceAddress: String? = null, fromNotification: Boolean = false) {
         if (deviceAddress != null) {
             // Trigger specific camera
             val connection = cameraConnections[deviceAddress]
@@ -564,10 +599,15 @@ class CameraSyncService : Service() {
             }
 
             val gatt = connection.gatt ?: return
-            val shutterChar = gatt.getService(SHUTTER_SERVICE_UUID)?.getCharacteristic(SHUTTER_CHARACTERISTIC_UUID)
+            val shutterChar = gatt.getService(Constants.SHUTTER_SERVICE_UUID)?.getCharacteristic(Constants.SHUTTER_CHARACTERISTIC_UUID)
             if (shutterChar == null) {
                 log("Shutter characteristic not found for $deviceAddress")
                 return
+            }
+
+            // Track if this shutter was triggered from notification
+            if (fromNotification) {
+                _shutterTriggeredFromNotification.value = deviceAddress
             }
 
             log("Triggering shutter for ${connection.device.name ?: deviceAddress}...")
@@ -590,7 +630,7 @@ class CameraSyncService : Service() {
                     connection.isConnected = true
                     connection.isConnecting = false
                     log("Connected to ${gatt.device.name ?: deviceAddress}. Requesting MTU...")
-                    handler.postDelayed({ gatt.requestMtu(REQUEST_MTU_SIZE) }, 600)
+                    handler.postDelayed({ gatt.requestMtu(Constants.REQUEST_MTU_SIZE) }, 600)
 
                     // Update UI immediately
                     startService()      // make sure the service is started
@@ -607,6 +647,9 @@ class CameraSyncService : Service() {
                     connection.isConnected = false
                     connection.isConnecting = false
                     stopLocationUpdates(connection)
+
+                    // Clear any error notifications for this camera
+                    clearShutterErrorNotification(deviceAddress)
 
                     // Update UI immediately
                     updateConnectionsList()
@@ -639,24 +682,37 @@ class CameraSyncService : Service() {
             override fun onCharacteristicWrite(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic, status: Int) {
                 if (status == BluetoothGatt.GATT_SUCCESS) {
                     when (characteristic.uuid) {
-                        LOCK_LOCATION_ENDPOINT_UUID -> {
+                        Constants.LOCK_LOCATION_ENDPOINT_UUID -> {
                             log("Endpoint locked for $deviceAddress. Enabling location updates...")
                             enableLocationUpdates(gatt, deviceAddress)
                         }
-                        ENABLE_LOCATION_UPDATES_UUID -> {
+                        Constants.ENABLE_LOCATION_UPDATES_UUID -> {
                             log("Location updates enabled for $deviceAddress. Syncing time...")
                             synchronizeTime(gatt, deviceAddress)
                         }
-                        TIME_CHARACTERISTIC_UUID -> {
+                        Constants.TIME_CHARACTERISTIC_UUID -> {
                             log("Time synced for $deviceAddress. Starting location data stream.")
                             startLocationUpdates(deviceAddress)
                         }
                     }
                 } else {
                     log("Write failed for ${characteristic.uuid} on $deviceAddress with status $status")
+                    if (characteristic.uuid == Constants.SHUTTER_CHARACTERISTIC_UUID && status == 144) {
+                        // Check if this shutter was triggered from notification
+                        if (_shutterTriggeredFromNotification.value == deviceAddress) {
+                            _shutterTriggeredFromNotification.value = null
+                            showShutterErrorNotification(deviceAddress)
+                        } else {
+                            _shutterErrorMessage.value = "Enable \"Bluetooth Rmt Ctrl\" in the camera settings!"
+                        }
+                    }
                 }
             }
         }
+    }
+
+    fun clearShutterError() {
+        _shutterErrorMessage.value = null
     }
 
     private val manualScanCallback = object : ScanCallback() {
@@ -689,7 +745,7 @@ class CameraSyncService : Service() {
     // --- Characteristic Writes ---
     @SuppressLint("MissingPermission")
     private fun lockLocationEndpoint(gatt: BluetoothGatt, deviceAddress: String) {
-        val lockChar = gatt.getService(PICT_SERVICE_UUID)?.getCharacteristic(LOCK_LOCATION_ENDPOINT_UUID)
+        val lockChar = gatt.getService(Constants.PICT_SERVICE_UUID)?.getCharacteristic(Constants.LOCK_LOCATION_ENDPOINT_UUID)
         if (lockChar == null) {
             log("Lock Location Endpoint characteristic (dd30) not found for $deviceAddress!")
             return
@@ -699,7 +755,7 @@ class CameraSyncService : Service() {
 
     @SuppressLint("MissingPermission")
     private fun enableLocationUpdates(gatt: BluetoothGatt, deviceAddress: String) {
-        val enableChar = gatt.getService(PICT_SERVICE_UUID)?.getCharacteristic(ENABLE_LOCATION_UPDATES_UUID)
+        val enableChar = gatt.getService(Constants.PICT_SERVICE_UUID)?.getCharacteristic(Constants.ENABLE_LOCATION_UPDATES_UUID)
         if (enableChar == null) {
             log("Enable Location Updates characteristic (dd31) not found for $deviceAddress!")
             return
@@ -709,7 +765,7 @@ class CameraSyncService : Service() {
 
     @SuppressLint("MissingPermission")
     private fun synchronizeTime(gatt: BluetoothGatt, deviceAddress: String) {
-        val timeChar = gatt.getService(TIME_SERVICE_UUID)?.getCharacteristic(TIME_CHARACTERISTIC_UUID)
+        val timeChar = gatt.getService(Constants.TIME_SERVICE_UUID)?.getCharacteristic(Constants.TIME_CHARACTERISTIC_UUID)
         if (timeChar == null) {
             log("Time characteristic not found for $deviceAddress! Skipping sync.")
             startLocationUpdates(deviceAddress)
@@ -774,7 +830,7 @@ class CameraSyncService : Service() {
                         if (location != null) {
                             sendLocationData(location, deviceAddress)
                         }
-                        handler.postDelayed(this, LOCATION_UPDATE_INTERVAL)
+                        handler.postDelayed(this, Constants.LOCATION_UPDATE_INTERVAL)
                     }
             }
         }
@@ -788,7 +844,7 @@ class CameraSyncService : Service() {
         val connection = cameraConnections[deviceAddress] ?: return
         val gatt = connection.gatt ?: return
 
-        val locationChar = gatt.getService(PICT_SERVICE_UUID)?.getCharacteristic(LOCATION_CHARACTERISTIC_UUID)
+        val locationChar = gatt.getService(Constants.PICT_SERVICE_UUID)?.getCharacteristic(Constants.LOCATION_CHARACTERISTIC_UUID)
         if (locationChar == null) {
             log("Location characteristic not found for $deviceAddress.")
             return
@@ -843,14 +899,14 @@ class CameraSyncService : Service() {
     private fun saveCameras() {
         val addresses = cameraConnections.keys.joinToString(",")
         sharedPreferences.edit()
-            .putString(PREF_KEY_SAVED_CAMERAS, addresses)
+            .putString(Constants.PREF_KEY_SAVED_CAMERAS, addresses)
             .commit()
         _rememberedDevice.value = if (addresses.isNotEmpty()) addresses else null
     }
 
     @SuppressLint("MissingPermission")
     private fun loadSavedCameras() {
-        val savedAddresses = sharedPreferences.getString(PREF_KEY_SAVED_CAMERAS, "") ?: ""
+        val savedAddresses = sharedPreferences.getString(Constants.PREF_KEY_SAVED_CAMERAS, "") ?: ""
         if (savedAddresses.isNotEmpty()) {
             savedAddresses.split(",").forEach { address ->
                 if (address.isNotBlank()) {
@@ -942,6 +998,4 @@ class CameraSyncService : Service() {
     fun getLogAsString(): String {
         return _log.value.joinToString("\n")
     }
-
 }
-
