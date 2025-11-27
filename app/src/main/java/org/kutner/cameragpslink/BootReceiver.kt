@@ -12,8 +12,8 @@ import androidx.core.app.NotificationCompat
 class BootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action == Intent.ACTION_BOOT_COMPLETED) {
-            val prefs = context.getSharedPreferences("cameragpslinkPrefs", Context.MODE_PRIVATE)
-            val savedCameras = prefs.getString("saved_cameras", null)
+            val prefs = context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
+            val savedCameras = prefs.getString(Constants.PREF_KEY_SAVED_CAMERAS, null)
 
             // And update the check:
             if (!savedCameras.isNullOrEmpty()) {
@@ -29,8 +29,8 @@ class BootReceiver : BroadcastReceiver() {
         // Create notification channel for Android O and above
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
-                "camera_sync_boot_channel",
-                "Camera Sync Boot",
+                Constants.CHANNEL_CAMERA_SYNC_BOOT,
+                Constants.CHANNEL_NAME_BOOT,
                 NotificationManager.IMPORTANCE_HIGH
             )
             notificationManager.createNotificationChannel(channel)
@@ -49,9 +49,9 @@ class BootReceiver : BroadcastReceiver() {
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
 
-        val notification = NotificationCompat.Builder(context, "camera_sync_boot_channel")
-            .setContentTitle("Camera Gps Link")
-            .setContentText("Tap to connect to your saved camera")
+        val notification = NotificationCompat.Builder(context, Constants.CHANNEL_CAMERA_SYNC_BOOT)
+            .setContentTitle(Constants.APP_NAME)
+            .setContentText(Constants.NOTIFICATION_BOOT_MESSAGE)
             .setSmallIcon(R.drawable.appicon)
             .setContentIntent(pendingIntent)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
