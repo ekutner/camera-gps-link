@@ -636,17 +636,17 @@ class CameraSyncService : Service() {
                 if (newState == BluetoothProfile.STATE_CONNECTED) {
                     connection.isConnected = true
                     connection.isConnecting = false
-                    log("Connected to ${gatt.device.name ?: deviceAddress}. Requesting MTU...")
-                    handler.postDelayed({ gatt.requestMtu(Constants.REQUEST_MTU_SIZE) }, 100)
+                    log("Connected to ${gatt.device.name ?: deviceAddress}. Discovering services (skipping MTU)...")
+//                    handler.postDelayed({ gatt.requestMtu(Constants.REQUEST_MTU_SIZE) }, 100)
 
 //                    gatt.requestMtu(Constants.REQUEST_MTU_SIZE)
-//                    if (gatt.device.bondState == BluetoothDevice.BOND_BONDED) {
-//                        gatt.discoverServices()
-//                    }
-//                    else {
-//                        log("Device not bonded. Starting pairing...")
-//                        gatt.device.createBond()
-//                    }
+                    if (gatt.device.bondState == BluetoothDevice.BOND_BONDED) {
+                        handler.postDelayed({ gatt.discoverServices() }, 100)
+                    }
+                    else {
+                        log("Device not bonded. Starting pairing...")
+                        gatt.device.createBond()
+                    }
 
 
                         // Update UI immediately
