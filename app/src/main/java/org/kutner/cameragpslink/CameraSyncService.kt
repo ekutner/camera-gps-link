@@ -170,6 +170,7 @@ class CameraSyncService : Service() {
         return START_STICKY
     }
 
+    @SuppressLint("MissingPermission")
     override fun onDestroy() {
         super.onDestroy()
         stopAutoScans()
@@ -541,6 +542,7 @@ class CameraSyncService : Service() {
         updateNotification()
     }
 
+    @SuppressLint("MissingPermission")
     fun forgetDevice(deviceAddress: String) {
         log("Forgetting device $deviceAddress...")
 
