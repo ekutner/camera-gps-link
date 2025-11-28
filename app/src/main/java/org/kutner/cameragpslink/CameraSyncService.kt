@@ -116,7 +116,7 @@ class CameraSyncService : Service() {
 
     override fun onCreate() {
         super.onCreate()
-        sharedPreferences = getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
+        sharedPreferences = getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE)
         initializeBluetoothAndLocation()
         loadSavedCameras()
         if (cameraConnections.isNotEmpty()) {
@@ -197,7 +197,7 @@ class CameraSyncService : Service() {
     private fun stopService() {
         if (isForegroundServiceStarted) {
             log("Stopping foreground service...")
-            stopForeground(Service.STOP_FOREGROUND_REMOVE)
+            stopForeground(STOP_FOREGROUND_REMOVE)
             isForegroundServiceStarted = false
             stopSelf()
         }
@@ -360,7 +360,7 @@ class CameraSyncService : Service() {
 
     private fun showPermissionsRequiredNotification() {
         val notification = createNotification()
-        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.notify(Constants.NOTIFICATION_ID_PERMISSIONS_REQUIRED, notification)
     }
 
@@ -417,7 +417,7 @@ class CameraSyncService : Service() {
     }
 
     private fun updateNotification() {
-        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
 
         if (isForegroundServiceStarted) {
             // Create individual notifications for each connected camera
@@ -438,7 +438,7 @@ class CameraSyncService : Service() {
     }
 
     private fun cancelNotification(notificationId: Int) {
-        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.cancel(notificationId)
         log("Cancelled notification with ID $notificationId")
     }
@@ -483,7 +483,7 @@ class CameraSyncService : Service() {
             .setAutoCancel(true)
             .build()
 
-        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
         val notificationId = deviceAddress.hashCode() + Constants.NOTIFICATION_ID_SHUTTER_ERROR_OFFSET
         notificationManager.notify(notificationId, notification)
 
@@ -491,7 +491,7 @@ class CameraSyncService : Service() {
     }
 
     private fun clearShutterErrorNotification(deviceAddress: String) {
-        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
         val notificationId = deviceAddress.hashCode() + Constants.NOTIFICATION_ID_SHUTTER_ERROR_OFFSET
         notificationManager.cancel(notificationId)
     }
@@ -859,7 +859,7 @@ class CameraSyncService : Service() {
 
     @SuppressLint("MissingPermission")
     private fun sendLocationData(deviceAddress: String) {
-        var  location = lastKnownLocation
+        val  location = lastKnownLocation
         if (location == null) {
             log("No pre-fetched location data to send to $deviceAddress. Will fetch low accuracy location instead")
             return
@@ -969,7 +969,7 @@ class CameraSyncService : Service() {
 
     // --- Utility Methods ---
     private fun initializeBluetoothAndLocation() {
-        bluetoothManager = getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
+        bluetoothManager = getSystemService(BLUETOOTH_SERVICE) as BluetoothManager
         bluetoothAdapter = bluetoothManager.adapter
         bleScanner = bluetoothAdapter.bluetoothLeScanner
 
