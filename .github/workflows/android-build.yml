@@ -21,23 +21,39 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
+      - name: Decode Keystore
+        env:
+          ENCODED_STRING: ${{ secrets.KEYSTORE_BASE64 }}
+          SIGNING_KEY_STORE_PATH: ${{ github.workspace }}/keystore.jks
+        run: |
+          echo "$ENCODED_STRING" | base64 --decode > "$SIGNING_KEY_STORE_PATH"
+
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Build with Gradle
-        run: ./gradlew assembleRelease
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: camera-gps-link-unsigned
-          path: app/build/outputs/apk/release/app-release-unsigned.apk
-
       - name: Build Debug APK
         run: ./gradlew assembleDebug
+
+      - name: Build Release APK (Signed)
+        env:
+          SIGNING_KEY_STORE_PATH: ${{ github.workspace }}/keystore.jks
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: ./gradlew assembleRelease
+
+      - name: Upload Release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: camera-gps-link-release
+          path: app/build/outputs/apk/release/app-release.apk
 
       - name: Upload Debug APK
         uses: actions/upload-artifact@v4
         with:
           name: camera-gps-link-debug
           path: app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Cleanup Keystore
+        if: always()
+        run: rm -f ${{ github.workspace }}/keystore.jks
