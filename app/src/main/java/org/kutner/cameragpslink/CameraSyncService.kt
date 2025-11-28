@@ -370,6 +370,7 @@ class CameraSyncService : Service() {
                 log("Found saved device $deviceAddress. Connecting...")
                 bleScanner.stopScan(this)
                 autoScanCallbacks.remove(deviceAddress)
+                startBackgroundLocationFetching()
                 connectToDevice(result.device)
             }
 
@@ -634,13 +635,19 @@ class CameraSyncService : Service() {
                     connection.isConnected = true
                     connection.isConnecting = false
                     log("Connected to ${gatt.device.name ?: deviceAddress}. Requesting MTU...")
-//                    handler.postDelayed({ gatt.requestMtu(Constants.REQUEST_MTU_SIZE) }, 600)
+                    handler.postDelayed({ gatt.requestMtu(Constants.REQUEST_MTU_SIZE) }, 100)
 
-                    startBackgroundLocationFetching()
+//                    gatt.requestMtu(Constants.REQUEST_MTU_SIZE)
+//                    if (gatt.device.bondState == BluetoothDevice.BOND_BONDED) {
+//                        gatt.discoverServices()
+//                    }
+//                    else {
+//                        log("Device not bonded. Starting pairing...")
+//                        gatt.device.createBond()
+//                    }
 
-                    gatt.requestMtu(Constants.REQUEST_MTU_SIZE)
 
-                    // Update UI immediately
+                        // Update UI immediately
                     startService()      // make sure the service is started
                     updateConnectionsList()
                     updateNotification()
@@ -969,7 +976,7 @@ class CameraSyncService : Service() {
         locationCallback = object : LocationCallback() {
             override fun onLocationResult(locationResult: LocationResult) {
                 for (location in locationResult.locations) {
-                    log("Pre-fetched location: Lat=${location.latitude}, Lon=${location.longitude}")
+                    log("Pre-fetched current location: Lat=${location.latitude}, Lon=${location.longitude}")
                     lastKnownLocation = location
                 }
             }
@@ -986,6 +993,7 @@ class CameraSyncService : Service() {
         fusedLocationClient.getLastLocation().addOnSuccessListener { location ->
             if (lastKnownLocation == null) {
                 lastKnownLocation = location
+                log("Pre-fetched last location: Lat=${location.latitude}, Lon=${location.longitude}")
             }
         }
         log("Starting background location fetching")
