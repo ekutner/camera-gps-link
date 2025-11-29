@@ -77,64 +77,6 @@ android {
             signingConfig = signingConfigs.getByName("release")
         }
     }
-//    signingConfigs {
-//        create("release") {
-//            // Load properties from keystore.properties file (for local dev)
-//            // This is separate from local.properties to avoid Android Studio conflicts
-//            val keystorePropertiesFile = File(rootProject.projectDir, "keystore.properties")
-//            val keystoreProperties = Properties()
-//
-//            if (keystorePropertiesFile.exists()) {
-//                keystoreProperties.load(keystorePropertiesFile.inputStream())
-//            }
-//
-//            // Priority: keystore.properties (local) -> environment variables (CI) -> default
-//            val keystorePath = keystoreProperties.getProperty("SIGNING_KEY_STORE_PATH")
-//                ?: System.getenv("SIGNING_KEY_STORE_PATH")
-//                ?: "keystore.jks"
-//            val keystoreFile = file(keystorePath)
-//
-//            if (keystoreFile.exists()) {
-//                storeFile = keystoreFile
-//                // For each property, try keystore.properties first, then environment variable
-//                storePassword = keystoreProperties.getProperty("KEYSTORE_PASSWORD")
-//                    ?: System.getenv("KEYSTORE_PASSWORD")
-//                keyAlias = keystoreProperties.getProperty("KEY_ALIAS")
-//                    ?: System.getenv("KEY_ALIAS")
-//                keyPassword = keystoreProperties.getProperty("KEY_PASSWORD")
-//                    ?: System.getenv("KEY_PASSWORD")
-//
-//                println("Release signing configured with keystore at: $keystorePath")
-//            } else {
-//                println("Warning: Keystore file not found at $keystorePath. Release signing will be skipped.")
-//            }
-//        }
-//    }
-//
-//    buildTypes {
-//        release {
-//            isMinifyEnabled = false
-//            proguardFiles(
-//                getDefaultProguardFile("proguard-android-optimize.txt"),
-//                "proguard-rules.pro"
-//            )
-//
-//            // Only apply signing config if keystore exists
-//            val keystorePropertiesFile = File(rootProject.projectDir, "keystore.properties")
-//            val keystoreProperties = Properties()
-//            if (keystorePropertiesFile.exists()) {
-//                keystoreProperties.load(keystorePropertiesFile.inputStream())
-//            }
-//
-//            val keystorePath = keystoreProperties.getProperty("SIGNING_KEY_STORE_PATH")
-//                ?: System.getenv("SIGNING_KEY_STORE_PATH")
-//                ?: "keystore.jks"
-//
-//            if (file(keystorePath).exists()) {
-//                signingConfig = signingConfigs.getByName("release")
-//            }
-//        }
-//    }
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
@@ -163,13 +105,13 @@ dependencies {
     implementation(libs.androidx.compose.material3)
 
     // Material Icons Extended
-    implementation("androidx.compose.material:material-icons-extended:1.7.5")
+    implementation(libs.androidx.compose.material.icons.extended)
 
     // Explicitly add Fragment dependency to fix ActivityResult API issue
     implementation(libs.androidx.fragment.ktx)
 
     // Gson for JSON serialization
-    implementation("com.google.code.gson:gson:2.10.1")
+    implementation(libs.google.gson)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
