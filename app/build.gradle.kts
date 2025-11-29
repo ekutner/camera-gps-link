@@ -168,6 +168,9 @@ dependencies {
     // Explicitly add Fragment dependency to fix ActivityResult API issue
     implementation(libs.androidx.fragment.ktx)
 
+    // Gson for JSON serialization
+    implementation("com.google.code.gson:gson:2.10.1")
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

@@ -164,6 +164,10 @@ class MainActivity : ComponentActivity() {
                         },
                         onTriggerShutter = { address -> service.triggerShutter(address) },
                         onForgetDevice = { address -> service.forgetDevice(address) },
+                        onQuickConnectSettings = { address, enabled, duration ->
+                            CameraSettingsManager.updateQuickConnect(this, address, enabled, duration)
+                            service.resetAutoScan(address)
+                        },
                         onClearLog = { service.clearLog() },
                         onShareLog = { shareLog(service.getLogAsString()) },
                         onDismissShutterError = { service.clearShutterError() }
@@ -251,6 +255,7 @@ fun MainScreen(
     onConnectToDevice: (BluetoothDevice) -> Unit,
     onTriggerShutter: (String) -> Unit,
     onForgetDevice: (String) -> Unit,
+    onQuickConnectSettings: (String, Boolean, Int) -> Unit,
     onClearLog: () -> Unit,
     onShareLog: () -> Unit,
     onDismissShutterError: () -> Unit
@@ -404,7 +409,10 @@ fun MainScreen(
                                     isConnected = connection.isConnected,
                                     isConnecting = connection.isConnecting,
                                     onShutter = { onTriggerShutter(connection.device.address) },
-                                    onDisconnect = { onForgetDevice(connection.device.address) }
+                                    onDisconnect = { onForgetDevice(connection.device.address) },
+                                    onQuickConnectSettings = { enabled, duration ->
+                                        onQuickConnectSettings(connection.device.address, enabled, duration)
+                                    }
                                 )
                             }
                         }
@@ -478,9 +486,11 @@ fun ConnectedCameraCard(
     isConnected: Boolean,
     isConnecting: Boolean,
     onShutter: () -> Unit,
-    onDisconnect: () -> Unit
+    onDisconnect: () -> Unit,
+    onQuickConnectSettings: (Boolean, Int) -> Unit
 ) {
     var showMenu by remember { mutableStateOf(false) }
+    var showQuickConnectDialog by remember { mutableStateOf(false) }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -543,6 +553,13 @@ fun ConnectedCameraCard(
                         onDismissRequest = { showMenu = false }
                     ) {
                         DropdownMenuItem(
+                            text = { Text("Quick Connect") },
+                            onClick = {
+                                showQuickConnectDialog = true
+                                showMenu = false
+                            }
+                        )
+                        DropdownMenuItem(
                             text = { Text("Remove Camera") },
                             onClick = {
                                 onDisconnect()
@@ -573,8 +590,18 @@ fun ConnectedCameraCard(
             }
         }
     }
-}
 
+    if (showQuickConnectDialog) {
+        QuickConnectDialog(
+            cameraAddress = cameraAddress,
+            onDismiss = { showQuickConnectDialog = false },
+            onSave = { enabled, duration ->
+                onQuickConnectSettings(enabled, duration)
+                showQuickConnectDialog = false
+            }
+        )
+    }
+}
 @Composable
 fun SearchDialog(
     isScanning: Boolean,
@@ -739,6 +766,151 @@ fun FoundCameraCard(
                     Text(text = "Connect")
                 }
             }
+        }
+    }
+}
+
+// In MainActivity.kt
+
+@Composable
+fun QuickConnectDialog(
+    cameraAddress: String,
+    onDismiss: () -> Unit,
+    onSave: (Boolean, Int) -> Unit
+) {
+    val context = LocalContext.current
+    val currentSettings = remember {
+        CameraSettingsManager.getSettings(context, cameraAddress)
+    }
+
+    var enabled by remember { mutableStateOf(currentSettings.quickConnectEnabled) }
+    var durationMinutes by remember { mutableStateOf(currentSettings.quickConnectDurationMinutes) }
+    val durationOptions = listOf(0, 1, 5, 10, 30, 60, 180, 360, 720)
+
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .wrapContentHeight(),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Text(
+                    text = "Quick Connect Settings",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+
+                // Enable Quick Connect Switch
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Enable Quick Connect",
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                    androidx.compose.material3.Switch(
+                        checked = enabled,
+                        onCheckedChange = { enabled = it }
+                    )
+                }
+
+                Text(
+                    text = "Uses faster scanning for quicker reconnection after disconnect but uses more battery",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                // Duration Selection
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = "Auto Quick Connect Period",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = if (enabled) MaterialTheme.colorScheme.onSurface
+                        else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    androidx.compose.foundation.layout.FlowRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        durationOptions.forEach { minutes ->
+                            val isSelected = durationMinutes == minutes
+                            Button(
+                                onClick = { if (enabled) durationMinutes = minutes },
+                                enabled = enabled,
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = if (isSelected)
+                                        MaterialTheme.colorScheme.primary
+                                    else
+                                        MaterialTheme.colorScheme.surfaceVariant,
+                                    contentColor = if (isSelected)
+                                        MaterialTheme.colorScheme.onPrimary
+                                    else
+                                        MaterialTheme.colorScheme.onSurfaceVariant
+                                ),
+                                modifier = Modifier.height(40.dp)
+                            ) {
+                                Text(
+                                    text = formatDurationMinutes(minutes),
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                            }
+                        }
+                    }
+
+                    Text(
+                        text = when (durationMinutes) {
+                            0 -> "Always use fast scanning"
+                            else -> "Use fast scanning for ${formatDurationMinutes(durationMinutes)} after disconnect"
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (enabled) MaterialTheme.colorScheme.onSurfaceVariant
+                        else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                    )
+                }
+
+                // OK Button (No changes here)
+                Button(
+                    onClick = {
+                        onSave(enabled, durationMinutes)
+                    },
+                    modifier = Modifier
+                        .align(Alignment.End)
+                        .height(48.dp)
+                ) {
+                    Text("OK")
+                }
+            }
+        }
+    }
+}
+
+// In MainActivity.kt
+
+private fun formatDurationMinutes(minutes: Int): String {
+    return when {
+        minutes == 0 -> "Always"
+        minutes < 60 -> "$minutes min"
+        minutes == 60 -> "1 hour"
+        // This handles clean hours like 120 -> "2 hours"
+        minutes % 60 == 0 -> "${minutes / 60} hours"
+        // This is a fallback for odd values like 90 -> "1h 30m"
+        else -> {
+            val hours = minutes / 60
+            val remainingMinutes = minutes % 60
+            "${hours}h ${remainingMinutes}m"
         }
     }
 }

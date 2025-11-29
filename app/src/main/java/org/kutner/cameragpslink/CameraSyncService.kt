@@ -12,7 +12,6 @@ import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanFilter
 import android.bluetooth.le.ScanResult
 import android.bluetooth.le.ScanSettings
-import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
@@ -39,7 +38,9 @@ data class CameraConnection(
     var gatt: BluetoothGatt? = null,
     var isConnected: Boolean = false,
     var isConnecting: Boolean = false,
-    var locationUpdateRunnable: Runnable? = null
+    var locationUpdateRunnable: Runnable? = null,
+    var disconnectTimestamp: Long? = null,
+    var quickConnectRunnable: Runnable? = null
 ) {
     // Override equals and hashCode to ensure updates are detected
     override fun equals(other: Any?): Boolean {
@@ -173,7 +174,7 @@ class CameraSyncService : Service() {
     @SuppressLint("MissingPermission")
     override fun onDestroy() {
         super.onDestroy()
-        stopAutoScans()
+        stopAutoScan()
         cameraConnections.values.forEach { connection ->
             stopLocationUpdates(connection)
             connection.gatt?.close()
@@ -364,13 +365,23 @@ class CameraSyncService : Service() {
         notificationManager.notify(Constants.NOTIFICATION_ID_PERMISSIONS_REQUIRED, notification)
     }
 
+
     private fun createAutoScanCallback(deviceAddress: String): ScanCallback {
         return object : ScanCallback() {
             @SuppressLint("MissingPermission")
             override fun onScanResult(callbackType: Int, result: ScanResult) {
                 log("Found saved device $deviceAddress. Connecting...")
-                bleScanner.stopScan(this)
-                autoScanCallbacks.remove(deviceAddress)
+                stopAutoScan(deviceAddress)
+//                bleScanner.stopScan(this)
+//                autoScanCallbacks.remove(deviceAddress)
+
+                // Cancel quick connect timer if running
+                val connection = cameraConnections[deviceAddress]
+                connection?.quickConnectRunnable?.let { runnable ->
+                    handler.removeCallbacks(runnable)
+                    connection.quickConnectRunnable = null
+                }
+
                 connectToDevice(result.device)
             }
 
@@ -381,6 +392,7 @@ class CameraSyncService : Service() {
         }
     }
 
+
     @SuppressLint("MissingPermission")
     private fun startAutoScan(deviceAddress: String) {
         if (!hasRequiredPermissions() || !isAdapterAndScannerReady()) return
@@ -389,33 +401,114 @@ class CameraSyncService : Service() {
         if (connection.isConnected || connection.isConnecting) return
 
         if (!autoScanCallbacks.containsKey(deviceAddress)) {
-            log("Starting auto-scan for $deviceAddress")
+            val cameraSettings = CameraSettingsManager.getSettings(this, deviceAddress)
+            val scanMode = determineScanMode(connection, cameraSettings)
+
+            val scanModeText = when (scanMode) {
+                ScanSettings.SCAN_MODE_LOW_LATENCY -> "LOW_LATENCY (Quick Connect)"
+                else -> "LOW_POWER"
+            }
+            log("Starting auto-scan for $deviceAddress with mode: $scanModeText")
 
             val callback = createAutoScanCallback(deviceAddress)
             autoScanCallbacks[deviceAddress] = callback
 
             val scanFilter = ScanFilter.Builder().setDeviceAddress(deviceAddress).build()
-            val scanSettings = ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_POWER).build()
-//            val scanSettings = ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).build()
+            val scanSettings = ScanSettings.Builder().setScanMode(scanMode).build()
             bleScanner.startScan(listOf(scanFilter), scanSettings, callback)
+
+            // Set up quick connect timer if needed
+            setupQuickConnectTimer(connection, cameraSettings, deviceAddress)
 
             updateNotification()
         }
     }
-
     @SuppressLint("MissingPermission")
-    private fun stopAutoScans() {
-        autoScanCallbacks.values.forEach { callback ->
-            try {
-                bleScanner.stopScan(callback)
-            } catch (e: Exception) {
-                log("Error stopping auto scan: ${e.message}")
+    private fun stopAutoScan(deviceAddress: String? = null) {
+        if (deviceAddress != null) {
+            autoScanCallbacks[deviceAddress]?.let { callback ->
+                try {
+                    bleScanner.stopScan(callback)
+                    autoScanCallbacks.remove(deviceAddress)
+                } catch (e: Exception) {
+                    log("Error stopping auto scan for $deviceAddress: ${e.message}")
+                }
             }
         }
-        autoScanCallbacks.clear()
+        else {
+            autoScanCallbacks.values.forEach { callback ->
+                try {
+                    bleScanner.stopScan(callback)
+                } catch (e: Exception) {
+                    log("Error stopping auto scan: ${e.message}")
+                }
+            }
+            autoScanCallbacks.clear()
+        }
     }
 
-    private fun updateNotification() {
+    fun resetAutoScan(deviceAddress: String) {
+        stopAutoScan(deviceAddress)
+        startAutoScan(deviceAddress)
+    }
+
+    private fun determineScanMode(connection: CameraConnection, cameraSettings: CameraSettings): Int {
+        if (!cameraSettings.quickConnectEnabled) {
+            return ScanSettings.SCAN_MODE_LOW_POWER
+        }
+
+        // If duration is 0, always use low latency
+        if (cameraSettings.quickConnectDurationMinutes == 0) {
+            return ScanSettings.SCAN_MODE_LOW_LATENCY
+        }
+
+        // Check if we're within the quick connect window
+        val disconnectTime = connection.disconnectTimestamp
+        if (disconnectTime != null) {
+            val elapsedMinutes = (System.currentTimeMillis() - disconnectTime) / (60 * 1000)
+            if (elapsedMinutes < cameraSettings.quickConnectDurationMinutes) {
+                return ScanSettings.SCAN_MODE_LOW_LATENCY
+            }
+        }
+
+        return ScanSettings.SCAN_MODE_LOW_POWER
+    }
+
+    private fun setupQuickConnectTimer(connection: CameraConnection, cameraSettings: CameraSettings, deviceAddress: String) {
+        // Cancel any existing timer
+        connection.quickConnectRunnable?.let { handler.removeCallbacks(it) }
+        connection.quickConnectRunnable = null
+
+        if (!cameraSettings.quickConnectEnabled || cameraSettings.quickConnectDurationMinutes == 0) {
+            return
+        }
+
+        val disconnectTime = connection.disconnectTimestamp ?: return
+        val elapsedMillis = System.currentTimeMillis() - disconnectTime
+        val durationMillis = cameraSettings.quickConnectDurationMinutes * 60 * 1000L
+        val remainingMillis = durationMillis - elapsedMillis
+
+        if (remainingMillis > 0) {
+            log("Quick Connect timer set for $deviceAddress: ${remainingMillis / 1000} seconds remaining")
+            val runnable = Runnable {
+                log("Quick Connect period expired for $deviceAddress, switching to low power scan")
+                // Restart scan with low power mode
+                autoScanCallbacks[deviceAddress]?.let { callback ->
+                    try {
+                        bleScanner.stopScan(callback)
+                        autoScanCallbacks.remove(deviceAddress)
+                    } catch (e: Exception) {
+                        log("Error stopping scan: ${e.message}")
+                    }
+                }
+                startAutoScan(deviceAddress)
+            }
+            connection.quickConnectRunnable = runnable
+            handler.postDelayed(runnable, remainingMillis)
+        }
+    }
+
+     private fun updateNotification() {
         val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
 
         if (isForegroundServiceStarted) {
@@ -549,6 +642,11 @@ class CameraSyncService : Service() {
         log("Forgetting device $deviceAddress...")
 
         cameraConnections[deviceAddress]?.let { connection ->
+            // Cancel quick connect timer
+            connection.quickConnectRunnable?.let { runnable ->
+                handler.removeCallbacks(runnable)
+            }
+
             // Stop location updates
             stopLocationUpdates(connection)
 
@@ -579,6 +677,9 @@ class CameraSyncService : Service() {
 
             // Remove from connections map
             cameraConnections.remove(deviceAddress)
+
+            // Remove all camera settings (Quick Connect + disconnect timestamp)
+            CameraSettingsManager.removeSettings(this, deviceAddress)  // ADD THIS LINE
 
             // Save updated camera list
             saveCameras()
@@ -667,6 +768,12 @@ class CameraSyncService : Service() {
                     log("Disconnected from ${gatt.device.name ?: deviceAddress}.")
                     connection.isConnected = false
                     connection.isConnecting = false
+
+                    // Record disconnect timestamp for quick connect
+                    val timestamp = System.currentTimeMillis()
+                    connection.disconnectTimestamp = timestamp
+                    CameraSettingsManager.updateDisconnectTimestamp(this@CameraSyncService, deviceAddress, timestamp)
+
 
                     stopLocationUpdates(connection)
                     stopBackgroundLocationFetching()
@@ -944,8 +1051,22 @@ class CameraSyncService : Service() {
                             return@forEach
                         }
                         val device = bluetoothAdapter.getRemoteDevice(address)
-                        cameraConnections[address] = CameraConnection(device = device)
+                        val connection = CameraConnection(device = device)
+
+                        // Load saved camera settings
+                        val cameraSettings = CameraSettingsManager.getSettings(this, address)
+                        connection.disconnectTimestamp = cameraSettings.lastDisconnectTimestamp
+
+                        cameraConnections[address] = connection
                         log("Loaded saved camera: ${device.name ?: address}")
+
+                        // Log if within quick connect period
+                        if (connection.disconnectTimestamp != null) {
+                            val scanMode = determineScanMode(connection, cameraSettings)
+                            if (scanMode == ScanSettings.SCAN_MODE_LOW_LATENCY) {
+                                log("Camera $address is within Quick Connect period")
+                            }
+                        }
                     } catch (e: Exception) {
                         log("Failed to load saved camera $address: ${e.message}")
                     }
@@ -955,7 +1076,6 @@ class CameraSyncService : Service() {
             updateConnectionsList()
         }
     }
-
     private fun updateConnectionsList() {
         // Create a completely new list with new references to force update
         val newList = cameraConnections.values.map { conn ->
