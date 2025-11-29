@@ -157,9 +157,10 @@ class MainActivity : ComponentActivity() {
                         onStartScan = { service.startManualScan() },
                         onCancelScan = { service.stopManualScan() },
                         onConnectToDevice = {
-                            service.connectToDevice(it)
                             // Ensure the service is started as a service, not just bound
                             startCameraService()
+                            service.stopManualScan()
+                            service.connectToDevice(it)
                         },
                         onTriggerShutter = { address -> service.triggerShutter(address) },
                         onForgetDevice = { address -> service.forgetDevice(address) },

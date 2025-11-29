@@ -371,7 +371,6 @@ class CameraSyncService : Service() {
                 log("Found saved device $deviceAddress. Connecting...")
                 bleScanner.stopScan(this)
                 autoScanCallbacks.remove(deviceAddress)
-                startBackgroundLocationFetching()
                 connectToDevice(result.device)
             }
 
@@ -526,6 +525,10 @@ class CameraSyncService : Service() {
             }
         }
 
+        // Start fetching location in the background so it's
+        // ready when the connection is established
+        startBackgroundLocationFetching()
+
         log("Connecting to ${device.name ?: device.address}...")
 
         val connection = cameraConnections.getOrPut(address) {
@@ -533,12 +536,11 @@ class CameraSyncService : Service() {
         }
 
         connection.isConnecting = true
-        connection.gatt = device.connectGatt(this, false, createGattCallback(address), BluetoothDevice.TRANSPORT_LE)
+        connection.gatt = device.connectGatt(this, false, createGattCallback(address), BluetoothDevice.TRANSPORT_AUTO)
 
         // Save immediately when connecting to a new camera
         saveCameras()
         updateConnectionsList()
-        startService()
         updateNotification()
     }
 
@@ -634,31 +636,33 @@ class CameraSyncService : Service() {
                 val connection = cameraConnections[deviceAddress] ?: return
 
                 if (newState == BluetoothProfile.STATE_CONNECTED) {
+                    log("Connected to ${gatt.device.name ?: deviceAddress}. Requesting MTU...")
+
                     connection.isConnected = true
                     connection.isConnecting = false
-                    log("Connected to ${gatt.device.name ?: deviceAddress}. Discovering services (skipping MTU)...")
+
+                    // Stop auto-scan for this device
+//                    autoScanCallbacks[deviceAddress]?.let { callback ->
+//                        bleScanner.stopScan(callback)
+//                        autoScanCallbacks.remove(deviceAddress)
+//                    }
 //                    handler.postDelayed({ gatt.requestMtu(Constants.REQUEST_MTU_SIZE) }, 100)
+                    gatt.requestMtu(Constants.REQUEST_MTU_SIZE)
 
-//                    gatt.requestMtu(Constants.REQUEST_MTU_SIZE)
-                    if (gatt.device.bondState == BluetoothDevice.BOND_BONDED) {
-                        handler.postDelayed({ gatt.discoverServices() }, 100)
-                    }
-                    else {
-                        log("Device not bonded. Starting pairing...")
-                        gatt.device.createBond()
-                    }
+//                    log("Connected to ${gatt.device.name ?: deviceAddress}. Discovering services (skipping MTU)...")
+//                    if (gatt.device.bondState == BluetoothDevice.BOND_BONDED) {
+//                        handler.postDelayed({ gatt.discoverServices() }, 100)
+//                    }
+//                    else {
+//                        log("Device not bonded. Starting pairing...")
+//                        gatt.device.createBond()
+//                    }
 
-
-                        // Update UI immediately
-                    startService()      // make sure the service is started
+                    // Update UI immediately
                     updateConnectionsList()
                     updateNotification()
 
-                    // Stop auto-scan for this device
-                    autoScanCallbacks[deviceAddress]?.let { callback ->
-                        bleScanner.stopScan(callback)
-                        autoScanCallbacks.remove(deviceAddress)
-                    }
+
                 } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
                     log("Disconnected from ${gatt.device.name ?: deviceAddress}.")
                     connection.isConnected = false
@@ -683,8 +687,8 @@ class CameraSyncService : Service() {
 
             @SuppressLint("MissingPermission")
             override fun onMtuChanged(gatt: BluetoothGatt, mtu: Int, status: Int) {
-                log("MTU set to $mtu for ${gatt.device.name ?: deviceAddress}.")
                 if (gatt.device.bondState == BluetoothDevice.BOND_BONDED) {
+                    log("MTU set to $mtu for ${gatt.device.name ?: deviceAddress}. Discovering services...")
                     gatt.discoverServices()
                 } else {
                     log("Device not bonded. Starting pairing...")
@@ -924,7 +928,7 @@ class CameraSyncService : Service() {
         val addresses = cameraConnections.keys.joinToString(",")
         sharedPreferences.edit()
             .putString(Constants.PREF_KEY_SAVED_CAMERAS, addresses)
-            .commit()
+            .apply()
         _rememberedDevice.value = if (addresses.isNotEmpty()) addresses else null
     }
 
