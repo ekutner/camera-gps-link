@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -81,7 +82,7 @@ fun QuickConnectDialog(
                 }
 
                 Text(
-                    text = "Uses faster scanning for quicker reconnection after disconnect but uses more battery",
+                    text = "The app will connect faster to the camera but will also consumes more battery power",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -118,7 +119,7 @@ fun QuickConnectDialog(
                                     else
                                         MaterialTheme.colorScheme.onSurfaceVariant
                                 ),
-                                modifier = Modifier.height(40.dp)
+                                modifier = Modifier.defaultMinSize(minHeight = 40.dp)
                             ) {
                                 Text(
                                     text = formatDurationMinutes(minutes),
@@ -131,7 +132,7 @@ fun QuickConnectDialog(
                     Text(
                         text = when (durationMinutes) {
                             0 -> "Always use fast scanning"
-                            else -> "Use fast scanning for ${formatDurationMinutes(durationMinutes)} after disconnect"
+                            else -> "Use fast scanning for ${formatDurationMinutes(durationMinutes)} after the camera disconnects, then switch back to regular connect mode to save battery"
                         },
                         style = MaterialTheme.typography.bodySmall,
                         color = if (enabled) MaterialTheme.colorScheme.onSurfaceVariant
