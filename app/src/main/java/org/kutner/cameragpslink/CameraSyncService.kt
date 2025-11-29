@@ -13,7 +13,6 @@ import android.bluetooth.le.ScanFilter
 import android.bluetooth.le.ScanResult
 import android.bluetooth.le.ScanSettings
 import android.content.Intent
-import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.location.Location
 import android.os.Binder
@@ -76,7 +75,6 @@ class CameraSyncService : Service() {
     private lateinit var bluetoothAdapter: BluetoothAdapter
     private lateinit var bleScanner: android.bluetooth.le.BluetoothLeScanner
     private lateinit var fusedLocationClient: FusedLocationProviderClient
-    private lateinit var sharedPreferences: SharedPreferences
 
     // --- Multiple camera connections ---
     private val cameraConnections = mutableMapOf<String, CameraConnection>()
@@ -117,7 +115,6 @@ class CameraSyncService : Service() {
 
     override fun onCreate() {
         super.onCreate()
-        sharedPreferences = getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE)
         initializeBluetoothAndLocation()
         loadSavedCameras()
         if (cameraConnections.isNotEmpty()) {
@@ -632,7 +629,9 @@ class CameraSyncService : Service() {
         connection.gatt = device.connectGatt(this, false, createGattCallback(address), BluetoothDevice.TRANSPORT_AUTO)
 
         // Save immediately when connecting to a new camera
-        saveCameras()
+        CameraSettingsManager.addSavedCamera(this, address)
+        _rememberedDevice.value = CameraSettingsManager.getSavedCameras(this).joinToString(",")
+        
         updateConnectionsList()
         updateNotification()
     }
@@ -679,10 +678,10 @@ class CameraSyncService : Service() {
             cameraConnections.remove(deviceAddress)
 
             // Remove all camera settings (Quick Connect + disconnect timestamp)
-            CameraSettingsManager.removeSettings(this, deviceAddress)  // ADD THIS LINE
+            CameraSettingsManager.removeSavedCamera(this, deviceAddress)
 
             // Save updated camera list
-            saveCameras()
+            _rememberedDevice.value = CameraSettingsManager.getSavedCameras(this).joinToString(",")
 
             // Update UI
             updateConnectionsList()
@@ -1030,20 +1029,11 @@ class CameraSyncService : Service() {
         }
     }
 
-    // --- Camera Management ---
-    private fun saveCameras() {
-        val addresses = cameraConnections.keys.joinToString(",")
-        sharedPreferences.edit()
-            .putString(Constants.PREF_KEY_SAVED_CAMERAS, addresses)
-            .apply()
-        _rememberedDevice.value = if (addresses.isNotEmpty()) addresses else null
-    }
-
     @SuppressLint("MissingPermission")
     private fun loadSavedCameras() {
-        val savedAddresses = sharedPreferences.getString(Constants.PREF_KEY_SAVED_CAMERAS, "") ?: ""
+        val savedAddresses = CameraSettingsManager.getSavedCameras(this)
         if (savedAddresses.isNotEmpty()) {
-            savedAddresses.split(",").forEach { address ->
+            savedAddresses.forEach { address ->
                 if (address.isNotBlank()) {
                     try {
                         if (!::bluetoothAdapter.isInitialized) {
@@ -1072,7 +1062,7 @@ class CameraSyncService : Service() {
                     }
                 }
             }
-            _rememberedDevice.value = savedAddresses
+            _rememberedDevice.value = savedAddresses.joinToString(",")
             updateConnectionsList()
         }
     }

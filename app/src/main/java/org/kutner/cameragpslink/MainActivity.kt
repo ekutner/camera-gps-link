@@ -85,9 +85,8 @@ class MainActivity : ComponentActivity() {
         if (permissions.values.all { it }) {
             bindToService()
             // Only start service if we have saved cameras
-            val prefs = getSharedPreferences("cameragpslinkPrefs", Context.MODE_PRIVATE)
-            val savedCameras = prefs.getString("saved_cameras", "")
-            if (!savedCameras.isNullOrEmpty()) {
+            val savedCameras = CameraSettingsManager.getSavedCameras(this)
+            if (savedCameras.isNotEmpty()) {
                 startCameraService()
             }
         }
@@ -99,9 +98,8 @@ class MainActivity : ComponentActivity() {
 
         if (hasRequiredPermissions()) {
             // Only start service if we have saved cameras
-            val prefs = getSharedPreferences("cameragpslinkPrefs", Context.MODE_PRIVATE)
-            val savedCameras = prefs.getString("saved_cameras", "")
-            if (!savedCameras.isNullOrEmpty()) {
+            val savedCameras = CameraSettingsManager.getSavedCameras(this)
+            if (savedCameras.isNotEmpty()) {
                 startCameraService()
             }
             bindToService()
@@ -240,15 +238,14 @@ fun MainScreen(
     onDismissShutterError: () -> Unit
 ) {
     val context = LocalContext.current
-    val prefs = remember { context.getSharedPreferences("cameragpslinkPrefs", Context.MODE_PRIVATE) }
-
+    
     val logMessages by log.collectAsState()
     val cameras by connectedCameras.collectAsState()
     val scanning by isManualScanning.collectAsState()
     val devices by foundDevices.collectAsState()
     val errorMessage by shutterErrorMessage.collectAsState()
 
-    var showLog by remember { mutableStateOf(prefs.getBoolean("show_log", false)) }
+    var showLog by remember { mutableStateOf(CameraSettingsManager.isShowLogEnabled(context)) }
     var showMenu by remember { mutableStateOf(false) }
     var showSearchDialog by remember { mutableStateOf(false) }
 
@@ -285,7 +282,7 @@ fun MainScreen(
                             text = { Text("Show Log") },
                             onClick = {
                                 showLog = !showLog
-                                prefs.edit().putBoolean("show_log", showLog).apply()
+                                CameraSettingsManager.setShowLogEnabled(context, showLog)
                                 showMenu = false
                             },
                             leadingIcon = {

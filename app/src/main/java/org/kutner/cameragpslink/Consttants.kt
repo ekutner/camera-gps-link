@@ -6,12 +6,6 @@ object Constants {
     // Global Constants
     const val APP_NAME = "Camera Gps Link"
 
-    // Preferences keys
-    const val PREFS_NAME = "cameragpslinkPrefs"
-    const val PREF_KEY_SAVED_CAMERAS = "saved_cameras"
-
-
-
     // Notification Channels
     const val CHANNEL_CAMERA_SYNC_HIGH = "camera_sync_channel_high"
     const val CHANNEL_CAMERA_SYNC_LOW = "camera_sync_channel_low"

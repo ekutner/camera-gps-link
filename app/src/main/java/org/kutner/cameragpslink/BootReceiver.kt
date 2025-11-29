@@ -12,11 +12,10 @@ import androidx.core.app.NotificationCompat
 class BootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action == Intent.ACTION_BOOT_COMPLETED) {
-            val prefs = context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
-            val savedCameras = prefs.getString(Constants.PREF_KEY_SAVED_CAMERAS, null)
+            // Check if we have saved cameras using CameraSettingsManager
+            val savedCameras = CameraSettingsManager.getSavedCameras(context)
 
-            // And update the check:
-            if (!savedCameras.isNullOrEmpty()) {
+            if (savedCameras.isNotEmpty()) {
                 // Instead of starting the service, show a notification
                 showStartServiceNotification(context)
             }
