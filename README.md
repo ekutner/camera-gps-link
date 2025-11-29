@@ -49,13 +49,19 @@ unable, or unwilling, to fix it.
   disabled and the camera will have to be manually turned off  
 
 ### Quick Connect mode
-The "Quick Connect" option in the camera three dots menu will show the Quick Connect option dialog.
-When Quick Connect is enabled the app will search for the camera more aggressively, which will reduce the 
+Select the Quick Connect option from the camera three dots menu:
+![](assets/camera-menu.jpg)
+
+Which will open the Quick Connect dialog:  
+![](assets/quick-connect-dialog.jpg)  
+When Quick Connect is enabled the app will search for the camera more aggressively, which will reduce the
 connection time, when the camera is turned on, by 1-2 seconds. However, this mode will require more
-power to do so, which will drain the battery faster. In order to balance the connection speed and battery 
+power to do so, which will drain the battery faster. In order to balance the connection speed and battery
 consumption the app allows setting a timeout period for the Quick Connect mode. If the camera wasn't found
 within the timeout period, after being disconnected from the phone, the Quick Connect mode will be turned off
 to save battery.
+
+
   
 
 ### Unpairing
