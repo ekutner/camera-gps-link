@@ -42,11 +42,21 @@ unable, or unwilling, to fix it.
 ### Remote Control
 1. Enable remote control on the camera:
     MENU → Network → Bluetooth → Bluetooth Rmt Ctrl - Set to "On"
-2. On the app either press the "SHUTTER" button on the app's main screen or 
-   directly from the notification which is displayed when the app is actively connected to the camera
+2. In the app either press the "SHUTTER" button on the app's main screen or 
+   directly from the notification which is displayed when the app is actively connected to the camera  
+
 **Note** that when remote control is enabled the auto power off feature of the camera is automatically 
   disabled and the camera will have to be manually turned off  
 
+### Quick Connect mode
+The "Quick Connect" option in the camera three dots menu will show the Quick Connect option dialog.
+When Quick Connect is enabled the app will search for the camera more aggressively, which will reduce the 
+connection time, when the camera is turned on, by 1-2 seconds. However, this mode will require more
+power to do so, which will drain the battery faster. In order to balance the connection speed and battery 
+consumption the app allows setting a timeout period for the Quick Connect mode. If the camera wasn't found
+within the timeout period, after being disconnected from the phone, the Quick Connect mode will be turned off
+to save battery.
+  
 
 ### Unpairing
 Select the "Remove camera" option from the three dots menu (aka kebab menu) next to the camera.
