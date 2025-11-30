@@ -417,8 +417,10 @@ class CameraSyncService : Service() {
             // Set up quick connect timer if needed
             setupQuickConnectTimer(connection, cameraSettings, deviceAddress)
 
-            val device: BluetoothDevice = bluetoothManager.adapter.getRemoteDevice(deviceAddress)
-            connection.gatt = device.connectGatt(this, true, createGattCallback(deviceAddress), BluetoothDevice.TRANSPORT_AUTO)
+            if (connection.gatt == null) {
+                val device: BluetoothDevice = bluetoothManager.adapter.getRemoteDevice(deviceAddress)
+                connection.gatt = device.connectGatt(this,true,createGattCallback(deviceAddress),BluetoothDevice.TRANSPORT_AUTO)
+            }
 
 
             updateNotification()
