@@ -420,6 +420,10 @@ class CameraSyncService : Service() {
             if (connection.gatt == null) {
                 val device: BluetoothDevice = bluetoothManager.adapter.getRemoteDevice(deviceAddress)
                 connection.gatt = device.connectGatt(this,true,createGattCallback(deviceAddress),BluetoothDevice.TRANSPORT_AUTO)
+                log("Created GATT connection with autoConnect=true for $deviceAddress")
+            }
+            else {
+                log("Using existing GATT connection for $deviceAddress")
             }
 
 
