@@ -36,7 +36,7 @@ object Constants {
     const val NOTIFICATION_CONNECTED_MULTIPLE = "Connected to %d cameras"
     const val NOTIFICATION_CONNECTED_TO = "Connected to %s"
     const val NOTIFICATION_SHUTTER_FAILED = "Shutter Failed - %s"
-    const val NOTIFICATION_BOOT_MESSAGE = "Tap to connect to your saved camera"
+    const val NOTIFICATION_BOOT_MESSAGE = "Tap to activate $APP_NAME after phone reboot"
 
 
     // Action Labels
