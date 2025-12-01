@@ -407,25 +407,15 @@ class CameraSyncService : Service() {
             }
             log("Starting auto-scan for $deviceAddress with mode: $scanModeText")
 
-//            val callback = createAutoScanCallback(deviceAddress)
-//            autoScanCallbacks[deviceAddress] = callback
-//
-//            val scanFilter = ScanFilter.Builder().setDeviceAddress(deviceAddress).build()
-//            val scanSettings = ScanSettings.Builder().setScanMode(scanMode).build()
-//            bleScanner.startScan(listOf(scanFilter), scanSettings, callback)
+            val callback = createAutoScanCallback(deviceAddress)
+            autoScanCallbacks[deviceAddress] = callback
+
+            val scanFilter = ScanFilter.Builder().setDeviceAddress(deviceAddress).build()
+            val scanSettings = ScanSettings.Builder().setScanMode(scanMode).build()
+            bleScanner.startScan(listOf(scanFilter), scanSettings, callback)
 
             // Set up quick connect timer if needed
             setupQuickConnectTimer(connection, cameraSettings, deviceAddress)
-
-            if (connection.gatt == null) {
-                val device: BluetoothDevice = bluetoothManager.adapter.getRemoteDevice(deviceAddress)
-                connection.gatt = device.connectGatt(this,true,createGattCallback(deviceAddress),BluetoothDevice.TRANSPORT_AUTO)
-                log("Created GATT connection with autoConnect=true for $deviceAddress")
-            }
-            else {
-                log("Using existing GATT connection for $deviceAddress")
-            }
-
 
             updateNotification()
         }
@@ -746,22 +736,27 @@ class CameraSyncService : Service() {
                 val connection = cameraConnections[deviceAddress] ?: return
 
                 if (newState == BluetoothProfile.STATE_CONNECTED) {
-//                    log("Connected to ${gatt.device.name ?: deviceAddress}. Requesting MTU...")
+                    log("Connected to ${gatt.device.name ?: deviceAddress}. Requesting MTU...")
 
                     connection.isConnected = true
                     connection.isConnecting = false
-                    startBackgroundLocationFetching()
 
-//                    gatt.requestMtu(Constants.REQUEST_MTU_SIZE)
+                    // Stop auto-scan for this device
+//                    autoScanCallbacks[deviceAddress]?.let { callback ->
+//                        bleScanner.stopScan(callback)
+//                        autoScanCallbacks.remove(deviceAddress)
+//                    }
+//                    handler.postDelayed({ gatt.requestMtu(Constants.REQUEST_MTU_SIZE) }, 100)
+                    gatt.requestMtu(Constants.REQUEST_MTU_SIZE)
 
-                    log("Connected to ${gatt.device.name ?: deviceAddress}. Discovering services (skipping MTU)...")
-                    if (gatt.device.bondState == BluetoothDevice.BOND_BONDED) {
-                        handler.postDelayed({ gatt.discoverServices() }, 100)
-                    }
-                    else {
-                        log("Device not bonded. Starting pairing...")
-                        gatt.device.createBond()
-                    }
+//                    log("Connected to ${gatt.device.name ?: deviceAddress}. Discovering services (skipping MTU)...")
+//                    if (gatt.device.bondState == BluetoothDevice.BOND_BONDED) {
+//                        handler.postDelayed({ gatt.discoverServices() }, 100)
+//                    }
+//                    else {
+//                        log("Device not bonded. Starting pairing...")
+//                        gatt.device.createBond()
+//                    }
 
                     // Update UI immediately
                     updateConnectionsList()
@@ -976,7 +971,7 @@ class CameraSyncService : Service() {
     private fun sendLocationData(deviceAddress: String) {
         val  location = lastKnownLocation
         if (location == null) {
-            log("No pre-fetched location data to send to $deviceAddress")
+            log("No pre-fetched location data to send to $deviceAddress. Will fetch low accuracy location instead")
             return
         }
 
@@ -1110,7 +1105,7 @@ class CameraSyncService : Service() {
             log("Cannot start location updates: Permissions not granted")
             return
         }
-        // Fetch last known location so we have something immediately and then start fetching more accurate updates
+        // Fetch last known location so we have something ASAP and then start fetching more accurate updates
         fusedLocationClient.getLastLocation().addOnSuccessListener { location ->
             if (lastKnownLocation == null) {
                 lastKnownLocation = location
@@ -1126,7 +1121,6 @@ class CameraSyncService : Service() {
     private fun stopBackgroundLocationFetching() {
         log("Stopping background location fetching")
         fusedLocationClient.removeLocationUpdates(locationCallback)
-        lastKnownLocation = null
     }
 
 
