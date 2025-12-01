@@ -422,6 +422,7 @@ class CameraSyncService : Service() {
     }
     @SuppressLint("MissingPermission")
     private fun stopAutoScan(deviceAddress: String? = null) {
+        log("Stopping auto-scan for ${deviceAddress ?: "all"}...")
         if (deviceAddress != null) {
             autoScanCallbacks[deviceAddress]?.let { callback ->
                 try {
@@ -490,14 +491,7 @@ class CameraSyncService : Service() {
             val runnable = Runnable {
                 log("Quick Connect period expired for $deviceAddress, switching to low power scan")
                 // Restart scan with low power mode
-                autoScanCallbacks[deviceAddress]?.let { callback ->
-                    try {
-                        bleScanner.stopScan(callback)
-                        autoScanCallbacks.remove(deviceAddress)
-                    } catch (e: Exception) {
-                        log("Error stopping scan: ${e.message}")
-                    }
-                }
+                stopAutoScan(deviceAddress)
                 startAutoScan(deviceAddress)
             }
             connection.quickConnectRunnable = runnable
@@ -767,22 +761,23 @@ class CameraSyncService : Service() {
                     log("Disconnected from ${gatt.device.name ?: deviceAddress}.")
                     connection.isConnected = false
                     connection.isConnecting = false
+                    connection.gatt?.close()
+                    connection.gatt = null
 
                     // Record disconnect timestamp for quick connect
                     val timestamp = System.currentTimeMillis()
                     connection.disconnectTimestamp = timestamp
                     CameraSettingsManager.updateDisconnectTimestamp(this@CameraSyncService, deviceAddress, timestamp)
 
-
                     stopLocationUpdates(connection)
                     stopBackgroundLocationFetching()
-
-                    // Clear any error notifications for this camera
-                    clearShutterErrorNotification(deviceAddress)
 
                     // Update UI immediately
                     updateConnectionsList()
                     updateNotification()
+
+                    // Clear any error notifications for this camera
+                    clearShutterErrorNotification(deviceAddress)
 
                     // Restart auto-scan for this device
                     handler.postDelayed({
@@ -1147,16 +1142,16 @@ class CameraSyncService : Service() {
 
     private fun stopLocationUpdates(connection: CameraConnection) {
         connection.locationUpdateRunnable?.let {
+            log("Stopping location updates for ${connection.device.address}.")
             handler.removeCallbacks(it)
             connection.locationUpdateRunnable = null
-            log("Location updates stopped for ${connection.device.address}.")
         }
     }
 
     private fun log(message: String) {
         Log.d(TAG, message)
         val currentLog = _log.value.toMutableList()
-        currentLog.add(0, "[${SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())}] $message")
+        currentLog.add(0, "[${SimpleDateFormat("HH:mm:ss.SSS", Locale.getDefault()).format(Date())}] $message")
         if (currentLog.size > 200) {
             currentLog.removeAt(currentLog.size - 1)
         }
