@@ -7,6 +7,7 @@ import com.google.gson.reflect.TypeToken
 
 data class CameraSettings(
     val deviceAddress: String,
+    val connectionMode: Int = 1, // 1 = Mode 1, 2 = Mode 2
     val quickConnectEnabled: Boolean = false,
     val quickConnectDurationMinutes: Int = 5,
     val lastDisconnectTimestamp: Long? = null
@@ -15,14 +16,10 @@ data class CameraSettings(
 object CameraSettingsManager {
     const val PREFS_NAME = "cameragpslinkPrefs"
     private const val CAMERA_SETTINGS_KEY = "camera_settings"
-    private const val KEY_SAVED_CAMERAS = "saved_cameras" // Kept for migration
     private const val KEY_SHOW_LOG = "show_log"
-    
+
     private val gson = Gson()
 
-    /**
-     * Save settings for a specific camera
-     */
     fun saveSettings(context: Context, settings: CameraSettings) {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         val allSettings = loadAllSettings(prefs).toMutableMap()
@@ -30,39 +27,35 @@ object CameraSettingsManager {
         saveAllSettings(prefs, allSettings)
     }
 
-    /**
-     * Get settings for a specific camera
-     */
     fun getSettings(context: Context, deviceAddress: String): CameraSettings {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         val allSettings = loadAllSettings(prefs)
-        return allSettings[deviceAddress] ?: CameraSettings(deviceAddress = deviceAddress)
+        val settings = allSettings[deviceAddress] ?: CameraSettings(deviceAddress = deviceAddress)
+        return settings.copy(
+            connectionMode = settings.connectionMode.coerceAtLeast(1).coerceAtMost(2), // Ensure connectionMode is between 1 and 2 ?:)
+            quickConnectDurationMinutes = settings.quickConnectDurationMinutes.coerceAtLeast(0).coerceAtMost(720),
+            quickConnectEnabled = settings.quickConnectEnabled.coerceAtLeast(false).coerceAtMost(true),
+            lastDisconnectTimestamp = settings.lastDisconnectTimestamp?.coerceAtLeast(0)
+        )
     }
 
-    /**
-     * Update Quick Connect settings for a camera
-     */
-    fun updateQuickConnect(context: Context, deviceAddress: String, enabled: Boolean, durationMinutes: Int) {
+    // Renamed and updated to handle all settings
+    fun updateCameraSettings(context: Context, deviceAddress: String, mode: Int, quickConnectEnabled: Boolean, durationMinutes: Int) {
         val currentSettings = getSettings(context, deviceAddress)
         val updatedSettings = currentSettings.copy(
-            quickConnectEnabled = enabled,
+            connectionMode = mode,
+            quickConnectEnabled = quickConnectEnabled,
             quickConnectDurationMinutes = durationMinutes
         )
         saveSettings(context, updatedSettings)
     }
 
-    /**
-     * Update last disconnect timestamp for a camera
-     */
     fun updateDisconnectTimestamp(context: Context, deviceAddress: String, timestamp: Long) {
         val currentSettings = getSettings(context, deviceAddress)
         val updatedSettings = currentSettings.copy(lastDisconnectTimestamp = timestamp)
         saveSettings(context, updatedSettings)
     }
 
-    /**
-     * Remove all settings for a camera
-     */
     fun removeSettings(context: Context, deviceAddress: String) {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         val allSettings = loadAllSettings(prefs).toMutableMap()
@@ -76,11 +69,7 @@ object CameraSettingsManager {
         prefs.edit().putString(CAMERA_SETTINGS_KEY, json).apply()
     }
 
-    /**
-     * Load all camera settings from SharedPreferences, handling migration from legacy list
-     */
     private fun loadAllSettings(prefs: SharedPreferences): Map<String, CameraSettings> {
-        // 1. Load existing map
         var map = mutableMapOf<String, CameraSettings>()
         val json = prefs.getString(CAMERA_SETTINGS_KEY, null)
         if (json != null) {
@@ -91,54 +80,28 @@ object CameraSettingsManager {
                 map = mutableMapOf()
             }
         }
-
-        // 2. Check for legacy list (Migration)
-        if (prefs.contains(KEY_SAVED_CAMERAS)) {
-            val savedAddresses = prefs.getString(KEY_SAVED_CAMERAS, "") ?: ""
-            val editor = prefs.edit()
-            
-            if (savedAddresses.isNotBlank()) {
-                val addresses = savedAddresses.split(",").filter { it.isNotBlank() }
-                for (addr in addresses) {
-                    if (!map.containsKey(addr)) {
-                        map[addr] = CameraSettings(deviceAddress = addr)
-                    }
-                }
-                
-                // Save the merged/migrated map immediately
-                val newJson = gson.toJson(map)
-                editor.putString(CAMERA_SETTINGS_KEY, newJson)
-            }
-            
-            // Remove the legacy key so this doesn't run again
-            editor.remove(KEY_SAVED_CAMERAS)
-            editor.apply()
-        }
-
         return map
     }
 
     // --- Saved Cameras Management ---
+    fun getSavedCameras(context: Context): List<String> = getSavedCamerasMap(context).keys.toList()
 
-    fun getSavedCameras(context: Context): List<String> {
+    // Helper to avoid re-loading for list
+    private fun getSavedCamerasMap(context: Context): Map<String, CameraSettings> {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        return loadAllSettings(prefs).keys.toList()
+        return loadAllSettings(prefs)
     }
 
     fun addSavedCamera(context: Context, deviceAddress: String) {
-        // Ensuring it exists in the settings map is enough
         val currentSettings = getSettings(context, deviceAddress)
-        // Only save if it wasn't already there? getSettings returns default if not present.
-        // We should save it to ensure it's persisted in the map.
         saveSettings(context, currentSettings)
     }
 
     fun removeSavedCamera(context: Context, deviceAddress: String) {
         removeSettings(context, deviceAddress)
     }
-    
+
     // --- UI Preferences ---
-    
     fun isShowLogEnabled(context: Context): Boolean {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         return prefs.getBoolean(KEY_SHOW_LOG, false)

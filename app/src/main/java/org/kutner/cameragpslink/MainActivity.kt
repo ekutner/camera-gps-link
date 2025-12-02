@@ -61,6 +61,7 @@ import org.kutner.cameragpslink.composables.ConnectedCameraCard
 import org.kutner.cameragpslink.composables.FoundCameraCard
 import org.kutner.cameragpslink.composables.LogCard
 import org.kutner.cameragpslink.composables.SearchDialog
+import org.kutner.cameragpslink.composables.CameraSettingsDialog
 import org.kutner.cameragpslink.ui.theme.CameraGpsLinkTheme
 
 class MainActivity : ComponentActivity() {
@@ -141,8 +142,8 @@ class MainActivity : ComponentActivity() {
                         },
                         onTriggerShutter = { address -> service.triggerShutter(address) },
                         onForgetDevice = { address -> service.forgetDevice(address) },
-                        onQuickConnectSettings = { address, enabled, duration ->
-                            CameraSettingsManager.updateQuickConnect(this, address, enabled, duration)
+                        onCameraSettings = { address, mode, enabled, duration ->
+                            CameraSettingsManager.updateCameraSettings(this, address, mode, enabled, duration)
                             service.resetAutoScan(address)
                         },
                         onClearLog = { service.clearLog() },
@@ -232,7 +233,7 @@ fun MainScreen(
     onConnectToDevice: (BluetoothDevice) -> Unit,
     onTriggerShutter: (String) -> Unit,
     onForgetDevice: (String) -> Unit,
-    onQuickConnectSettings: (String, Boolean, Int) -> Unit,
+    onCameraSettings: (String, Int, Boolean, Int) -> Unit,
     onClearLog: () -> Unit,
     onShareLog: () -> Unit,
     onDismissShutterError: () -> Unit
@@ -379,6 +380,8 @@ fun MainScreen(
                             verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
                             items(cameras, key = { it.device.address }) { connection ->
+                                var showSettings by remember { mutableStateOf(false) }
+
                                 ConnectedCameraCard(
                                     cameraName = connection.device.name ?: "Unknown Camera",
                                     cameraAddress = connection.device.address,
@@ -386,8 +389,8 @@ fun MainScreen(
                                     isConnecting = connection.isConnecting,
                                     onShutter = { onTriggerShutter(connection.device.address) },
                                     onDisconnect = { onForgetDevice(connection.device.address) },
-                                    onQuickConnectSettings = { enabled, duration ->
-                                        onQuickConnectSettings(connection.device.address, enabled, duration)
+                                    onCameraSettings = { connectionMode, quickConnectEnabled, duration ->
+                                        onCameraSettings(connection.device.address, connectionMode, quickConnectEnabled, duration)
                                     }
                                 )
                             }

@@ -46,10 +46,10 @@ fun ConnectedCameraCard(
     isConnecting: Boolean,
     onShutter: () -> Unit,
     onDisconnect: () -> Unit,
-    onQuickConnectSettings: (Boolean, Int) -> Unit
+    onCameraSettings: (Int, Boolean, Int) -> Unit
 ) {
     var showMenu by remember { mutableStateOf(false) }
-    var showQuickConnectDialog by remember { mutableStateOf(false) }
+    var showCameraSettingsDialog by remember { mutableStateOf(false) }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -112,9 +112,9 @@ fun ConnectedCameraCard(
                         onDismissRequest = { showMenu = false }
                     ) {
                         DropdownMenuItem(
-                            text = { Text("Quick Connect") },
+                            text = { Text("Settings") },
                             onClick = {
-                                showQuickConnectDialog = true
+                                showCameraSettingsDialog = true
                                 showMenu = false
                             }
                         )
@@ -150,13 +150,13 @@ fun ConnectedCameraCard(
         }
     }
 
-    if (showQuickConnectDialog) {
-        QuickConnectDialog(
+    if (showCameraSettingsDialog) {
+        CameraSettingsDialog(
             cameraAddress = cameraAddress,
-            onDismiss = { showQuickConnectDialog = false },
-            onSave = { enabled, duration ->
-                onQuickConnectSettings(enabled, duration)
-                showQuickConnectDialog = false
+            onDismiss = { showCameraSettingsDialog = false },
+            onSave = { mode, enabled, duration ->
+                onCameraSettings(mode, enabled, duration)
+                showCameraSettingsDialog = false
             }
         )
     }

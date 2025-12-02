@@ -364,31 +364,22 @@ class CameraSyncService : Service() {
     }
 
 
-//    private fun createAutoScanCallback(deviceAddress: String): ScanCallback {
-//        return object : ScanCallback() {
-//            @SuppressLint("MissingPermission")
-//            override fun onScanResult(callbackType: Int, result: ScanResult) {
-//                log("Found saved device $deviceAddress. Connecting...")
-//                stopAutoScan(deviceAddress)
-////                bleScanner.stopScan(this)
-////                autoScanCallbacks.remove(deviceAddress)
-//
-//                // Cancel quick connect timer if running
-//                val connection = cameraConnections[deviceAddress]
-//                connection?.quickConnectRunnable?.let { runnable ->
-//                    handler.removeCallbacks(runnable)
-//                    connection.quickConnectRunnable = null
-//                }
-//
-//                connectToDevice(result.device)
-//            }
-//
-//            override fun onScanFailed(errorCode: Int) {
-//                log("Auto-scan failed for $deviceAddress: $errorCode. Retrying...")
-//                handler.postDelayed({ startAutoScan(deviceAddress) }, 3000)
-//            }
-//        }
-//    }
+    private fun createAutoScanCallback(deviceAddress: String): ScanCallback {
+        return object : ScanCallback() {
+            @SuppressLint("MissingPermission")
+            override fun onScanResult(callbackType: Int, result: ScanResult) {
+                log("Found saved device $deviceAddress. Connecting...")
+                stopAutoScan(deviceAddress)
+                cancelQuickConnectTimer(deviceAddress)
+                connectToDevice(result.device)
+            }
+
+            override fun onScanFailed(errorCode: Int) {
+                log("Auto-scan failed for $deviceAddress: $errorCode. Retrying...")
+                handler.postDelayed({ startAutoScan(deviceAddress) }, 3000)
+            }
+        }
+    }
 
 
     @SuppressLint("MissingPermission")
@@ -398,41 +389,56 @@ class CameraSyncService : Service() {
         val connection = cameraConnections[deviceAddress] ?: return
         if (connection.isConnected || connection.isConnecting) return
 
-        if (!autoScanCallbacks.containsKey(deviceAddress)) {
-            val cameraSettings = CameraSettingsManager.getSettings(this, deviceAddress)
-            val scanMode = determineScanMode(connection, cameraSettings)
+        val cameraSettings = CameraSettingsManager.getSettings(this, deviceAddress)
 
-            val scanModeText = when (scanMode) {
-                ScanSettings.SCAN_MODE_LOW_LATENCY -> "LOW_LATENCY (Quick Connect)"
-                else -> "LOW_POWER"
+        if (cameraSettings.connectionMode == 1) {
+            if (!autoScanCallbacks.containsKey(deviceAddress)) {
+                    // Make sure gatt connection is closed just in case we're switching from mode 2 to mode 1
+                    connection.gatt?.close()
+                    connection.gatt = null
+
+                val scanMode = determineScanMode(connection, cameraSettings)
+
+                val scanModeText = when (scanMode) {
+                    ScanSettings.SCAN_MODE_LOW_LATENCY -> "LOW_LATENCY (Quick Connect)"
+                    else -> "LOW_POWER"
+                }
+                log("Connection mode 1: Starting auto-scan for $deviceAddress with scan mode: $scanModeText")
+
+                val callback = createAutoScanCallback(deviceAddress)
+                autoScanCallbacks[deviceAddress] = callback
+
+                val scanFilter = ScanFilter.Builder().setDeviceAddress(deviceAddress).build()
+                val scanSettings = ScanSettings.Builder().setScanMode(scanMode).build()
+                bleScanner.startScan(listOf(scanFilter), scanSettings, callback)
+
+                // Set up quick connect timer if needed
+                createQuickConnectTimer(connection, cameraSettings, deviceAddress)
             }
-            log("Starting auto-scan for $deviceAddress with mode: $scanModeText")
-
-//            val callback = createAutoScanCallback(deviceAddress)
-//            autoScanCallbacks[deviceAddress] = callback
-//
-//            val scanFilter = ScanFilter.Builder().setDeviceAddress(deviceAddress).build()
-//            val scanSettings = ScanSettings.Builder().setScanMode(scanMode).build()
-//            bleScanner.startScan(listOf(scanFilter), scanSettings, callback)
-
-            // Set up quick connect timer if needed
-            setupQuickConnectTimer(connection, cameraSettings, deviceAddress)
-
+        }
+        else {
+            // connectionMode == 2
             if (connection.gatt == null) {
-                val device: BluetoothDevice = bluetoothManager.adapter.getRemoteDevice(deviceAddress)
-                connection.gatt = device.connectGatt(this,true,createGattCallback(deviceAddress),BluetoothDevice.TRANSPORT_AUTO)
-                log("Created GATT connection with autoConnect=true for $deviceAddress")
-            }
-            else {
-                log("Using existing GATT connection for $deviceAddress")
-            }
+                // Cancel quick connect timer in case we switched from mode 1
+                cancelQuickConnectTimer(deviceAddress)
 
-
-            updateNotification()
+                val device: BluetoothDevice =
+                    bluetoothManager.adapter.getRemoteDevice(deviceAddress)
+                connection.gatt = device.connectGatt(
+                    this,
+                    true,
+                    createGattCallback(deviceAddress),
+                    BluetoothDevice.TRANSPORT_AUTO
+                )
+                log("Connection mode 2: Created GATT connection with autoConnect=true for $deviceAddress")
+            } else {
+                log("Connection mode 2: Using existing GATT connection for $deviceAddress")
+            }
         }
     }
     @SuppressLint("MissingPermission")
     private fun stopAutoScan(deviceAddress: String? = null) {
+        log("Stopping auto-scan for ${deviceAddress ?: "all"}...")
         if (deviceAddress != null) {
             autoScanCallbacks[deviceAddress]?.let { callback ->
                 try {
@@ -482,10 +488,9 @@ class CameraSyncService : Service() {
         return ScanSettings.SCAN_MODE_LOW_POWER
     }
 
-    private fun setupQuickConnectTimer(connection: CameraConnection, cameraSettings: CameraSettings, deviceAddress: String) {
+    private fun createQuickConnectTimer(connection: CameraConnection, cameraSettings: CameraSettings, deviceAddress: String) {
         // Cancel any existing timer
-        connection.quickConnectRunnable?.let { handler.removeCallbacks(it) }
-        connection.quickConnectRunnable = null
+        cancelQuickConnectTimer(deviceAddress)
 
         if (!cameraSettings.quickConnectEnabled || cameraSettings.quickConnectDurationMinutes == 0) {
             return
@@ -501,19 +506,18 @@ class CameraSyncService : Service() {
             val runnable = Runnable {
                 log("Quick Connect period expired for $deviceAddress, switching to low power scan")
                 // Restart scan with low power mode
-//                autoScanCallbacks[deviceAddress]?.let { callback ->
-//                    try {
-//                        bleScanner.stopScan(callback)
-//                        autoScanCallbacks.remove(deviceAddress)
-//                    } catch (e: Exception) {
-//                        log("Error stopping scan: ${e.message}")
-//                    }
-//                }
-//                startAutoScan(deviceAddress)
                 resetAutoScan(deviceAddress)
             }
             connection.quickConnectRunnable = runnable
             handler.postDelayed(runnable, remainingMillis)
+        }
+    }
+
+    private fun cancelQuickConnectTimer(deviceAddress: String) {
+        val connection = cameraConnections[deviceAddress]
+        connection?.quickConnectRunnable?.let { runnable ->
+            handler.removeCallbacks(runnable)
+            connection.quickConnectRunnable = null
         }
     }
 
@@ -627,26 +631,32 @@ class CameraSyncService : Service() {
             }
         }
 
-        // Start fetching location in the background so it's
-        // ready when the connection is established
-//        startBackgroundLocationFetching()
-
-        log("Saving device ${device.name ?: device.address}...")
-
         val connection = cameraConnections.getOrPut(address) {
             CameraConnection(device = device)
         }
 
-//        connection.isConnecting = true
-//        connection.gatt = device.connectGatt(this, false, createGattCallback(address), BluetoothDevice.TRANSPORT_AUTO)
+        // Start fetching location in the background so it's
+        // ready when the connection is established
+//        startBackgroundLocationFetching()
+        val cameraSettings = CameraSettingsManager.getSettings(this, address)
+        if (cameraSettings.connectionMode == 1) {
+            log("Connection mode 1: Connecting to ${device.name ?: device.address}...")
+            connection.isConnecting = true
+            connection.gatt = device.connectGatt(this, false, createGattCallback(address), BluetoothDevice.TRANSPORT_AUTO)
+
+        }
+        else {
+            log("Connection mode 2: Saving device ${device.name ?: device.address}...")
+            startAutoScan(device.address)
+        }
 
         // Save immediately when connecting to a new camera
         CameraSettingsManager.addSavedCamera(this, address)
         _rememberedDevice.value = CameraSettingsManager.getSavedCameras(this).joinToString(",")
 
         updateConnectionsList()
-//        updateNotification()
-        startAutoScan(device.address)
+        updateNotification()
+
     }
 
     @SuppressLint("MissingPermission")
@@ -747,23 +757,30 @@ class CameraSyncService : Service() {
             @SuppressLint("MissingPermission")
             override fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {
                 val connection = cameraConnections[deviceAddress] ?: return
+                val cameraSettings = CameraSettingsManager.getSettings(this@CameraSyncService, deviceAddress)
+
+                connection.isConnected = true
+                connection.isConnecting = false
 
                 if (newState == BluetoothProfile.STATE_CONNECTED) {
-//                    log("Connected to ${gatt.device.name ?: deviceAddress}. Requesting MTU...")
-
-                    connection.isConnected = true
-                    connection.isConnecting = false
                     startBackgroundLocationFetching()
 
-//                    gatt.requestMtu(Constants.REQUEST_MTU_SIZE)
+                    if (cameraSettings.connectionMode == 1) {
+                        log("Connection mode 1: Connected to ${gatt.device.name ?: deviceAddress}. Requesting MTU...")
 
-                    log("Connected to ${gatt.device.name ?: deviceAddress}. Discovering services (skipping MTU)...")
-                    if (gatt.device.bondState == BluetoothDevice.BOND_BONDED) {
-                        handler.postDelayed({ gatt.discoverServices() }, 100)
+                        stopAutoScan(deviceAddress)
+                        gatt.requestMtu(Constants.REQUEST_MTU_SIZE)
+
                     }
                     else {
-                        log("Device not bonded. Starting pairing...")
-                        gatt.device.createBond()
+                        log("Connection mode 2: Connected to ${gatt.device.name ?: deviceAddress}. Discovering services (skipping MTU)...")
+                        if (gatt.device.bondState == BluetoothDevice.BOND_BONDED) {
+                            handler.postDelayed({ gatt.discoverServices() }, 100)
+                        }
+                        else {
+                            log("Device not bonded. Starting pairing...")
+                            gatt.device.createBond()
+                        }
                     }
 
                     // Update UI immediately
@@ -783,16 +800,15 @@ class CameraSyncService : Service() {
                     connection.disconnectTimestamp = timestamp
                     CameraSettingsManager.updateDisconnectTimestamp(this@CameraSyncService, deviceAddress, timestamp)
 
-
                     stopLocationUpdates(connection)
                     stopBackgroundLocationFetching()
-
-                    // Clear any error notifications for this camera
-                    clearShutterErrorNotification(deviceAddress)
 
                     // Update UI immediately
                     updateConnectionsList()
                     updateNotification()
+
+                    // Clear any error notifications for this camera
+                    clearShutterErrorNotification(deviceAddress)
 
                     // Restart auto-scan for this device
                     handler.postDelayed({
@@ -981,7 +997,7 @@ class CameraSyncService : Service() {
     private fun sendLocationData(deviceAddress: String) {
         val  location = lastKnownLocation
         if (location == null) {
-            log("No pre-fetched location data to send to $deviceAddress")
+            log("No pre-fetched location data to send to $deviceAddress. Will fetch low accuracy location instead")
             return
         }
 
@@ -1158,16 +1174,16 @@ class CameraSyncService : Service() {
 
     private fun stopLocationUpdates(connection: CameraConnection) {
         connection.locationUpdateRunnable?.let {
+            log("Stopping location updates for ${connection.device.address}.")
             handler.removeCallbacks(it)
             connection.locationUpdateRunnable = null
-            log("Location updates stopped for ${connection.device.address}.")
         }
     }
 
     private fun log(message: String) {
         Log.d(TAG, message)
         val currentLog = _log.value.toMutableList()
-        currentLog.add(0, "[${SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())}] $message")
+        currentLog.add(0, "[${SimpleDateFormat("HH:mm:ss.SSS", Locale.getDefault()).format(Date())}] $message")
         if (currentLog.size > 200) {
             currentLog.removeAt(currentLog.size - 1)
         }
