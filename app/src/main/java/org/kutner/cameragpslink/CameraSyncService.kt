@@ -500,15 +500,16 @@ class CameraSyncService : Service() {
             val runnable = Runnable {
                 log("Quick Connect period expired for $deviceAddress, switching to low power scan")
                 // Restart scan with low power mode
-                autoScanCallbacks[deviceAddress]?.let { callback ->
-                    try {
-                        bleScanner.stopScan(callback)
-                        autoScanCallbacks.remove(deviceAddress)
-                    } catch (e: Exception) {
-                        log("Error stopping scan: ${e.message}")
-                    }
-                }
-                startAutoScan(deviceAddress)
+//                autoScanCallbacks[deviceAddress]?.let { callback ->
+//                    try {
+//                        bleScanner.stopScan(callback)
+//                        autoScanCallbacks.remove(deviceAddress)
+//                    } catch (e: Exception) {
+//                        log("Error stopping scan: ${e.message}")
+//                    }
+//                }
+//                startAutoScan(deviceAddress)
+                resetAutoScan(deviceAddress)
             }
             connection.quickConnectRunnable = runnable
             handler.postDelayed(runnable, remainingMillis)
@@ -772,6 +773,8 @@ class CameraSyncService : Service() {
                     log("Disconnected from ${gatt.device.name ?: deviceAddress}.")
                     connection.isConnected = false
                     connection.isConnecting = false
+                    connection.gatt?.close()
+                    connection.gatt = null
 
                     // Record disconnect timestamp for quick connect
                     val timestamp = System.currentTimeMillis()
