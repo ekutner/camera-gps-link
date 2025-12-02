@@ -195,6 +195,7 @@ class CameraSyncService : Service() {
     private fun stopService() {
         if (isForegroundServiceStarted) {
             log("Stopping foreground service...")
+            stopBackgroundLocationFetching()
             stopForeground(STOP_FOREGROUND_REMOVE)
             isForegroundServiceStarted = false
             stopSelf()
@@ -363,35 +364,35 @@ class CameraSyncService : Service() {
     }
 
 
-    private fun createAutoScanCallback(deviceAddress: String): ScanCallback {
-        return object : ScanCallback() {
-            @SuppressLint("MissingPermission")
-            override fun onScanResult(callbackType: Int, result: ScanResult) {
-                log("Found saved device $deviceAddress. Connecting...")
-                stopAutoScan(deviceAddress)
-//                bleScanner.stopScan(this)
-//                autoScanCallbacks.remove(deviceAddress)
-
-                // Cancel quick connect timer if running
-                val connection = cameraConnections[deviceAddress]
-                connection?.quickConnectRunnable?.let { runnable ->
-                    handler.removeCallbacks(runnable)
-                    connection.quickConnectRunnable = null
-                }
-
-                connectToDevice(result.device)
-            }
-
-            override fun onScanFailed(errorCode: Int) {
-                log("Auto-scan failed for $deviceAddress: $errorCode. Retrying...")
-                handler.postDelayed({ startAutoScan(deviceAddress) }, 3000)
-            }
-        }
-    }
+//    private fun createAutoScanCallback(deviceAddress: String): ScanCallback {
+//        return object : ScanCallback() {
+//            @SuppressLint("MissingPermission")
+//            override fun onScanResult(callbackType: Int, result: ScanResult) {
+//                log("Found saved device $deviceAddress. Connecting...")
+//                stopAutoScan(deviceAddress)
+////                bleScanner.stopScan(this)
+////                autoScanCallbacks.remove(deviceAddress)
+//
+//                // Cancel quick connect timer if running
+//                val connection = cameraConnections[deviceAddress]
+//                connection?.quickConnectRunnable?.let { runnable ->
+//                    handler.removeCallbacks(runnable)
+//                    connection.quickConnectRunnable = null
+//                }
+//
+//                connectToDevice(result.device)
+//            }
+//
+//            override fun onScanFailed(errorCode: Int) {
+//                log("Auto-scan failed for $deviceAddress: $errorCode. Retrying...")
+//                handler.postDelayed({ startAutoScan(deviceAddress) }, 3000)
+//            }
+//        }
+//    }
 
 
     @SuppressLint("MissingPermission")
-    private fun startAutoScan(deviceAddress: String) {
+    fun startAutoScan(deviceAddress: String) {
         if (!hasRequiredPermissions() || !isAdapterAndScannerReady()) return
 
         val connection = cameraConnections[deviceAddress] ?: return
@@ -628,23 +629,24 @@ class CameraSyncService : Service() {
 
         // Start fetching location in the background so it's
         // ready when the connection is established
-        startBackgroundLocationFetching()
+//        startBackgroundLocationFetching()
 
-        log("Connecting to ${device.name ?: device.address}...")
+        log("Saving device ${device.name ?: device.address}...")
 
         val connection = cameraConnections.getOrPut(address) {
             CameraConnection(device = device)
         }
 
-        connection.isConnecting = true
-        connection.gatt = device.connectGatt(this, false, createGattCallback(address), BluetoothDevice.TRANSPORT_AUTO)
+//        connection.isConnecting = true
+//        connection.gatt = device.connectGatt(this, false, createGattCallback(address), BluetoothDevice.TRANSPORT_AUTO)
 
         // Save immediately when connecting to a new camera
         CameraSettingsManager.addSavedCamera(this, address)
         _rememberedDevice.value = CameraSettingsManager.getSavedCameras(this).joinToString(",")
-        
+
         updateConnectionsList()
-        updateNotification()
+//        updateNotification()
+        startAutoScan(device.address)
     }
 
     @SuppressLint("MissingPermission")
