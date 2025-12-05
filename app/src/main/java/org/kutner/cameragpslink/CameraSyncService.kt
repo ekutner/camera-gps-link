@@ -464,6 +464,7 @@ class CameraSyncService : Service() {
                 // Close open gatt.connect(autoConnect=true) requests
                 val connection = cameraConnections[deviceAddress]
                 connection?.gatt?.close()
+                connection?.gatt = null
             }
         }
         else {
