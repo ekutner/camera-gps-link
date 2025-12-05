@@ -48,24 +48,37 @@ unable, or unwilling, to fix it.
 **Note** that when remote control is enabled the auto power off feature of the camera is automatically 
   disabled and the camera will have to be manually turned off  
 
-### Quick Connect mode
-Select the Quick Connect option from the camera three dots menu:
+### Settings
+Select the "Settings" option from the option from the three dots menu (aka kebab menu) next to the camera:
 ![](assets/camera-menu.jpg)
 
-Which will open the Quick Connect dialog:  
-![](assets/quick-connect-dialog.jpg)  
-When Quick Connect is enabled the app will search for the camera more aggressively, which will reduce the
-connection time, when the camera is turned on, by 1-2 seconds. However, this mode will require more
-power to do so, which will drain the battery faster. In order to balance the connection speed and battery
-consumption the app allows setting a timeout period for the Quick Connect mode. If the camera wasn't found
-within the timeout period, after being disconnected from the phone, the Quick Connect mode will be turned off
-to save battery.
+#### Available Options
+![](assets/camera-settings-dialog.jpg)
 
+* **Connection Mode**
+  The implements two different connection modes supported by Android. The technical differences between 
+  these modes are not important but what is important is that it seems that Mode 2 connects faster
+  for certain camera/phone combinations. It is therefor recommended to just try and see if mode 2
+  connects faster for you and if it doesn't just stay with the recommended Mode 1.
 
+* **Quick Connect**
+  This feature is only supported when in Mode 1 and will be disabled in Mode 2.
+  When enabled the app will search for the camera more aggressively, which will reduce the
+  time between turning the camera on and the app connecting to it by 1-2 seconds. This mode
+  requires a little more power for scanning, which will drain the battery a bit faster.
+
+* **Quick Connect Duration**
+  In order to balance the connection speed and battery usage this feature allows setting 
+  a timeout period for the Quick Connect mode. If the camera wasn't found again within the 
+  specified time period after being disconnected from the phone, the app will revert to the normal 
+  scan speed in order to save battery. Setting this to "Always" means the fast scan speed will always
+  be used.
   
 
 ### Unpairing
-Select the "Remove camera" option from the three dots menu (aka kebab menu) next to the camera.
+Select the "Remove camera" option from the three dots menu (see above).
+Then go to your phone Bluetooth menu and unpair the camera there as well.
+Finally unpair the phone from the camera on the camera Bluetooth menu.
 
 ### After phone restart
 Due to the way location permissions work on Android the app is not 
