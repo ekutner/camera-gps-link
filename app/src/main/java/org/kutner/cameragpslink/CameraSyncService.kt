@@ -172,7 +172,6 @@ class CameraSyncService : Service() {
     override fun onDestroy() {
         super.onDestroy()
         stopAutoScan()
-        stopBackgroundLocationFetching()
         cameraConnections.values.forEach { connection ->
             stopLocationUpdates(connection)
             cancelQuickConnectTimer(connection.device.address)
@@ -652,8 +651,8 @@ class CameraSyncService : Service() {
 
         // Don't connect if already connected or connecting
         cameraConnections[address]?.let { connection ->
-            if (connection.isConnected ) {
-                log("Already connected to ${device.name ?: address}")
+            if (connection.isConnected || connection.isConnecting) {
+                log("Already connected or connecting to ${device.name ?: address}")
                 return
             }
         }
