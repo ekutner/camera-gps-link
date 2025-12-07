@@ -20,16 +20,16 @@ object CameraSettingsManager {
 
     private val gson = Gson()
 
-    fun saveSettings(context: Context, settings: CameraSettings) {
+    fun saveCameraSettings(context: Context, settings: CameraSettings) {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        val allSettings = loadAllSettings(prefs).toMutableMap()
+        val allSettings = loadAllCamerasSettings(prefs).toMutableMap()
         allSettings[settings.deviceAddress] = settings
         saveAllSettings(prefs, allSettings)
     }
 
-    fun getSettings(context: Context, deviceAddress: String): CameraSettings {
+    fun getCameraSettings(context: Context, deviceAddress: String): CameraSettings {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        val allSettings = loadAllSettings(prefs)
+        val allSettings = loadAllCamerasSettings(prefs)
         val settings = allSettings[deviceAddress] ?: CameraSettings(deviceAddress = deviceAddress)
         return settings.copy(
             connectionMode = settings.connectionMode.coerceAtLeast(1).coerceAtMost(2), // Ensure connectionMode is between 1 and 2 ?:)
@@ -41,24 +41,24 @@ object CameraSettingsManager {
 
     // Renamed and updated to handle all settings
     fun updateCameraSettings(context: Context, deviceAddress: String, mode: Int, quickConnectEnabled: Boolean, durationMinutes: Int) {
-        val currentSettings = getSettings(context, deviceAddress)
+        val currentSettings = getCameraSettings(context, deviceAddress)
         val updatedSettings = currentSettings.copy(
             connectionMode = mode,
             quickConnectEnabled = quickConnectEnabled,
             quickConnectDurationMinutes = durationMinutes
         )
-        saveSettings(context, updatedSettings)
+        saveCameraSettings(context, updatedSettings)
     }
 
     fun updateDisconnectTimestamp(context: Context, deviceAddress: String, timestamp: Long) {
-        val currentSettings = getSettings(context, deviceAddress)
+        val currentSettings = getCameraSettings(context, deviceAddress)
         val updatedSettings = currentSettings.copy(lastDisconnectTimestamp = timestamp)
-        saveSettings(context, updatedSettings)
+        saveCameraSettings(context, updatedSettings)
     }
 
     fun removeSettings(context: Context, deviceAddress: String) {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        val allSettings = loadAllSettings(prefs).toMutableMap()
+        val allSettings = loadAllCamerasSettings(prefs).toMutableMap()
         if (allSettings.remove(deviceAddress) != null) {
             saveAllSettings(prefs, allSettings)
         }
@@ -69,7 +69,7 @@ object CameraSettingsManager {
         prefs.edit().putString(CAMERA_SETTINGS_KEY, json).apply()
     }
 
-    private fun loadAllSettings(prefs: SharedPreferences): Map<String, CameraSettings> {
+    private fun loadAllCamerasSettings(prefs: SharedPreferences): Map<String, CameraSettings> {
         var map = mutableMapOf<String, CameraSettings>()
         val json = prefs.getString(CAMERA_SETTINGS_KEY, null)
         if (json != null) {
@@ -89,16 +89,20 @@ object CameraSettingsManager {
     // Helper to avoid re-loading for list
     private fun getSavedCamerasMap(context: Context): Map<String, CameraSettings> {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        return loadAllSettings(prefs)
+        return loadAllCamerasSettings(prefs)
     }
 
     fun addSavedCamera(context: Context, deviceAddress: String) {
-        val currentSettings = getSettings(context, deviceAddress)
-        saveSettings(context, currentSettings)
+        val currentSettings = getCameraSettings(context, deviceAddress)
+        saveCameraSettings(context, currentSettings)
     }
 
     fun removeSavedCamera(context: Context, deviceAddress: String) {
         removeSettings(context, deviceAddress)
+    }
+
+    fun hasSavedCamera(context: Context, deviceAddress: String): Boolean {
+        return getSavedCameras(context).contains(deviceAddress)
     }
 
     // --- UI Preferences ---

@@ -53,7 +53,7 @@ fun CameraSettingsDialog(
 ) {
     val context = LocalContext.current
     val currentSettings: CameraSettings = remember {
-        CameraSettingsManager.getSettings(context, cameraAddress)
+        CameraSettingsManager.getCameraSettings(context, cameraAddress)
     }
 
     var connectionMode by remember { mutableStateOf(currentSettings.connectionMode) }

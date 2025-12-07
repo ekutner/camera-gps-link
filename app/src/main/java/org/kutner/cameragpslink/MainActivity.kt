@@ -144,7 +144,7 @@ class MainActivity : ComponentActivity() {
                         onForgetDevice = { address -> service.forgetDevice(address) },
                         onCameraSettings = { address, mode, enabled, duration ->
                             CameraSettingsManager.updateCameraSettings(this, address, mode, enabled, duration)
-                            service.resetAutoScan(address)
+                            service.onSettingsChanged(address)
                         },
                         onClearLog = { service.clearLog() },
                         onShareLog = { shareLog(service.getLogAsString()) },
