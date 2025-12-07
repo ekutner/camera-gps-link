@@ -40,7 +40,7 @@ data class CameraConnection(
     var locationUpdateRunnable: Runnable? = null,
     var disconnectTimestamp: Long? = null,
     var quickConnectRunnable: Runnable? = null,
-    var retries: Int = 0
+    var retries: Long = 0
 ) {
     // Override equals and hashCode to ensure updates are detected
     override fun equals(other: Any?): Boolean {
@@ -84,9 +84,6 @@ class CameraSyncService : Service() {
     // --- State for UI ---
     private val _log = MutableStateFlow<List<String>>(emptyList())
     val log: StateFlow<List<String>> = _log
-
-//    private val _rememberedDevice = MutableStateFlow<String?>(null)
-//    val rememberedDevice: StateFlow<String?> = _rememberedDevice
 
     private val _connectedCameras = MutableStateFlow<List<CameraConnection>>(emptyList())
     val connectedCameras: StateFlow<List<CameraConnection>> = _connectedCameras
@@ -408,13 +405,6 @@ class CameraSyncService : Service() {
             connection.isConnecting = false
         }
 
-//        if (connection.isConnected || connection.isConnecting) {
-//            log("startAutoScan() already connected to $deviceAddress. Skipping auto-scan.")
-//            return
-//        }
-
-
-
         val cameraSettings = CameraSettingsManager.getCameraSettings(this, deviceAddress)
 
         if (cameraSettings.connectionMode == 1) {
@@ -474,13 +464,9 @@ class CameraSyncService : Service() {
             }
             cancelQuickConnectTimer(deviceAddress)
 
-//            val settings = CameraSettingsManager.getSettings(this, deviceAddress)
-//            if (settings.connectionMode == 2) {
-                // Close open gatt.connect(autoConnect=true) requests
-                val connection = cameraConnections[deviceAddress]
-                connection?.gatt?.close()
-                connection?.gatt = null
-//            }
+            val connection = cameraConnections[deviceAddress]
+            connection?.gatt?.close()
+            connection?.gatt = null
         }
         else {
             autoScanCallbacks.values.forEach { callback ->
@@ -494,6 +480,8 @@ class CameraSyncService : Service() {
             connectedCameras.value.forEach { connection ->
                 connection.gatt?.close()
                 connection.gatt = null
+                connection.isConnected = false
+                connection.isConnecting = false
             }
 
         }
@@ -526,28 +514,15 @@ class CameraSyncService : Service() {
 
         connection.isConnecting = true
         connection.gatt = device.connectGatt(this, false, createGattCallback(address), BluetoothDevice.TRANSPORT_AUTO)
-        startBackgroundLocationFetching()
+
 
         // Start fetching location in the background so it's
         // ready when the connection is established
-//        val cameraSettings = CameraSettingsManager.getCameraSettings(this, address)
-//        if (cameraSettings.connectionMode == 1) {
-//            log("Connection mode 1: Connecting to ${device.name ?: device.address}...")
-//            connection.isConnecting = true
-//            connection.gatt = device.connectGatt(this, false, createGattCallback(address), BluetoothDevice.TRANSPORT_AUTO)
-//            startBackgroundLocationFetching()
-//        }
-//        else {
-//            log("Connection mode 2: Saving device ${device.name ?: device.address}...")
-//            // This method will be called for mode 2 only immediately after pairing to a new camera
-//            // so we call startAutoStart to initiate the connection
-//            startAutoScan(device.address)
-//        }
+        startBackgroundLocationFetching()
 
         // Save immediately when connecting to a new camera
         if (!CameraSettingsManager.hasSavedCamera(this, address)) {
             CameraSettingsManager.addSavedCamera(this, address)
-//            _rememberedDevice.value = CameraSettingsManager.getSavedCameras(this).joinToString(",")
         }
 
         updateConnectionsList()
@@ -567,8 +542,6 @@ class CameraSyncService : Service() {
 
                     if (cameraSettings.connectionMode == 1) {
                         log("Connection mode 1: Connected to ${gatt.device.name ?: deviceAddress}. Requesting MTU...")
-//                        stopAutoScan(deviceAddress)
-//                        cancelQuickConnectTimer(deviceAddress)
                         gatt.requestMtu(Constants.REQUEST_MTU_SIZE)
 
                     }
@@ -628,7 +601,11 @@ class CameraSyncService : Service() {
             }
 
             override fun onCharacteristicWrite(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic, status: Int) {
+                val connection = cameraConnections[deviceAddress] ?: return
+
                 if (status == BluetoothGatt.GATT_SUCCESS) {
+                    connection.retries = 0
+
                     when (characteristic.uuid) {
                         Constants.LOCK_LOCATION_ENDPOINT_UUID -> {
                             log("Endpoint locked for $deviceAddress. Enabling location updates...")
@@ -649,18 +626,17 @@ class CameraSyncService : Service() {
                     }
                 } else {
                     log("Write failed for ${characteristic.uuid} on $deviceAddress with status $status")
-                    val connection = cameraConnections[deviceAddress] ?: return
 
                     when (characteristic.uuid) {
                         Constants.ENABLE_LOCATION_UPDATES_UUID -> {
                             if (connection.retries < Constants.MAX_BT_RETRIES) {
-                                handler.postDelayed({ enableLocationUpdates(gatt, deviceAddress) },500)
                                 connection.retries++
+                                handler.postDelayed({ enableLocationUpdates(gatt, deviceAddress) },500 * connection.retries)
                             }
                         }
                         Constants.LOCK_LOCATION_ENDPOINT_UUID -> {
                             if (connection.retries < Constants.MAX_BT_RETRIES) {
-                                handler.postDelayed({ lockLocationEndpoint(gatt, deviceAddress) },500)
+                                handler.postDelayed({ lockLocationEndpoint(gatt, deviceAddress) },500 * connection.retries)
                                 connection.retries++
                             }
                         }
@@ -762,9 +738,6 @@ class CameraSyncService : Service() {
 
             // Remove all camera settings (Quick Connect + disconnect timestamp)
             CameraSettingsManager.removeSavedCamera(this, deviceAddress)
-
-            // Save updated camera list
-//            _rememberedDevice.value = CameraSettingsManager.getSavedCameras(this).joinToString(",")
 
             // Update UI
             updateConnectionsList()
@@ -1115,7 +1088,6 @@ class CameraSyncService : Service() {
                     }
                 }
             }
-//            _rememberedDevice.value = savedAddresses.joinToString(",")
             updateConnectionsList()
         }
     }
