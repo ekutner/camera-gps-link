@@ -2,10 +2,6 @@ package org.kutner.cameragpslink
 
 import android.Manifest
 import android.annotation.SuppressLint
-import android.app.Notification
-import android.app.NotificationChannel
-import android.app.NotificationManager
-import android.app.PendingIntent
 import android.app.Service
 import android.bluetooth.*
 import android.bluetooth.le.ScanCallback
@@ -21,7 +17,6 @@ import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
 import android.util.Log
-import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import com.google.android.gms.location.*
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -70,6 +65,7 @@ class CameraSyncService : Service() {
     // --- Service components ---
     private val binder = LocalBinder()
     private val handler = Handler(Looper.getMainLooper())
+    private lateinit var notificationHelper: NotificationHelper
 
     // --- Bluetooth & Location ---
     private lateinit var bluetoothManager: BluetoothManager
@@ -113,6 +109,7 @@ class CameraSyncService : Service() {
 
     override fun onCreate() {
         super.onCreate()
+        notificationHelper = NotificationHelper(this)
         initializeBluetoothAndLocation()
         loadSavedCameras()
         if (cameraConnections.isNotEmpty()) {
@@ -178,7 +175,7 @@ class CameraSyncService : Service() {
     private fun startService() {
         if (!isForegroundServiceStarted) {
             log("Starting foreground service...")
-            startForeground(Constants.NOTIFICATION_ID_FOREGROUND_SERVICE, createSearchingNotification())
+            startForeground(Constants.NOTIFICATION_ID_FOREGROUND_SERVICE, notificationHelper.createSearchingNotification())
             isForegroundServiceStarted = true
         }
         else {
@@ -196,167 +193,7 @@ class CameraSyncService : Service() {
         }
     }
 
-    private fun createNotification(): Notification {
-        val connectedCount = cameraConnections.values.count { it.isConnected }
-        val channelId = if (connectedCount > 0) Constants.CHANNEL_CAMERA_SYNC_HIGH else Constants.CHANNEL_CAMERA_SYNC_LOW
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val notificationManager = getSystemService(NotificationManager::class.java)
-
-            val highChannel = NotificationChannel(
-                Constants.CHANNEL_CAMERA_SYNC_HIGH,
-                Constants.CHANNEL_NAME_CONNECTED,
-                NotificationManager.IMPORTANCE_HIGH
-            ).apply {
-                setShowBadge(true)
-                enableLights(true)
-                enableVibration(true)
-            }
-            notificationManager.createNotificationChannel(highChannel)
-
-            val lowChannel = NotificationChannel(
-                Constants.CHANNEL_CAMERA_SYNC_LOW,
-                Constants.CHANNEL_NAME_SEARCHING,
-                NotificationManager.IMPORTANCE_LOW
-            ).apply {
-                setShowBadge(false)
-                enableLights(false)
-                enableVibration(false)
-            }
-            notificationManager.createNotificationChannel(lowChannel)
-        }
-
-        val pendingIntent: PendingIntent =
-            Intent(this, MainActivity::class.java).let { notificationIntent ->
-                PendingIntent.getActivity(this, 0, notificationIntent, PendingIntent.FLAG_IMMUTABLE)
-            }
-
-        val priority = if (connectedCount > 0) NotificationCompat.PRIORITY_HIGH else NotificationCompat.PRIORITY_LOW
-
-        val title = when {
-            connectedCount == 0 -> "Searching for cameras..."
-            connectedCount == 1 -> "Connected to 1 camera"
-            else -> "Connected to $connectedCount cameras"
-        }
-
-        val builder = NotificationCompat.Builder(this, channelId)
-            .setContentTitle(title)
-            .setSmallIcon(R.drawable.ic_notification)
-            .setContentIntent(pendingIntent)
-            .setOngoing(true)
-            .setPriority(priority)
-            .setCategory(NotificationCompat.CATEGORY_SERVICE)
-
-        // Add shutter button if at least one camera is connected
-        if (connectedCount > 0) {
-            val shutterIntent = Intent(this, CameraSyncService::class.java).apply {
-                action = Constants.ACTION_TRIGGER_SHUTTER
-            }
-            val shutterPendingIntent = PendingIntent.getService(
-                this,
-                1,
-                shutterIntent,
-                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-            )
-            builder.addAction(
-                R.drawable.appicon,
-                "Shutter All",
-                shutterPendingIntent
-            )
-        }
-
-        return builder.build()
-    }
-
-    private fun createSearchingNotification(): Notification {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val notificationManager = getSystemService(NotificationManager::class.java)
-            val lowChannel = NotificationChannel(
-                Constants.CHANNEL_CAMERA_SYNC_LOW,
-                Constants.CHANNEL_NAME_SEARCHING,
-                NotificationManager.IMPORTANCE_LOW
-            ).apply {
-                setShowBadge(false)
-                enableLights(false)
-                enableVibration(false)
-            }
-            notificationManager.createNotificationChannel(lowChannel)
-        }
-
-        val pendingIntent: PendingIntent =
-            Intent(this, MainActivity::class.java).let { notificationIntent ->
-                PendingIntent.getActivity(this, 0, notificationIntent, PendingIntent.FLAG_IMMUTABLE)
-            }
-
-        return NotificationCompat.Builder(this, Constants.CHANNEL_CAMERA_SYNC_LOW)
-            .setContentText("Searching for cameras...")
-            .setSmallIcon(R.drawable.ic_notification)
-            .setContentIntent(pendingIntent)
-            .setOngoing(true)
-            .setPriority(NotificationCompat.PRIORITY_LOW)
-            .setCategory(NotificationCompat.CATEGORY_SERVICE)
-            .build()
-    }
-
-    private fun createCameraNotification(connection: CameraConnection, notificationId: Int): Notification {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val notificationManager = getSystemService(NotificationManager::class.java)
-            val highChannel = NotificationChannel(
-                Constants.CHANNEL_CAMERA_SYNC_HIGH,
-                Constants.CHANNEL_NAME_CONNECTED,
-                NotificationManager.IMPORTANCE_HIGH
-            ).apply {
-                setShowBadge(true)
-                enableLights(true)
-                enableVibration(true)
-            }
-            notificationManager.createNotificationChannel(highChannel)
-        }
-
-        val pendingIntent: PendingIntent =
-            Intent(this, MainActivity::class.java).let { notificationIntent ->
-                PendingIntent.getActivity(this, 0, notificationIntent, PendingIntent.FLAG_IMMUTABLE)
-            }
-
-        val shutterIntent = Intent(this, CameraSyncService::class.java).apply {
-            action = Constants.ACTION_TRIGGER_SHUTTER
-            putExtra(Constants.EXTRA_DEVICE_ADDRESS, connection.device.address)
-        }
-        val shutterPendingIntent = PendingIntent.getService(
-            this,
-            notificationId,
-            shutterIntent,
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-        )
-
-        val cameraName = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
-            ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED) {
-            connection.device.name ?: "Camera"
-        } else {
-            "Camera"
-        }
-
-        return NotificationCompat.Builder(this, Constants.CHANNEL_CAMERA_SYNC_HIGH)
-            .setContentTitle("Connected to $cameraName")
-            .setSmallIcon(R.drawable.ic_notification)
-            .setContentIntent(pendingIntent)
-            .setOngoing(true)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setCategory(NotificationCompat.CATEGORY_SERVICE)
-            .addAction(
-                R.drawable.appicon,
-                "Shutter",
-                shutterPendingIntent
-            )
-            .build()
-    }
-
-    private fun showPermissionsRequiredNotification() {
-        val notification = createNotification()
-        val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
-        notificationManager.notify(Constants.NOTIFICATION_ID_PERMISSIONS_REQUIRED, notification)
-    }
-
+    // --- Core Logic ---
 
     private fun createAutoScanCallback(deviceAddress: String): ScanCallback {
         return object : ScanCallback() {
@@ -384,8 +221,6 @@ class CameraSyncService : Service() {
 
     @SuppressLint("MissingPermission")
     fun startAutoScan(deviceAddress: String) {
-//        if (!hasRequiredPermissions() || !isAdapterAndScannerReady()) return
-
         val connection = cameraConnections[deviceAddress] ?: return
         if (connection.gatt != null) {
 
@@ -407,7 +242,7 @@ class CameraSyncService : Service() {
 
         val cameraSettings = CameraSettingsManager.getCameraSettings(this, deviceAddress)
 
-        if (cameraSettings.connectionMode == 1) {
+        if (cameraSettings.connectionMode == 1) { // Mode 1
             if (!autoScanCallbacks.containsKey(deviceAddress)) {
                     // Make sure gatt connection is closed just in case we're switching from mode 2 to mode 1
 
@@ -428,6 +263,8 @@ class CameraSyncService : Service() {
 
                 // Set up quick connect timer if needed
                 createQuickConnectTimer(connection, cameraSettings, deviceAddress)
+
+                notificationHelper.updateNotifications(cameraConnections.values, isForegroundServiceStarted) { log(it) }
             }
             else {
                 log("Auto-scan already in progress for $deviceAddress.")
@@ -483,7 +320,6 @@ class CameraSyncService : Service() {
                 connection.isConnected = false
                 connection.isConnecting = false
             }
-
         }
     }
 
@@ -526,7 +362,7 @@ class CameraSyncService : Service() {
         }
 
         updateConnectionsList()
-        updateNotification()
+        notificationHelper.updateNotifications(cameraConnections.values, isForegroundServiceStarted) { log(it) }
     }
 
     private fun createGattCallback(deviceAddress: String): BluetoothGattCallback {
@@ -571,16 +407,14 @@ class CameraSyncService : Service() {
                     stopLocationUpdates(connection)
                     stopBackgroundLocationFetching()
 
-                    // Clear any error notifications for this camera
-                    clearShutterErrorNotification(deviceAddress)
+                    notificationHelper.clearShutterErrorNotification(deviceAddress)
 
                     // Restart auto-scan for this device
                     startAutoScan(deviceAddress)
                 }
 
-                // Update UI immediately
                 updateConnectionsList()
-                updateNotification()
+                notificationHelper.updateNotifications(cameraConnections.values, isForegroundServiceStarted) { log(it) }
             }
 
             @SuppressLint("MissingPermission")
@@ -645,7 +479,7 @@ class CameraSyncService : Service() {
                                 // Check if this shutter was triggered from notification
                                 if (_shutterTriggeredFromNotification.value == deviceAddress) {
                                     _shutterTriggeredFromNotification.value = null
-                                    showShutterErrorNotification(deviceAddress)
+                                    notificationHelper.showShutterErrorNotification(deviceAddress, connection)
                                 } else {
                                     _shutterErrorMessage.value = Constants.ERROR_SHUTTER_MESSAGE_LONG
                                 }
@@ -730,8 +564,9 @@ class CameraSyncService : Service() {
             // Stop all device related activities
             stopLocationUpdates(connection)
             stopAutoScan(deviceAddress)
-            cancelNotification(connection.device.address.hashCode())
-            clearShutterErrorNotification(deviceAddress)
+            
+            notificationHelper.cancel(connection.device.address.hashCode())
+            notificationHelper.clearShutterErrorNotification(deviceAddress)
 
             // Remove from connections map
             cameraConnections.remove(deviceAddress)
@@ -750,7 +585,8 @@ class CameraSyncService : Service() {
                 stopService()
             }
         } ?: log("Device $deviceAddress not found in connections")
-        updateNotification()
+        
+        notificationHelper.updateNotifications(cameraConnections.values, isForegroundServiceStarted) { log(it) }
     }
 
     fun onSettingsChanged(deviceAddress: String) {
@@ -834,7 +670,6 @@ class CameraSyncService : Service() {
         val timeChar = gatt.getService(Constants.TIME_SERVICE_UUID)?.getCharacteristic(Constants.TIME_CHARACTERISTIC_UUID)
         if (timeChar == null) {
             log("Time characteristic not found for $deviceAddress! Skipping sync.")
-//            startLocationUpdates(deviceAddress)
             return
         }
         log("Syncing time for $deviceAddress...")
@@ -1092,7 +927,6 @@ class CameraSyncService : Service() {
         }
     }
     private fun updateConnectionsList() {
-        // Create a completely new list with new references to force update
         val newList = cameraConnections.values.map { conn ->
             CameraConnection(
                 device = conn.device,
@@ -1136,88 +970,6 @@ class CameraSyncService : Service() {
         }
     }
 
-    // Notification functions
-    private fun updateNotification() {
-        val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
-
-        if (isForegroundServiceStarted) {
-            // Create individual notifications for each connected camera
-            cameraConnections.values.forEach { connection ->
-                val notificationId = connection.device.address.hashCode()
-                if (connection.isConnected || connection.isConnecting) {
-                    notificationManager.notify(notificationId, createCameraNotification(connection, notificationId))
-                    log("Created/Updated notification for ${connection.device.address}")
-                } else {
-                    notificationManager.cancel(notificationId)
-                    log("Cancelled notification for ${connection.device.address}")
-                }
-            }
-        } else {
-            log("Service not started, cancelling all notifications")
-            notificationManager.cancelAll()
-        }
-    }
-
-    private fun cancelNotification(notificationId: Int) {
-        val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
-        notificationManager.cancel(notificationId)
-        log("Cancelled notification with ID $notificationId")
-    }
-
-    private fun showShutterErrorNotification(deviceAddress: String) {
-        val connection = cameraConnections[deviceAddress] ?: return
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val notificationManager = getSystemService(NotificationManager::class.java)
-            val errorChannel = NotificationChannel(
-                Constants.CHANNEL_CAMERA_ERROR,
-                Constants.CHANNEL_NAME_ERRORS,
-                NotificationManager.IMPORTANCE_HIGH
-            ).apply {
-                setShowBadge(true)
-                enableLights(true)
-                enableVibration(true)
-            }
-            notificationManager.createNotificationChannel(errorChannel)
-        }
-
-        val pendingIntent: PendingIntent =
-            Intent(this, MainActivity::class.java).let { notificationIntent ->
-                PendingIntent.getActivity(this, 0, notificationIntent, PendingIntent.FLAG_IMMUTABLE)
-            }
-
-        val cameraName = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
-            ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED) {
-            connection.device.name ?: "Camera"
-        } else {
-            "Camera"
-        }
-
-        val notification = NotificationCompat.Builder(this, Constants.CHANNEL_CAMERA_ERROR)
-            .setContentTitle(Constants.ERROR_SHUTTER_TITLE + " - " + cameraName)
-            .setContentText(Constants.ERROR_SHUTTER_MESSAGE)
-            .setStyle(NotificationCompat.BigTextStyle()
-                .bigText(Constants.ERROR_SHUTTER_MESSAGE_LONG))
-            .setSmallIcon(R.drawable.ic_notification)
-            .setContentIntent(pendingIntent)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setAutoCancel(true)
-            .build()
-
-        val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
-        val notificationId = deviceAddress.hashCode() + Constants.NOTIFICATION_ID_SHUTTER_ERROR_OFFSET
-        notificationManager.notify(notificationId, notification)
-
-        log("Showed error notification for $deviceAddress")
-    }
-
-    private fun clearShutterErrorNotification(deviceAddress: String) {
-        val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
-        val notificationId = deviceAddress.hashCode() + Constants.NOTIFICATION_ID_SHUTTER_ERROR_OFFSET
-        notificationManager.cancel(notificationId)
-    }
-
-    // Logging functions
     private fun log(message: String) {
         Log.d(TAG, message)
         val currentLog = _log.value.toMutableList()
