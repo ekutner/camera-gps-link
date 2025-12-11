@@ -14,6 +14,7 @@ import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
@@ -57,6 +58,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.PopupProperties
 import androidx.core.content.ContextCompat
 import kotlinx.coroutines.flow.StateFlow
 import org.kutner.cameragpslink.composables.ConnectedCameraCard
@@ -252,6 +254,11 @@ fun MainScreen(
     var showMenu by remember { mutableStateOf(false) }
     var showSearchDialog by remember { mutableStateOf(false) }
 
+    // Handle back press to close menu when focusable is false
+    BackHandler(enabled = showMenu) {
+        showMenu = false
+    }
+
     // Show error dialog when there's an error message
     if (errorMessage != null) {
         AlertDialog(
@@ -279,7 +286,8 @@ fun MainScreen(
                     }
                     DropdownMenu(
                         expanded = showMenu,
-                        onDismissRequest = { showMenu = false }
+                        onDismissRequest = { showMenu = false },
+                        properties = PopupProperties(focusable = false)
                     ) {
                         DropdownMenuItem(
                             text = { Text("Show Log") },

@@ -1,5 +1,6 @@
 package org.kutner.cameragpslink.composables
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -36,6 +37,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.PopupProperties
 import org.kutner.cameragpslink.Constants
 
 @Composable
@@ -50,6 +52,11 @@ fun ConnectedCameraCard(
 ) {
     var showMenu by remember { mutableStateOf(false) }
     var showCameraSettingsDialog by remember { mutableStateOf(false) }
+
+    // Handle back press to close menu when focusable is false
+    BackHandler(enabled = showMenu) {
+        showMenu = false
+    }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -109,6 +116,7 @@ fun ConnectedCameraCard(
                     }
                     DropdownMenu(
                         expanded = showMenu,
+                        properties = PopupProperties(focusable = false),
                         onDismissRequest = { showMenu = false }
                     ) {
                         DropdownMenuItem(
