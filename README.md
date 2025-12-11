@@ -17,6 +17,7 @@ unable, or unwilling, to fix it.
   which can't be synced automatically when using the Creator's App
 * Remote shutter release - A simple and quick shutter release remote control (similar to the shutter button on Sony's RMT-P1BT)   
 * Support for connecting multiple cameras
+* Two connection modes for best connection speed with all phones and camera combinations
 
 ## Screenshots
 | ![](assets/two-cameras-dark.jpeg) | ![](assets/one-camera-light.jpg) | ![](assets/found-camera-dark.jpg) | ![](assets/notifications.jpg) |
@@ -99,6 +100,19 @@ The app requires the following permission:
 **Notifications** - Required for showing a persistent notification while the
 app is running in the background, waiting to connect with the camera
 
+## FAQ
+* **The camera only connects to the app when it is running in the foreground**  
+  The app has a background process that is searching for paired cameras all the time,
+  even when the app is not active in the foreground. That process is displaying a 
+  notification in Android notification center saying "Searching for cameras...", if 
+  you dismiss this notification (swipe it out), Android will kill the background process
+  and the app won't work until you open the app again.
+* **I restarted my phone and now there is a notification to open the app**  
+  This is a requirement of Android. Background processes that access the GPS location
+  can't start automatically after a phone restart and can only start after the user 
+  interacts with the app. Just tap the notification, it will open the app and then you 
+  close it until you restart the phone again.
+  
 
 ### Acknowledgements
 This app is inspired by previous work done by:  
