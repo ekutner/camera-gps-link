@@ -37,11 +37,13 @@ object Constants {
     const val NOTIFICATION_CONNECTED_TO = "Connected to %s"
     const val NOTIFICATION_SHUTTER_FAILED = "Shutter Failed - %s"
     const val NOTIFICATION_BOOT_MESSAGE = "Tap to activate $APP_NAME after the phone has rebooted"
-
+    const val NOTIFICATION_SEARCHING_TITLE = "Searching for cameras..."
+    const val NOTIFICATION_SEARCHING_MESSAGE = "Do not remove this notification!"
+    const val NOTIFICATION_SEARCH_LONG_MESSAGE = "Do not remove this notification!\nIt is required for the app to connect to the camera while it's in the background."
+    const val HELP_PAGE_URL= "https://github.com/ekutner/camera-gps-link?tab=readme-ov-file#camera-gps-link"
 
     // Action Labels
     const val ACTION_SHUTTER = "Shutter"
-    const val ACTION_SHUTTER_ALL = "Shutter All"
     const val ACTION_TRIGGER_SHUTTER = "org.kutner.cameragpslink.ACTION_TRIGGER_SHUTTER"
 
 

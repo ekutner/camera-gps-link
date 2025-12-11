@@ -59,49 +59,50 @@ class NotificationHelper(private val context: Context) {
         }
     }
 
-    fun createForegroundNotification(connectedCount: Int): Notification {
-        val channelId = if (connectedCount > 0) Constants.CHANNEL_CAMERA_SYNC_HIGH else Constants.CHANNEL_CAMERA_SYNC_LOW
-        val priority = if (connectedCount > 0) NotificationCompat.PRIORITY_HIGH else NotificationCompat.PRIORITY_LOW
-
-        val title = when {
-            connectedCount == 0 -> "Searching for cameras..."
-            connectedCount == 1 -> "Connected to 1 camera"
-            else -> "Connected to $connectedCount cameras"
-        }
-
-        val pendingIntent: PendingIntent =
-            Intent(context, MainActivity::class.java).let { notificationIntent ->
-                PendingIntent.getActivity(context, 0, notificationIntent, PendingIntent.FLAG_IMMUTABLE)
-            }
-
-        val builder = NotificationCompat.Builder(context, channelId)
-            .setContentTitle(title)
-            .setSmallIcon(R.drawable.ic_notification)
-            .setContentIntent(pendingIntent)
-            .setOngoing(true)
-            .setPriority(priority)
-            .setCategory(NotificationCompat.CATEGORY_SERVICE)
-
-        // Add shutter button if at least one camera is connected
-        if (connectedCount > 0) {
-            val shutterIntent = Intent(context, CameraSyncService::class.java).apply {
-                action = Constants.ACTION_TRIGGER_SHUTTER
-            }
-            val shutterPendingIntent = PendingIntent.getService(
-                context,
-                1,
-                shutterIntent,
-                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-            )
-            builder.addAction(
-                R.drawable.appicon,
-                "Shutter All",
-                shutterPendingIntent
-            )
-        }
-
-        return builder.build()
-    }
+//    fun createForegroundNotification(connectedCount: Int): Notification {
+//        val channelId = if (connectedCount > 0) Constants.CHANNEL_CAMERA_SYNC_HIGH else Constants.CHANNEL_CAMERA_SYNC_LOW
+//        val priority = if (connectedCount > 0) NotificationCompat.PRIORITY_HIGH else NotificationCompat.PRIORITY_LOW
+//
+//        val title = when {
+//            connectedCount == 0 -> "Searching for cameras..."
+//            connectedCount == 1 -> "Connected to 1 camera"
+//            else -> "Connected to $connectedCount cameras"
+//        }
+//
+//        val pendingIntent: PendingIntent =
+//            Intent(context, MainActivity::class.java).let { notificationIntent ->
+//                PendingIntent.getActivity(context, 0, notificationIntent, PendingIntent.FLAG_IMMUTABLE)
+//            }
+//
+//        val builder = NotificationCompat.Builder(context, channelId)
+//            .setContentTitle(title)
+//            .setContentText()
+//            .setSmallIcon(R.drawable.ic_notification)
+//            .setContentIntent(pendingIntent)
+//            .setOngoing(true)
+//            .setPriority(priority)
+//            .setCategory(NotificationCompat.CATEGORY_SERVICE)
+//
+//        // Add shutter button if at least one camera is connected
+//        if (connectedCount > 0) {
+//            val shutterIntent = Intent(context, CameraSyncService::class.java).apply {
+//                action = Constants.ACTION_TRIGGER_SHUTTER
+//            }
+//            val shutterPendingIntent = PendingIntent.getService(
+//                context,
+//                1,
+//                shutterIntent,
+//                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+//            )
+//            builder.addAction(
+//                R.drawable.appicon,
+//                "Shutter All",
+//                shutterPendingIntent
+//            )
+//        }
+//
+//        return builder.build()
+//    }
 
     fun createSearchingNotification(): Notification {
         val pendingIntent: PendingIntent =
@@ -110,7 +111,10 @@ class NotificationHelper(private val context: Context) {
             }
 
         return NotificationCompat.Builder(context, Constants.CHANNEL_CAMERA_SYNC_LOW)
-            .setContentText("Searching for cameras...")
+            .setContentTitle(Constants.NOTIFICATION_SEARCHING_TITLE)
+            .setContentText(Constants.NOTIFICATION_SEARCHING_MESSAGE)
+            .setStyle(NotificationCompat.BigTextStyle()
+                .bigText(Constants.NOTIFICATION_SEARCH_LONG_MESSAGE))
             .setSmallIcon(R.drawable.ic_notification)
             .setContentIntent(pendingIntent)
             .setOngoing(true)
@@ -181,10 +185,10 @@ class NotificationHelper(private val context: Context) {
         }
     }
 
-    fun showPermissionsRequiredNotification() {
-        val notification = createForegroundNotification(0)
-        notificationManager.notify(Constants.NOTIFICATION_ID_PERMISSIONS_REQUIRED, notification)
-    }
+//    fun showPermissionsRequiredNotification() {
+//        val notification = createForegroundNotification(0)
+//        notificationManager.notify(Constants.NOTIFICATION_ID_PERMISSIONS_REQUIRED, notification)
+//    }
 
     fun showShutterErrorNotification(deviceAddress: String, connection: CameraConnection) {
         val cameraName = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&

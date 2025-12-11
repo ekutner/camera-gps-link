@@ -375,6 +375,7 @@ class CameraSyncService : Service() {
                 if (newState == BluetoothProfile.STATE_CONNECTED) {
                     connection.isConnected = true
                     connection.isConnecting = false
+                    connection.retries = 0
 
                     if (cameraSettings.connectionMode == 1) {
                         log("Connection mode 1: Connected to ${gatt.device.name ?: deviceAddress}. Requesting MTU...")
