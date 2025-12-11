@@ -42,6 +42,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import org.kutner.cameragpslink.CameraSettings
 import org.kutner.cameragpslink.CameraSettingsManager
+import org.kutner.cameragpslink.R
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -82,7 +83,7 @@ fun CameraSettingsDialog(
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     Text(
-                        text = "Camera Settings",
+                        text = context.getString(R.string.dialog_camera_settings_title),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold
                     )
@@ -90,7 +91,7 @@ fun CameraSettingsDialog(
                     // --- SECTION 1: Connection Mode ---
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(
-                            text = "Connection Mode",
+                            text = context.getString(R.string.dialog_camera_settings_connection_mode),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.SemiBold
                         )
@@ -100,7 +101,7 @@ fun CameraSettingsDialog(
                                 onClick = { connectionMode = 1 }
                             )
                             Text(
-                                text = "Mode 1",
+                                text = context.getString(R.string.dialog_camera_settings_mode1),
                                 style = MaterialTheme.typography.bodyMedium,
                                 modifier = Modifier.padding(start = 8.dp)
                             )
@@ -111,7 +112,7 @@ fun CameraSettingsDialog(
                                 onClick = { connectionMode = 2 }
                             )
                             Text(
-                                text = "Mode 2",
+                                text = context.getString(R.string.dialog_camera_settings_mode1),
                                 style = MaterialTheme.typography.bodyMedium,
                                 modifier = Modifier.padding(start = 8.dp)
                             )
@@ -132,7 +133,7 @@ fun CameraSettingsDialog(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "Enable Quick Connect",
+                                text = context.getString(R.string.dialog_camera_settings_enable_quick_connect),
                                 style = MaterialTheme.typography.bodyLarge,
                                 color = if (isQuickConnectEditable) MaterialTheme.colorScheme.onSurface
                                 else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
@@ -145,14 +146,14 @@ fun CameraSettingsDialog(
                         }
 
                         Text(
-                            text = "The app will connect faster to the camera but will also consumes more battery power",
+                            text = context.getString(R.string.dialog_camera_settings_quick_connect_info),
                             style = MaterialTheme.typography.bodySmall,
                             color = if (isQuickConnectEditable) MaterialTheme.colorScheme.onSurfaceVariant
                             else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f)
                         )
 
                         Text(
-                            text = "Auto Quick Connect Period",
+                            text = context.getString(R.string.dialog_camera_settings_quick_connect_period),
                             style = MaterialTheme.typography.bodyLarge,
                             color = if (isQuickConnectEditable && quickConnectEnabled) MaterialTheme.colorScheme.onSurface
                             else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f)
@@ -198,8 +199,8 @@ fun CameraSettingsDialog(
 
                         Text(
                             text = when (durationMinutes) {
-                                0 -> "Always use fast scanning"
-                                else -> "Use fast scanning for ${formatDurationMinutes(durationMinutes)} after the camera disconnects, then switch back to regular connect mode to save battery"
+                                0 -> context.getString(R.string.dialog_camera_settings_quick_connect_period_always)
+                                else -> context.getString(R.string.dialog_camera_settings_quick_connect_period_other,formatDurationMinutes(durationMinutes))
                             },
                             style = MaterialTheme.typography.bodySmall,
                             color = if (isQuickConnectEditable && quickConnectEnabled) MaterialTheme.colorScheme.onSurfaceVariant
@@ -214,7 +215,7 @@ fun CameraSettingsDialog(
                             .align(Alignment.End)
                             .height(48.dp)
                     ) {
-                        Text("OK")
+                        Text(context.getString(R.string.button_ok))
                     }
                 }
 

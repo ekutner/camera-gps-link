@@ -62,10 +62,8 @@ import androidx.compose.ui.window.PopupProperties
 import androidx.core.content.ContextCompat
 import kotlinx.coroutines.flow.StateFlow
 import org.kutner.cameragpslink.composables.ConnectedCameraCard
-import org.kutner.cameragpslink.composables.FoundCameraCard
 import org.kutner.cameragpslink.composables.LogCard
 import org.kutner.cameragpslink.composables.SearchDialog
-import org.kutner.cameragpslink.composables.CameraSettingsDialog
 import org.kutner.cameragpslink.ui.theme.CameraGpsLinkTheme
 
 class MainActivity : ComponentActivity() {
@@ -263,11 +261,11 @@ fun MainScreen(
     if (errorMessage != null) {
         AlertDialog(
             onDismissRequest = onDismissShutterError,
-            title = { Text(Constants.ERROR_SHUTTER_TITLE) },
+            title = { Text(context.getString(R.string.error_shutter_title)) },
             text = { Text(errorMessage ?: "") },
             confirmButton = {
                 TextButton(onClick = onDismissShutterError) {
-                    Text("OK")
+                    Text(context.getString(R.string.button_ok))
                 }
             }
         )
@@ -290,7 +288,7 @@ fun MainScreen(
                         properties = PopupProperties(focusable = false)
                     ) {
                         DropdownMenuItem(
-                            text = { Text("Show Log") },
+                            text = { Text(context.getString(R.string.menu_show_log)) },
                             onClick = {
                                 showLog = !showLog
                                 CameraSettingsManager.setShowLogEnabled(context, showLog)
@@ -304,7 +302,7 @@ fun MainScreen(
                             }
                         )
                         DropdownMenuItem(
-                            text = { Text("Clear Log") },
+                            text = { Text(context.getString(R.string.menu_clear_log)) },
                             onClick = {
                                 onClearLog()
                                 showMenu = false
@@ -317,7 +315,7 @@ fun MainScreen(
                             }
                         )
                         DropdownMenuItem(
-                            text = { Text("Share Log") },
+                            text = { Text(context.getString(R.string.menu_share_log)) },
                             onClick = {
                                 onShareLog()
                                 showMenu = false
@@ -330,9 +328,9 @@ fun MainScreen(
                             }
                         )
                         DropdownMenuItem(
-                            text = { Text("Help") },
+                            text = { Text(context.getString(R.string.menu_help)) },
                             onClick = {
-                                val helpIntent = Intent(Intent.ACTION_VIEW, Uri.parse(Constants.HELP_PAGE_URL))
+                                val helpIntent = Intent(Intent.ACTION_VIEW, Uri.parse(context.getString(R.string.help_page_url)))
                                 context.startActivity(helpIntent)
                                 showMenu = false
                             },
@@ -407,7 +405,7 @@ fun MainScreen(
                                 var showSettings by remember { mutableStateOf(false) }
 
                                 ConnectedCameraCard(
-                                    cameraName = connection.device.name ?: "Unknown Camera",
+                                    cameraName = connection.device.name ?: context.getString(R.string.unknown_camera_name),
                                     cameraAddress = connection.device.address,
                                     isConnected = connection.isConnected,
                                     isConnecting = connection.isConnecting,

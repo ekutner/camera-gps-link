@@ -34,11 +34,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.PopupProperties
-import org.kutner.cameragpslink.Constants
+import org.kutner.cameragpslink.R
 
 @Composable
 fun ConnectedCameraCard(
@@ -52,6 +53,7 @@ fun ConnectedCameraCard(
 ) {
     var showMenu by remember { mutableStateOf(false) }
     var showCameraSettingsDialog by remember { mutableStateOf(false) }
+    val context = LocalContext.current
 
     // Handle back press to close menu when focusable is false
     BackHandler(enabled = showMenu) {
@@ -85,9 +87,9 @@ fun ConnectedCameraCard(
                     Column {
                         Text(
                             text = when {
-                                isConnected -> "CONNECTED"
-                                isConnecting -> "CONNECTING"
-                                else -> "DISCONNECTED"
+                                isConnected -> context.getString(R.string.camera_state_connected)
+                                isConnecting -> context.getString(R.string.camera_state_connecting)
+                                else -> context.getString(R.string.camera_state_disconnected)
                             },
                             style = MaterialTheme.typography.labelSmall,
                             color = when {
@@ -120,14 +122,14 @@ fun ConnectedCameraCard(
                         onDismissRequest = { showMenu = false }
                     ) {
                         DropdownMenuItem(
-                            text = { Text("Settings") },
+                            text = { Text(context.getString(R.string.menu_settings)) },
                             onClick = {
                                 showCameraSettingsDialog = true
                                 showMenu = false
                             }
                         )
                         DropdownMenuItem(
-                            text = { Text("Remove Camera") },
+                            text = { Text(context.getString(R.string.menu_remove_camera)) },
                             onClick = {
                                 onDisconnect()
                                 showMenu = false
@@ -150,7 +152,7 @@ fun ConnectedCameraCard(
                 )
             ) {
                 Text(
-                    text = Constants.ACTION_SHUTTER,
+                    text =  context.getString(R.string.action_shutter),
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Medium
                 )

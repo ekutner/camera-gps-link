@@ -482,7 +482,7 @@ class CameraSyncService : Service() {
                                     _shutterTriggeredFromNotification.value = null
                                     notificationHelper.showShutterErrorNotification(deviceAddress, connection)
                                 } else {
-                                    _shutterErrorMessage.value = Constants.ERROR_SHUTTER_MESSAGE_LONG
+                                    _shutterErrorMessage.value = this@CameraSyncService.getString(R.string.error_shutter_message_long)
                                 }
                             }
                         }
@@ -565,7 +565,7 @@ class CameraSyncService : Service() {
             // Stop all device related activities
             stopLocationUpdates(connection)
             stopAutoScan(deviceAddress)
-            
+
             notificationHelper.cancel(connection.device.address.hashCode())
             notificationHelper.clearShutterErrorNotification(deviceAddress)
 
@@ -586,7 +586,7 @@ class CameraSyncService : Service() {
                 stopService()
             }
         } ?: log("Device $deviceAddress not found in connections")
-        
+
         notificationHelper.updateNotifications(cameraConnections.values, isForegroundServiceStarted) { log(it) }
     }
 

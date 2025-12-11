@@ -1,3 +1,67 @@
 <resources>
     <string name="app_name">Camera GPS Link</string>
+
+    <string name="channel_name_connected">Camera Link - Connected</string>
+    <string name="channel_name_searching">Camera Link - Searching</string>
+    <string name="channel_name_errors">Camera Errors</string>
+    <string name="channel_name_boot">Camera Sync Boot</string>
+    <string name="channel_name_shutter_error">Camera Shutter Error</string>
+
+    <string name="error_shutter_title">Shutter Release Failed</string>
+    <string name="error_shutter_message">Enable \"Bluetooth Rmt Ctrl\" in the camera settings!</string>
+    <string name="error_shutter_message_long">Enable \"Bluetooth Rmt Ctrl\" in the camera settings to use remote shutter control.</string>
+
+    <string name="notification_searching">Searching for cameras...</string>
+    <string name="notification_connected_single">Connected to 1 camera</string>
+    <string name="notification_connected_multiple">Connected to %d cameras</string>
+    <string name="notification_connected_to">Connected to %s</string>
+    <string name="notification_shutter_failed">Shutter Failed - %s</string>
+    <string name="notification_boot_message">Tap to activate %s after the phone has rebooted</string>
+    <string name="notification_searching_title">Searching for cameras...</string>
+    <string name="notification_searching_message">Do not remove this notification!</string>
+    <string name="notification_search_long_message">Do not remove this notification!\nIt is required for the app to connect to the camera while in the background.</string>
+
+    <string name="action_shutter">Shutter</string>
+
+    <string name="default_camera_name">Camera</string>
+    <string name="unknown_camera_name">Unknown Camera</string>
+
+    <string name="help_page_url">https://github.com/ekutner/camera-gps-link?tab=readme-ov-file#camera-gps-link</string>
+
+    <string name="menu_show_log">Show Log</string>
+    <string name="menu_clear_log">Clear Log</string>
+    <string name="menu_share_log">Share Log</string>
+    <string name="menu_help">Help</string>
+    <string name="menu_settings">Settings</string>
+    <string name="menu_remove_camera">Remove Camera</string>
+
+    <string name="button_ok">OK</string>
+    <string name="button_cancel">Cancel</string>
+    <string name="button_connect">Connect</string>
+
+    <string name="fab_add_new_camera">Add new camera</string>
+    <string name="camera_state_connecting">CONNECTING...</string>
+    <string name="camera_state_connected">CONNECTED</string>
+    <string name="camera_state_disconnected">DISCONNECTED</string>
+    <string name="camera_state_found">FOUND CAMERA</string>
+
+    <string name="dialog_permissions_title">Permissions Required</string>
+    <string name="dialog_permissions_message">This app requires location and Bluetooth permissions to scan for and connect to your camera. Please grant them in the app settings.</string>
+
+    <string name="dialog_search_title">Searching for cameras</string>
+    <string name="dialog_search_wait_message">Please wait...</string>
+    <string name="dialog_search_found_message">Found Cameras</string>
+    <string name="dialog_search_fail_message">No cameras found</string>
+
+    <string name="dialog_camera_settings_title">Camera Settings</string>
+    <string name="dialog_camera_settings_connection_mode">Connection Mode</string>
+    <string name="dialog_camera_settings_mode1">Mode 1</string>
+    <string name="dialog_camera_settings_mode2">Mode 2</string>
+    <string name="dialog_camera_settings_enable_quick_connect">Enable Quick Connect</string>
+    <string name="dialog_camera_settings_quick_connect_info">The app will connect faster to the camera but will also consumes more battery power</string>
+    <string name="dialog_camera_settings_quick_connect_period">Auto Quick Connect Period</string>
+    <string name="dialog_camera_settings_quick_connect_period_always">Always use fast scanning</string>
+    <string name="dialog_camera_settings_quick_connect_period_other">Use fast scanning for %1$s after the camera disconnects, then switch back to regular connect mode to save battery</string>
+
+
 </resources>

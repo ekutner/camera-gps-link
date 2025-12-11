@@ -22,9 +22,11 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import org.kutner.cameragpslink.R
 
 @SuppressLint("MissingPermission")
 @Composable
@@ -36,6 +38,7 @@ fun SearchDialog(
     onCancelScan: () -> Unit
 ) {
     Dialog(onDismissRequest = onDismiss) {
+        val context = LocalContext.current
         Card(
             modifier = Modifier
                 .fillMaxWidth()
@@ -56,13 +59,13 @@ fun SearchDialog(
                     )
                     Spacer(modifier = Modifier.height(24.dp))
                     Text(
-                        text = "Searching for cameras",
+                        text = context.getString(R.string.dialog_search_title),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "Please wait...",
+                        text = context.getString(R.string.dialog_search_wait_message),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -73,14 +76,14 @@ fun SearchDialog(
                             onDismiss()
                         }
                     ) {
-                        Text("Cancel")
+                        Text(context.getString(R.string.button_cancel))
                     }
                 }
             } else {
                 // Found devices
                 Column(modifier = Modifier.fillMaxWidth()) {
                     Text(
-                        text = "Found Cameras",
+                        text = context.getString(R.string.dialog_search_found_message),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(16.dp)
@@ -88,7 +91,7 @@ fun SearchDialog(
 
                     if (foundDevices.isEmpty()) {
                         Text(
-                            text = "No cameras found",
+                            text = context.getString(R.string.dialog_search_fail_message),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 32.dp)

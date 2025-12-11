@@ -26,7 +26,7 @@ class NotificationHelper(private val context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val highChannel = NotificationChannel(
                 Constants.CHANNEL_CAMERA_SYNC_HIGH,
-                Constants.CHANNEL_NAME_CONNECTED,
+                context.getString(R.string.channel_name_connected), // Use string resource
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
                 setShowBadge(true)
@@ -37,7 +37,7 @@ class NotificationHelper(private val context: Context) {
 
             val lowChannel = NotificationChannel(
                 Constants.CHANNEL_CAMERA_SYNC_LOW,
-                Constants.CHANNEL_NAME_SEARCHING,
+                context.getString(R.string.channel_name_searching), // Use string resource
                 NotificationManager.IMPORTANCE_LOW
             ).apply {
                 setShowBadge(false)
@@ -48,7 +48,7 @@ class NotificationHelper(private val context: Context) {
 
             val errorChannel = NotificationChannel(
                 Constants.CHANNEL_CAMERA_ERROR,
-                Constants.CHANNEL_NAME_ERRORS,
+                context.getString(R.string.channel_name_errors), // Use string resource
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
                 setShowBadge(true)
@@ -111,10 +111,10 @@ class NotificationHelper(private val context: Context) {
             }
 
         return NotificationCompat.Builder(context, Constants.CHANNEL_CAMERA_SYNC_LOW)
-            .setContentTitle(Constants.NOTIFICATION_SEARCHING_TITLE)
-            .setContentText(Constants.NOTIFICATION_SEARCHING_MESSAGE)
+            .setContentTitle(context.getString(R.string.notification_searching_title)) // Use string resource
+            .setContentText(context.getString(R.string.notification_searching_message)) // Use string resource
             .setStyle(NotificationCompat.BigTextStyle()
-                .bigText(Constants.NOTIFICATION_SEARCH_LONG_MESSAGE))
+                .bigText(context.getString(R.string.notification_search_long_message))) // Use string resource
             .setSmallIcon(R.drawable.ic_notification)
             .setContentIntent(pendingIntent)
             .setOngoing(true)
@@ -143,13 +143,13 @@ class NotificationHelper(private val context: Context) {
 
         val cameraName = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
             ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED) {
-            connection.device.name ?: "Camera"
+            connection.device.name ?: context.getString(R.string.default_camera_name) // Use string resource
         } else {
-            "Camera"
+            context.getString(R.string.default_camera_name) // Use string resource
         }
 
         return NotificationCompat.Builder(context, Constants.CHANNEL_CAMERA_SYNC_HIGH)
-            .setContentTitle("Connected to $cameraName")
+            .setContentTitle(context.getString(R.string.notification_connected_to, cameraName)) // Use formatted string resource
             .setSmallIcon(R.drawable.ic_notification)
             .setContentIntent(pendingIntent)
             .setOngoing(true)
@@ -157,7 +157,7 @@ class NotificationHelper(private val context: Context) {
             .setCategory(NotificationCompat.CATEGORY_SERVICE)
             .addAction(
                 R.drawable.appicon,
-                "Shutter",
+                context.getString(R.string.action_shutter), // Use string resource
                 shutterPendingIntent
             )
             .build()
@@ -193,9 +193,9 @@ class NotificationHelper(private val context: Context) {
     fun showShutterErrorNotification(deviceAddress: String, connection: CameraConnection) {
         val cameraName = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
             ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED) {
-            connection.device.name ?: "Camera"
+            connection.device.name ?: context.getString(R.string.default_camera_name) // Use string resource
         } else {
-            "Camera"
+            context.getString(R.string.default_camera_name) // Use string resource
         }
 
         val pendingIntent: PendingIntent =
@@ -203,11 +203,16 @@ class NotificationHelper(private val context: Context) {
                 PendingIntent.getActivity(context, 0, notificationIntent, PendingIntent.FLAG_IMMUTABLE)
             }
 
+        // Use string resources
+        val errorTitle = context.getString(R.string.error_shutter_title) + " - " + cameraName
+        val errorMessage = context.getString(R.string.error_shutter_message)
+        val errorMessageLong = context.getString(R.string.error_shutter_message_long)
+
         val notification = NotificationCompat.Builder(context, Constants.CHANNEL_CAMERA_ERROR)
-            .setContentTitle(Constants.ERROR_SHUTTER_TITLE + " - " + cameraName)
-            .setContentText(Constants.ERROR_SHUTTER_MESSAGE)
+            .setContentTitle(errorTitle)
+            .setContentText(errorMessage)
             .setStyle(NotificationCompat.BigTextStyle()
-                .bigText(Constants.ERROR_SHUTTER_MESSAGE_LONG))
+                .bigText(errorMessageLong))
             .setSmallIcon(R.drawable.ic_notification)
             .setContentIntent(pendingIntent)
             .setPriority(NotificationCompat.PRIORITY_HIGH)

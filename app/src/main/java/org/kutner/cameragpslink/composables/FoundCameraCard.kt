@@ -25,10 +25,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import org.kutner.cameragpslink.Constants
+import org.kutner.cameragpslink.R
 
 @SuppressLint("MissingPermission")
 @OptIn(ExperimentalLayoutApi::class)
@@ -37,6 +38,8 @@ fun FoundCameraCard(
     device: BluetoothDevice,
     onConnect: () -> Unit
 ) {
+    val context = LocalContext.current
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -65,13 +68,13 @@ fun FoundCameraCard(
                 Spacer(modifier = Modifier.width(12.dp))
                 Column {
                     Text(
-                        text = "FOUND CAMERA",
+                        text = context.getString(R.string.camera_state_found),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = device.name ?: Constants.UNKNOWN_CAMERA_NAME,
+                        text = device.name ?: context.getString(R.string.unknown_camera_name),
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.SemiBold
                     )
@@ -97,7 +100,7 @@ fun FoundCameraCard(
                         containerColor = MaterialTheme.colorScheme.primary
                     )
                 ) {
-                    Text(text = "Connect")
+                    Text(text = context.getString(R.string.button_connect))
                 }
             }
         }

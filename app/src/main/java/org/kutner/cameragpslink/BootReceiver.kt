@@ -29,7 +29,7 @@ class BootReceiver : BroadcastReceiver() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 Constants.CHANNEL_CAMERA_SYNC_BOOT,
-                Constants.CHANNEL_NAME_BOOT,
+                context.getString(R.string.channel_name_boot), // Use string resource
                 NotificationManager.IMPORTANCE_HIGH
             )
             notificationManager.createNotificationChannel(channel)
@@ -48,9 +48,13 @@ class BootReceiver : BroadcastReceiver() {
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
 
+        // Use string resource for title and message, formatting the message with app_name
+        val appName = context.getString(R.string.app_name)
+        val bootMessage = context.getString(R.string.notification_boot_message, appName)
+
         val notification = NotificationCompat.Builder(context, Constants.CHANNEL_CAMERA_SYNC_BOOT)
-            .setContentTitle(Constants.APP_NAME)
-            .setContentText(Constants.NOTIFICATION_BOOT_MESSAGE)
+            .setContentTitle(appName) // Use string resource
+            .setContentText(bootMessage) // Use formatted string resource
             .setSmallIcon(R.drawable.appicon)
             .setContentIntent(pendingIntent)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
