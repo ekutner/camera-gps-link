@@ -13,7 +13,7 @@ class BootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action == Intent.ACTION_BOOT_COMPLETED) {
             // Check if we have saved cameras using CameraSettingsManager
-            val savedCameras = CameraSettingsManager.getSavedCameras(context)
+            val savedCameras = AppSettingsManager.getSavedCameras(context)
 
             if (savedCameras.isNotEmpty()) {
                 // Instead of starting the service, show a notification

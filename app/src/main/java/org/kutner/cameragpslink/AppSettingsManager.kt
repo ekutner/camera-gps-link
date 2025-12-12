@@ -13,10 +13,11 @@ data class CameraSettings(
     val lastDisconnectTimestamp: Long? = null
 )
 
-object CameraSettingsManager {
+object AppSettingsManager {
     const val PREFS_NAME = "cameragpslinkPrefs"
     private const val CAMERA_SETTINGS_KEY = "camera_settings"
     private const val KEY_SHOW_LOG = "show_log"
+    private const val KEY_SELECTED_LANGUAGE = "selected_language"
 
     private val gson = Gson()
 
@@ -114,5 +115,15 @@ object CameraSettingsManager {
     fun setShowLogEnabled(context: Context, enabled: Boolean) {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         prefs.edit().putBoolean(KEY_SHOW_LOG, enabled).apply()
+    }
+
+    fun getSelectedLanguage(context: Context): String {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getString(KEY_SELECTED_LANGUAGE, "") ?: ""
+    }
+
+    fun setSelectedLanguage(context: Context, languageCode: String) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putString(KEY_SELECTED_LANGUAGE, languageCode).apply()
     }
 }

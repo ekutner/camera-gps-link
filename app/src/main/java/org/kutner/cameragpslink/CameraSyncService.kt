@@ -109,7 +109,9 @@ class CameraSyncService : Service() {
 
     override fun onCreate() {
         super.onCreate()
-        notificationHelper = NotificationHelper(this)
+        val localizedContext = LanguageManager.wrapContext(baseContext)
+        notificationHelper = NotificationHelper(localizedContext)
+
         initializeBluetoothAndLocation()
         loadSavedCameras()
         if (cameraConnections.isNotEmpty()) {
@@ -240,7 +242,7 @@ class CameraSyncService : Service() {
             connection.isConnecting = false
         }
 
-        val cameraSettings = CameraSettingsManager.getCameraSettings(this, deviceAddress)
+        val cameraSettings = AppSettingsManager.getCameraSettings(this, deviceAddress)
 
         if (cameraSettings.connectionMode == 1) { // Mode 1
             if (!autoScanCallbacks.containsKey(deviceAddress)) {
@@ -357,8 +359,8 @@ class CameraSyncService : Service() {
         startBackgroundLocationFetching()
 
         // Save immediately when connecting to a new camera
-        if (!CameraSettingsManager.hasSavedCamera(this, address)) {
-            CameraSettingsManager.addSavedCamera(this, address)
+        if (!AppSettingsManager.hasSavedCamera(this, address)) {
+            AppSettingsManager.addSavedCamera(this, address)
         }
 
         updateConnectionsList()
@@ -370,7 +372,7 @@ class CameraSyncService : Service() {
             @SuppressLint("MissingPermission")
             override fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {
                 val connection = cameraConnections[deviceAddress] ?: return
-                val cameraSettings = CameraSettingsManager.getCameraSettings(this@CameraSyncService, deviceAddress)
+                val cameraSettings = AppSettingsManager.getCameraSettings(this@CameraSyncService, deviceAddress)
 
                 if (newState == BluetoothProfile.STATE_CONNECTED) {
                     connection.isConnected = true
@@ -403,7 +405,7 @@ class CameraSyncService : Service() {
                     // Record disconnect timestamp for quick connect
                     val timestamp = System.currentTimeMillis()
                     connection.disconnectTimestamp = timestamp
-                    CameraSettingsManager.updateDisconnectTimestamp(this@CameraSyncService, deviceAddress, timestamp)
+                    AppSettingsManager.updateDisconnectTimestamp(this@CameraSyncService, deviceAddress, timestamp)
 
                     stopLocationUpdates(connection)
                     stopBackgroundLocationFetching()
@@ -573,7 +575,7 @@ class CameraSyncService : Service() {
             cameraConnections.remove(deviceAddress)
 
             // Remove all camera settings (Quick Connect + disconnect timestamp)
-            CameraSettingsManager.removeSavedCamera(this, deviceAddress)
+            AppSettingsManager.removeSavedCamera(this, deviceAddress)
 
             // Update UI
             updateConnectionsList()
@@ -893,7 +895,7 @@ class CameraSyncService : Service() {
 
     @SuppressLint("MissingPermission")
     private fun loadSavedCameras() {
-        val savedAddresses = CameraSettingsManager.getSavedCameras(this)
+        val savedAddresses = AppSettingsManager.getSavedCameras(this)
         if (savedAddresses.isNotEmpty()) {
             savedAddresses.forEach { address ->
                 if (address.isNotBlank()) {
@@ -906,7 +908,7 @@ class CameraSyncService : Service() {
                         val connection = CameraConnection(device = device)
 
                         // Load saved camera settings
-                        val cameraSettings = CameraSettingsManager.getCameraSettings(this, address)
+                        val cameraSettings = AppSettingsManager.getCameraSettings(this, address)
                         connection.disconnectTimestamp = cameraSettings.lastDisconnectTimestamp
 
                         cameraConnections[address] = connection

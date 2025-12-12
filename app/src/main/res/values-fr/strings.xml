@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Camera GPS Link</string>
+
+    <string name="channel_name_connected">Lien Caméra - Connecté</string>
+    <string name="channel_name_searching">Lien Caméra - Recherche</string>
+    <string name="channel_name_errors">Erreurs de Caméra</string>
+    <string name="channel_name_boot">Démarrage de Sync Caméra</string>
+    <string name="channel_name_shutter_error">Erreur de Déclencheur de Caméra</string>
+
+    <string name="error_shutter_title">Échec du Déclenchement</string>
+    <string name="error_shutter_message">Activez \"Ctrl Bluetooth Distance\" dans les paramètres de la caméra !</string>
+    <string name="error_shutter_message_long">Activez \"Ctrl Bluetooth Distance\" dans les paramètres de la caméra pour utiliser le déclenchement à distance.</string>
+
+    <string name="notification_searching">Recherche de caméras...</string>
+    <string name="notification_connected_single">Connecté à 1 caméra</string>
+    <string name="notification_connected_multiple">Connecté à %d caméras</string>
+    <string name="notification_connected_to">Connecté à %s</string>
+    <string name="notification_shutter_failed">Déclencheur échoué - %s</string>
+    <string name="notification_boot_message">Appuyez pour activer %s après le redémarrage du téléphone</string>
+    <string name="notification_searching_title">Recherche de caméras...</string>
+    <string name="notification_searching_message">Ne supprimez pas cette notification !</string>
+    <string name="notification_search_long_message">Ne supprimez pas cette notification !\nElle est requise pour que l\'application se connecte à la caméra en arrière-plan.</string>
+
+    <string name="action_shutter">Déclencheur</string>
+
+    <string name="default_camera_name">Caméra</string>
+    <string name="unknown_camera_name">Caméra Inconnue</string>
+
+    <string name="help_page_url">https://github.com/ekutner/camera-gps-link?tab=readme-ov-file#camera-gps-link</string>
+
+    <string name="menu_show_log">Afficher le Journal</string>
+    <string name="menu_clear_log">Effacer le Journal</string>
+    <string name="menu_share_log">Partager le Journal</string>
+    <string name="menu_help">Aide</string>
+    <string name="menu_settings">Paramètres</string>
+    <string name="menu_remove_camera">Supprimer la Caméra</string>
+    <string name="menu_language">Langue</string>
+
+    <string name="button_ok">OK</string>
+    <string name="button_cancel">Annuler</string>
+    <string name="button_connect">Connecter</string>
+
+    <string name="fab_add_new_camera">Ajouter une nouvelle caméra</string>
+    <string name="camera_state_connecting">CONNEXION...</string>
+    <string name="camera_state_connected">CONNECTÉ</string>
+    <string name="camera_state_disconnected">DÉCONNECTÉ</string>
+    <string name="camera_state_found">CAMÉRA TROUVÉE</string>
+
+    <string name="dialog_permissions_title">Autorisations Requises</string>
+    <string name="dialog_permissions_message">Cette application nécessite les autorisations de localisation et Bluetooth pour rechercher et se connecter à votre caméra. Veuillez les accorder dans les paramètres de l\'application.</string>
+
+    <string name="dialog_search_title">Recherche de caméras</string>
+    <string name="dialog_search_wait_message">Veuillez patienter...</string>
+    <string name="dialog_search_found_message">Caméras Trouvées</string>
+    <string name="dialog_search_fail_message">Aucune caméra trouvée</string>
+
+    <string name="dialog_camera_settings_title">Paramètres de la Caméra</string>
+    <string name="dialog_camera_settings_connection_mode">Mode de Connexion</string>
+    <string name="dialog_camera_settings_mode1">Mode 1</string>
+    <string name="dialog_camera_settings_mode2">Mode 2</string>
+    <string name="dialog_camera_settings_enable_quick_connect">Activer la Connexion Rapide</string>
+    <string name="dialog_camera_settings_quick_connect_info">L\'application se connectera plus rapidement à la caméra mais consommera également plus de batterie</string>
+    <string name="dialog_camera_settings_quick_connect_period">Période de Connexion Rapide Automatique</string>
+    <string name="dialog_camera_settings_quick_connect_period_always">Toujours utiliser le scan rapide</string>
+    <string name="dialog_camera_settings_quick_connect_period_other">Utiliser le scan rapide pendant %1$s après la déconnexion de la caméra, puis revenir au mode de connexion normal pour économiser la batterie</string>
+
+</resources>

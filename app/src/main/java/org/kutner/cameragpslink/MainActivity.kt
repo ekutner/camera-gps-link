@@ -17,6 +17,8 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Arrangement
@@ -33,6 +35,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Help
+import androidx.compose.material.icons.filled.Language
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
@@ -60,13 +63,16 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.PopupProperties
 import androidx.core.content.ContextCompat
+import androidx.core.os.LocaleListCompat
 import kotlinx.coroutines.flow.StateFlow
 import org.kutner.cameragpslink.composables.ConnectedCameraCard
 import org.kutner.cameragpslink.composables.LogCard
 import org.kutner.cameragpslink.composables.SearchDialog
 import org.kutner.cameragpslink.ui.theme.CameraGpsLinkTheme
+import org.kutner.cameragpslink.composables.LanguageSelectionDialog
 
-class MainActivity : ComponentActivity() {
+
+class MainActivity : AppCompatActivity() {
 
     private var cameraSyncService: CameraSyncService? = null
     private val isBound: MutableState<Boolean> = mutableStateOf(false)
@@ -88,7 +94,7 @@ class MainActivity : ComponentActivity() {
         if (permissions.values.all { it }) {
             bindToService()
             // Only start service if we have saved cameras
-            val savedCameras = CameraSettingsManager.getSavedCameras(this)
+            val savedCameras = AppSettingsManager.getSavedCameras(this)
             if (savedCameras.isNotEmpty()) {
                 startCameraService()
             }
@@ -101,7 +107,7 @@ class MainActivity : ComponentActivity() {
 
         if (hasRequiredPermissions()) {
             // Only start service if we have saved cameras
-            val savedCameras = CameraSettingsManager.getSavedCameras(this)
+            val savedCameras = AppSettingsManager.getSavedCameras(this)
             if (savedCameras.isNotEmpty()) {
                 startCameraService()
             }
@@ -120,6 +126,17 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+
+        // Initialize the app language before setting content
+        val savedLanguage = AppSettingsManager.getSelectedLanguage(this)
+        val localeList = if (savedLanguage.isNotEmpty()) {
+            LocaleListCompat.forLanguageTags(savedLanguage)
+        } else {
+            // Explicitly pass an empty list to reset to system default locale
+            LocaleListCompat.getEmptyLocaleList()
+        }
+        AppCompatDelegate.setApplicationLocales(localeList)
+
         super.onCreate(savedInstanceState)
 
         setContent {
@@ -145,7 +162,7 @@ class MainActivity : ComponentActivity() {
                         onTriggerShutter = { address -> service.triggerShutter(address) },
                         onForgetDevice = { address -> service.forgetDevice(address) },
                         onCameraSettings = { address, mode, enabled, duration ->
-                            CameraSettingsManager.updateCameraSettings(this, address, mode, enabled, duration)
+                            AppSettingsManager.updateCameraSettings(this, address, mode, enabled, duration)
                             service.onSettingsChanged(address)
                         },
                         onClearLog = { service.clearLog() },
@@ -248,9 +265,10 @@ fun MainScreen(
     val devices by foundDevices.collectAsState()
     val errorMessage by shutterErrorMessage.collectAsState()
 
-    var showLog by remember { mutableStateOf(CameraSettingsManager.isShowLogEnabled(context)) }
+    var showLog by remember { mutableStateOf(AppSettingsManager.isShowLogEnabled(context)) }
     var showMenu by remember { mutableStateOf(false) }
     var showSearchDialog by remember { mutableStateOf(false) }
+    var showLanguageDialog by remember { mutableStateOf(false) }
 
     // Handle back press to close menu when focusable is false
     BackHandler(enabled = showMenu) {
@@ -291,7 +309,7 @@ fun MainScreen(
                             text = { Text(context.getString(R.string.menu_show_log)) },
                             onClick = {
                                 showLog = !showLog
-                                CameraSettingsManager.setShowLogEnabled(context, showLog)
+                                AppSettingsManager.setShowLogEnabled(context, showLog)
                                 showMenu = false
                             },
                             leadingIcon = {
@@ -323,6 +341,19 @@ fun MainScreen(
                             leadingIcon = {
                                 Icon(
                                     imageVector = Icons.Default.Share,
+                                    contentDescription = null
+                                )
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(context.getString(R.string.menu_language)) },
+                            onClick = {
+                                showLanguageDialog = true
+                                showMenu = false
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Default.Language,
                                     contentDescription = null
                                 )
                             }
@@ -437,6 +468,19 @@ fun MainScreen(
                         showSearchDialog = false
                     },
                     onCancelScan = onCancelScan
+                )
+            }
+
+            // Language selection dialog
+            if (showLanguageDialog) {
+                LanguageSelectionDialog(
+                    onDismiss = { showLanguageDialog = false },
+                    onLanguageSelected = { languageCode ->
+                        val serviceIntent = Intent(context, CameraSyncService::class.java)
+                        context.stopService(serviceIntent)
+
+                        LanguageManager.setLanguage(context, languageCode)
+                    }
                 )
             }
         }

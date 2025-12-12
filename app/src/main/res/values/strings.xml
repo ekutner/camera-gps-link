@@ -62,6 +62,7 @@
     <string name="dialog_camera_settings_quick_connect_period">Auto Quick Connect Period</string>
     <string name="dialog_camera_settings_quick_connect_period_always">Always use fast scanning</string>
     <string name="dialog_camera_settings_quick_connect_period_other">Use fast scanning for %1$s after the camera disconnects, then switch back to regular connect mode to save battery</string>
+    <string name="menu_language">Language</string>
 
 
 </resources>

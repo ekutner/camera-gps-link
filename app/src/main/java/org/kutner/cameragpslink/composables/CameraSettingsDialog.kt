@@ -41,7 +41,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import org.kutner.cameragpslink.CameraSettings
-import org.kutner.cameragpslink.CameraSettingsManager
+import org.kutner.cameragpslink.AppSettingsManager
 import org.kutner.cameragpslink.R
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -54,7 +54,7 @@ fun CameraSettingsDialog(
 ) {
     val context = LocalContext.current
     val currentSettings: CameraSettings = remember {
-        CameraSettingsManager.getCameraSettings(context, cameraAddress)
+        AppSettingsManager.getCameraSettings(context, cameraAddress)
     }
 
     var connectionMode by remember { mutableStateOf(currentSettings.connectionMode) }
@@ -112,7 +112,7 @@ fun CameraSettingsDialog(
                                 onClick = { connectionMode = 2 }
                             )
                             Text(
-                                text = context.getString(R.string.dialog_camera_settings_mode1),
+                                text = context.getString(R.string.dialog_camera_settings_mode2),
                                 style = MaterialTheme.typography.bodyMedium,
                                 modifier = Modifier.padding(start = 8.dp)
                             )
