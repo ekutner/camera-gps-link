@@ -346,19 +346,19 @@ fun MainScreen(
                                 )
                             }
                         )
-                        DropdownMenuItem(
-                            text = { Text(context.getString(R.string.menu_language)) },
-                            onClick = {
-                                showLanguageDialog = true
-                                showMenu = false
-                            },
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = Icons.Default.Language,
-                                    contentDescription = null
-                                )
-                            }
-                        )
+//                        DropdownMenuItem(
+//                            text = { Text(context.getString(R.string.menu_language)) },
+//                            onClick = {
+//                                showLanguageDialog = true
+//                                showMenu = false
+//                            },
+//                            leadingIcon = {
+//                                Icon(
+//                                    imageVector = Icons.Default.Language,
+//                                    contentDescription = null
+//                                )
+//                            }
+//                        )
                         DropdownMenuItem(
                             text = { Text(context.getString(R.string.menu_help)) },
                             onClick = {
