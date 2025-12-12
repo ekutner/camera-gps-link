@@ -17,7 +17,8 @@ class BootReceiver : BroadcastReceiver() {
 
             if (savedCameras.isNotEmpty()) {
                 // Instead of starting the service, show a notification
-                showStartServiceNotification(context)
+                val localizedContext = LanguageManager.wrapContext(context)
+                showStartServiceNotification(localizedContext)
             }
         }
     }
