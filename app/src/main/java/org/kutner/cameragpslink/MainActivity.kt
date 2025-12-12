@@ -28,6 +28,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Help
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckBox
 import androidx.compose.material.icons.filled.CheckBoxOutlineBlank
@@ -345,19 +346,19 @@ fun MainScreen(
                                 )
                             }
                         )
-//                        DropdownMenuItem(
-//                            text = { Text(context.getString(R.string.menu_language)) },
-//                            onClick = {
-//                                showLanguageDialog = true
-//                                showMenu = false
-//                            },
-//                            leadingIcon = {
-//                                Icon(
-//                                    imageVector = Icons.Default.Language,
-//                                    contentDescription = null
-//                                )
-//                            }
-//                        )
+                        DropdownMenuItem(
+                            text = { Text(context.getString(R.string.menu_language)) },
+                            onClick = {
+                                showLanguageDialog = true
+                                showMenu = false
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Default.Language,
+                                    contentDescription = null
+                                )
+                            }
+                        )
                         DropdownMenuItem(
                             text = { Text(context.getString(R.string.menu_help)) },
                             onClick = {
@@ -367,7 +368,7 @@ fun MainScreen(
                             },
                             leadingIcon = {
                                 Icon(
-                                    imageVector = Icons.Default.Help,
+                                    imageVector = Icons.AutoMirrored.Filled.Help,
                                     contentDescription = null
                                 )
                             }

@@ -119,7 +119,7 @@ fun CameraSettingsDialog(
                         }
                     }
 
-                    androidx.compose.material3.Divider()
+                    androidx.compose.material3.HorizontalDivider()
 
                     // --- SECTION 2: Quick Connect Settings ---
                     // This entire section is visually disabled if Mode != 1
