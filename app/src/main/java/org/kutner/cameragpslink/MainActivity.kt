@@ -104,7 +104,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onStart() {
         super.onStart()
-        dismissBootNotification()
+        NotificationHelper(context = this).clearBootNotification()
 
         if (hasRequiredPermissions()) {
             // Only start service if we have saved cameras
@@ -232,10 +232,6 @@ class MainActivity : AppCompatActivity() {
             putExtra(Intent.EXTRA_TEXT, logText)
         }
         startActivity(Intent.createChooser(shareIntent, "Share Log"))
-    }
-    private fun dismissBootNotification() {
-        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        notificationManager.cancel(1000)
     }
 }
 

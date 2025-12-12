@@ -1,7 +1,6 @@
 package org.kutner.cameragpslink
 
 import android.Manifest
-import android.annotation.SuppressLint
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -9,6 +8,8 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
@@ -22,10 +23,14 @@ class NotificationHelper(private val context: Context) {
         createNotificationChannels()
     }
 
+    private val largeIconBitmap: Bitmap by lazy {
+        BitmapFactory.decodeResource(context.resources, R.drawable.appicon)
+    }
+
     private fun createNotificationChannels() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val highChannel = NotificationChannel(
-                Constants.CHANNEL_CAMERA_SYNC_HIGH,
+                Constants.NOTIFICATION_CHANNEL_HIGH,
                 context.getString(R.string.channel_name_connected), // Use string resource
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
@@ -36,7 +41,7 @@ class NotificationHelper(private val context: Context) {
             notificationManager.createNotificationChannel(highChannel)
 
             val lowChannel = NotificationChannel(
-                Constants.CHANNEL_CAMERA_SYNC_LOW,
+                Constants.NOTIFICATION_CHANNEL_LOW,
                 context.getString(R.string.channel_name_searching), // Use string resource
                 NotificationManager.IMPORTANCE_LOW
             ).apply {
@@ -47,7 +52,7 @@ class NotificationHelper(private val context: Context) {
             notificationManager.createNotificationChannel(lowChannel)
 
             val errorChannel = NotificationChannel(
-                Constants.CHANNEL_CAMERA_ERROR,
+                Constants.NOTIFICATION_CHANNEL_CAMERA_ERROR,
                 context.getString(R.string.channel_name_errors), // Use string resource
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
@@ -57,6 +62,18 @@ class NotificationHelper(private val context: Context) {
             }
             notificationManager.createNotificationChannel(errorChannel)
         }
+
+        val bootNotificationChannel = NotificationChannel(
+            Constants.NOTIFICATION_CHANNEL_BOOT,
+            context.getString(R.string.channel_name_boot), // Use string resource
+            NotificationManager.IMPORTANCE_HIGH
+        ).apply {
+            setShowBadge(true)
+            enableLights(true)
+            enableVibration(true)
+        }
+        notificationManager.createNotificationChannel(bootNotificationChannel)
+
     }
 
 //    fun createForegroundNotification(connectedCount: Int): Notification {
@@ -110,12 +127,13 @@ class NotificationHelper(private val context: Context) {
                 PendingIntent.getActivity(context, 0, notificationIntent, PendingIntent.FLAG_IMMUTABLE)
             }
 
-        return NotificationCompat.Builder(context, Constants.CHANNEL_CAMERA_SYNC_LOW)
+        return NotificationCompat.Builder(context, Constants.NOTIFICATION_CHANNEL_LOW)
             .setContentTitle(context.getString(R.string.notification_searching_title)) // Use string resource
             .setContentText(context.getString(R.string.notification_searching_message)) // Use string resource
             .setStyle(NotificationCompat.BigTextStyle()
                 .bigText(context.getString(R.string.notification_search_long_message))) // Use string resource
             .setSmallIcon(R.drawable.ic_notification)
+            .setLargeIcon(largeIconBitmap)
             .setContentIntent(pendingIntent)
             .setOngoing(true)
             .setPriority(NotificationCompat.PRIORITY_LOW)
@@ -148,9 +166,10 @@ class NotificationHelper(private val context: Context) {
             context.getString(R.string.default_camera_name) // Use string resource
         }
 
-        return NotificationCompat.Builder(context, Constants.CHANNEL_CAMERA_SYNC_HIGH)
+        return NotificationCompat.Builder(context, Constants.NOTIFICATION_CHANNEL_HIGH)
             .setContentTitle(context.getString(R.string.notification_connected_to, cameraName)) // Use formatted string resource
             .setSmallIcon(R.drawable.ic_notification)
+            .setLargeIcon(largeIconBitmap)
             .setContentIntent(pendingIntent)
             .setOngoing(true)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
@@ -170,7 +189,7 @@ class NotificationHelper(private val context: Context) {
     ) {
         if (isForegroundServiceStarted) {
             connectedCameras.forEach { connection ->
-                val notificationId = connection.device.address.hashCode()
+                val notificationId = connection.device.address.hashCode() + Constants.NOTIFICATION_ID_CONNECTED_CAMERA_OFFSET
                 if (connection.isConnected || connection.isConnecting) {
                     notify(notificationId, createCameraNotification(connection))
                     log("Created/Updated notification for ${connection.device.address}")
@@ -208,12 +227,13 @@ class NotificationHelper(private val context: Context) {
         val errorMessage = context.getString(R.string.error_shutter_message)
         val errorMessageLong = context.getString(R.string.error_shutter_message_long)
 
-        val notification = NotificationCompat.Builder(context, Constants.CHANNEL_CAMERA_ERROR)
+        val notification = NotificationCompat.Builder(context, Constants.NOTIFICATION_CHANNEL_CAMERA_ERROR)
             .setContentTitle(errorTitle)
             .setContentText(errorMessage)
             .setStyle(NotificationCompat.BigTextStyle()
                 .bigText(errorMessageLong))
             .setSmallIcon(R.drawable.ic_notification)
+            .setLargeIcon(largeIconBitmap)
             .setContentIntent(pendingIntent)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
@@ -226,6 +246,40 @@ class NotificationHelper(private val context: Context) {
     fun clearShutterErrorNotification(deviceAddress: String) {
         val notificationId = deviceAddress.hashCode() + Constants.NOTIFICATION_ID_SHUTTER_ERROR_OFFSET
         notificationManager.cancel(notificationId)
+    }
+
+    fun showBootNotification() {
+        // Intent to open MainActivity and start the service
+        val openAppIntent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            putExtra("start_service_on_launch", true)
+        }
+
+        val pendingIntent = PendingIntent.getActivity(
+            context,
+            0,
+            openAppIntent,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+
+        // Use string resource for title and message, formatting the message with app_name
+        val appName = context.getString(R.string.app_name)
+        val bootMessage = context.getString(R.string.notification_boot_message, appName)
+
+        val notification = NotificationCompat.Builder(context, Constants.NOTIFICATION_CHANNEL_BOOT)
+            .setContentTitle(appName) // Use string resource
+            .setContentText(bootMessage) // Use formatted string resource
+            .setSmallIcon(R.drawable.appicon)
+            .setContentIntent(pendingIntent)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setAutoCancel(true)
+            .build()
+
+        notificationManager.notify(Constants.NOTIFICATION_ID_BOOT, notification)
+    }
+
+    fun clearBootNotification() {
+        notificationManager.cancel(Constants.NOTIFICATION_ID_BOOT)
     }
 
     fun notify(id: Int, notification: Notification) {
