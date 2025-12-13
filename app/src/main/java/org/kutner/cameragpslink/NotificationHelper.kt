@@ -22,40 +22,38 @@ class NotificationHelper(private val context: Context) {
     }
 
     private fun createNotificationChannels() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val highChannel = NotificationChannel(
-                Constants.NOTIFICATION_CHANNEL_HIGH,
-                context.getString(R.string.channel_name_connected), // Use string resource
-                NotificationManager.IMPORTANCE_HIGH
-            ).apply {
-                setShowBadge(true)
-                enableLights(true)
-                enableVibration(true)
-            }
-            notificationManager.createNotificationChannel(highChannel)
-
-            val lowChannel = NotificationChannel(
-                Constants.NOTIFICATION_CHANNEL_LOW,
-                context.getString(R.string.channel_name_searching), // Use string resource
-                NotificationManager.IMPORTANCE_LOW
-            ).apply {
-                setShowBadge(false)
-                enableLights(false)
-                enableVibration(false)
-            }
-            notificationManager.createNotificationChannel(lowChannel)
-
-            val errorChannel = NotificationChannel(
-                Constants.NOTIFICATION_CHANNEL_CAMERA_ERROR,
-                context.getString(R.string.channel_name_errors), // Use string resource
-                NotificationManager.IMPORTANCE_HIGH
-            ).apply {
-                setShowBadge(true)
-                enableLights(true)
-                enableVibration(true)
-            }
-            notificationManager.createNotificationChannel(errorChannel)
+        val highChannel = NotificationChannel(
+            Constants.NOTIFICATION_CHANNEL_HIGH,
+            context.getString(R.string.channel_name_connected), // Use string resource
+            NotificationManager.IMPORTANCE_HIGH
+        ).apply {
+            setShowBadge(true)
+            enableLights(true)
+            enableVibration(true)
         }
+        notificationManager.createNotificationChannel(highChannel)
+
+        val lowChannel = NotificationChannel(
+            Constants.NOTIFICATION_CHANNEL_LOW,
+            context.getString(R.string.channel_name_searching), // Use string resource
+            NotificationManager.IMPORTANCE_LOW
+        ).apply {
+            setShowBadge(false)
+            enableLights(false)
+            enableVibration(false)
+        }
+        notificationManager.createNotificationChannel(lowChannel)
+
+        val errorChannel = NotificationChannel(
+            Constants.NOTIFICATION_CHANNEL_CAMERA_ERROR,
+            context.getString(R.string.channel_name_errors), // Use string resource
+            NotificationManager.IMPORTANCE_HIGH
+        ).apply {
+            setShowBadge(true)
+            enableLights(true)
+            enableVibration(true)
+        }
+        notificationManager.createNotificationChannel(errorChannel)
 
         val bootNotificationChannel = NotificationChannel(
             Constants.NOTIFICATION_CHANNEL_BOOT,
