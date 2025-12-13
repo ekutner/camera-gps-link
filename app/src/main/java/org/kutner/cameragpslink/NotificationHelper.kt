@@ -23,10 +23,6 @@ class NotificationHelper(private val context: Context) {
         createNotificationChannels()
     }
 
-    private val largeIconBitmap: Bitmap by lazy {
-        BitmapFactory.decodeResource(context.resources, R.drawable.appicon)
-    }
-
     private fun createNotificationChannels() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val highChannel = NotificationChannel(
@@ -133,7 +129,6 @@ class NotificationHelper(private val context: Context) {
             .setStyle(NotificationCompat.BigTextStyle()
                 .bigText(context.getString(R.string.notification_search_long_message))) // Use string resource
             .setSmallIcon(R.drawable.ic_notification)
-            .setLargeIcon(largeIconBitmap)
             .setContentIntent(pendingIntent)
             .setOngoing(true)
             .setPriority(NotificationCompat.PRIORITY_LOW)
@@ -169,7 +164,6 @@ class NotificationHelper(private val context: Context) {
         return NotificationCompat.Builder(context, Constants.NOTIFICATION_CHANNEL_HIGH)
             .setContentTitle(context.getString(R.string.notification_connected_to, cameraName)) // Use formatted string resource
             .setSmallIcon(R.drawable.ic_notification)
-            .setLargeIcon(largeIconBitmap)
             .setContentIntent(pendingIntent)
             .setOngoing(true)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
@@ -233,7 +227,6 @@ class NotificationHelper(private val context: Context) {
             .setStyle(NotificationCompat.BigTextStyle()
                 .bigText(errorMessageLong))
             .setSmallIcon(R.drawable.ic_notification)
-            .setLargeIcon(largeIconBitmap)
             .setContentIntent(pendingIntent)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
