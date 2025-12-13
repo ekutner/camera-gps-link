@@ -2,18 +2,14 @@ package org.kutner.cameragpslink
 
 import android.Manifest
 import android.annotation.SuppressLint
-import android.app.NotificationManager
 import android.bluetooth.BluetoothDevice
 import android.content.ComponentName
-import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
 import android.content.pm.PackageManager
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
@@ -35,7 +31,6 @@ import androidx.compose.material.icons.filled.CheckBoxOutlineBlank
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.filled.Help
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
@@ -64,6 +59,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.PopupProperties
 import androidx.core.content.ContextCompat
+import androidx.core.net.toUri
 import androidx.core.os.LocaleListCompat
 import kotlinx.coroutines.flow.StateFlow
 import org.kutner.cameragpslink.composables.ConnectedCameraCard
@@ -184,11 +180,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun startCameraService() {
         val serviceIntent = Intent(this, CameraSyncService::class.java)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            startForegroundService(serviceIntent)
-        } else {
-            startService(serviceIntent)
-        }
+        startForegroundService(serviceIntent)
     }
 
     private fun hasRequiredPermissions(): Boolean {
@@ -221,7 +213,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun bindToService() {
         Intent(this, CameraSyncService::class.java).also { intent ->
-            bindService(intent, connection, Context.BIND_AUTO_CREATE)
+            bindService(intent, connection, BIND_AUTO_CREATE)
         }
     }
 
@@ -342,23 +334,23 @@ fun MainScreen(
                                 )
                             }
                         )
-//                        DropdownMenuItem(
-//                            text = { Text(context.getString(R.string.menu_language)) },
-//                            onClick = {
-//                                showLanguageDialog = true
-//                                showMenu = false
-//                            },
-//                            leadingIcon = {
-//                                Icon(
-//                                    imageVector = Icons.Default.Language,
-//                                    contentDescription = null
-//                                )
-//                            }
-//                        )
+                        DropdownMenuItem(
+                            text = { Text(context.getString(R.string.menu_language)) },
+                            onClick = {
+                                showLanguageDialog = true
+                                showMenu = false
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Default.Language,
+                                    contentDescription = null
+                                )
+                            }
+                        )
                         DropdownMenuItem(
                             text = { Text(context.getString(R.string.menu_help)) },
                             onClick = {
-                                val helpIntent = Intent(Intent.ACTION_VIEW, Uri.parse(context.getString(R.string.help_page_url)))
+                                val helpIntent = Intent(Intent.ACTION_VIEW, context.getString(R.string.help_page_url).toUri())
                                 context.startActivity(helpIntent)
                                 showMenu = false
                             },
@@ -430,8 +422,6 @@ fun MainScreen(
                             verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
                             items(cameras, key = { it.device.address }) { connection ->
-                                var showSettings by remember { mutableStateOf(false) }
-
                                 ConnectedCameraCard(
                                     cameraName = connection.device.name ?: context.getString(R.string.unknown_camera_name),
                                     cameraAddress = connection.device.address,
