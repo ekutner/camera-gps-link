@@ -3,7 +3,7 @@
     <string name="app_name">Camera GPS Link</string>
 
     <string name="channel_name_connected">Cámaras conectadas</string>
-    <string name="channel_name_searching">Estado de la aplicación</string>
+    <string name="channel_name_searching">Estado de la aplicación (obligatorio)</string>
     <string name="channel_name_errors">Errores</string>
     <string name="channel_name_boot">Después de reiniciar</string>
 

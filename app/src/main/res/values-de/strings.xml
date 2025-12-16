@@ -2,7 +2,7 @@
     <string name="app_name">Camera GPS Link</string>
 
     <string name="channel_name_connected">Verbundene Kameras</string>
-    <string name="channel_name_searching">App-Status</string>
+    <string name="channel_name_searching">App-Status (erforderlich)</string>
     <string name="channel_name_errors">Fehler</string>
     <string name="channel_name_boot">Nach Neustart</string>
 
