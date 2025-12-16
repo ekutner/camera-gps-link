@@ -2,11 +2,10 @@
 <resources>
     <string name="app_name">Camera GPS Link</string>
 
-    <string name="channel_name_connected">Enlace de Cámara - Conectado</string>
-    <string name="channel_name_searching">Enlace de Cámara - Buscando</string>
-    <string name="channel_name_errors">Errores de Cámara</string>
-    <string name="channel_name_boot">Inicio de Sincronización de Cámara</string>
-    <string name="channel_name_shutter_error">Error de Obturador de Cámara</string>
+    <string name="channel_name_connected">Cámaras conectadas</string>
+    <string name="channel_name_searching">Estado de la aplicación</string>
+    <string name="channel_name_errors">Errores</string>
+    <string name="channel_name_boot">Después de reiniciar</string>
 
     <string name="error_shutter_title">Error al Disparar el Obturador</string>
     <string name="error_shutter_message">¡Habilite \"Control Remoto Bluetooth\" en la configuración de la cámara!</string>

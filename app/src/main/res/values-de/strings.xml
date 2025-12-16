@@ -1,11 +1,10 @@
 <resources>
     <string name="app_name">Camera GPS Link</string>
 
-    <string name="channel_name_connected">Kamera-Link - Verbunden</string>
-    <string name="channel_name_searching">Kamera-Link - Suche</string>
-    <string name="channel_name_errors">Kamerafehler</string>
-    <string name="channel_name_boot">Kamera-Sync Start</string>
-    <string name="channel_name_shutter_error">Kamera-Auslöserfehler</string>
+    <string name="channel_name_connected">Verbundene Kameras</string>
+    <string name="channel_name_searching">App-Status</string>
+    <string name="channel_name_errors">Fehler</string>
+    <string name="channel_name_boot">Nach Neustart</string>
 
     <string name="error_shutter_title">Auslöser fehlgeschlagen</string>
     <string name="error_shutter_message">Aktivieren Sie \"Bluetooth-Fernsteuerung\" in den Kameraeinstellungen!</string>

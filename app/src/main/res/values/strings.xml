@@ -1,11 +1,10 @@
 <resources>
     <string name="app_name">Camera GPS Link</string>
 
-    <string name="channel_name_connected">Camera Link - Connected</string>
-    <string name="channel_name_searching">Camera Link - Searching</string>
-    <string name="channel_name_errors">Camera Errors</string>
-    <string name="channel_name_boot">Camera Sync Boot</string>
-    <string name="channel_name_shutter_error">Camera Shutter Error</string>
+    <string name="channel_name_connected">Connected cameras</string>
+    <string name="channel_name_searching">App status</string>
+    <string name="channel_name_errors">Errors</string>
+    <string name="channel_name_boot">Post restart</string>
 
     <string name="error_shutter_title">Shutter Release Failed</string>
     <string name="error_shutter_message">Enable \"Bluetooth Rmt Ctrl\" in the camera settings!</string>

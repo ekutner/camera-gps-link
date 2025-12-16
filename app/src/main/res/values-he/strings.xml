@@ -2,11 +2,10 @@
 <resources>
     <string name="app_name">Camera GPS Link</string>
 
-    <string name="channel_name_connected">קישור מצלמה - מחובר</string>
-    <string name="channel_name_searching">קישור מצלמה - מחפש</string>
-    <string name="channel_name_errors">שגיאות מצלמה</string>
-    <string name="channel_name_boot">אתחול סנכרון מצלמה</string>
-    <string name="channel_name_shutter_error">שגיאת תריס מצלמה</string>
+    <string name="channel_name_connected">מצלמות מחוברות</string>
+    <string name="channel_name_searching">סטטוס האפליקציה</string>
+    <string name="channel_name_errors">שגיאות</string>
+    <string name="channel_name_boot">לאחר הפעלה מחדש</string>
 
     <string name="error_shutter_title">שחרור תריס נכשל</string>
     <string name="error_shutter_message">הפעל \"שלט רחוק בלוטות׳\" בהגדרות המצלמה!</string>
