@@ -163,7 +163,7 @@ class NotificationHelper(private val context: Context) {
             .setContentIntent(pendingIntent)
             .setOngoing(true)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setCategory(NotificationCompat.CATEGORY_SERVICE)
+            .setCategory(NotificationCompat.CATEGORY_STATUS)
             .addAction(
                 R.drawable.appicon,
                 context.getString(R.string.action_shutter), // Use string resource
@@ -225,6 +225,7 @@ class NotificationHelper(private val context: Context) {
             .setSmallIcon(R.drawable.ic_notification)
             .setContentIntent(pendingIntent)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setCategory(NotificationCompat.CATEGORY_ERROR)
             .setAutoCancel(true)
             .build()
 
@@ -256,9 +257,9 @@ class NotificationHelper(private val context: Context) {
         val bootMessage = context.getString(R.string.notification_boot_message, appName)
 
         val notification = NotificationCompat.Builder(context, Constants.NOTIFICATION_CHANNEL_BOOT)
-            .setContentTitle(appName) // Use string resource
-            .setContentText(bootMessage) // Use formatted string resource
-            .setSmallIcon(R.drawable.appicon)
+            .setContentTitle(appName)
+            .setContentText(bootMessage)
+            .setSmallIcon(R.drawable.ic_notification)
             .setContentIntent(pendingIntent)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
