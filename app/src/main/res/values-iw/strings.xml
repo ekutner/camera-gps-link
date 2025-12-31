@@ -22,6 +22,7 @@
     <string name="notification_search_long_message">אל תסיר התראה זו!\nהיא נדרשת כדי שהאפליקציה תוכל להתחבר למצלמה כשהיא ברקע.</string>
 
     <string name="action_shutter">צלם</string>
+    <string name="action_remote">שלט רחוק</string>
 
     <string name="default_camera_name">מצלמה</string>
     <string name="unknown_camera_name">מצלמה לא ידועה</string>
@@ -63,5 +64,17 @@
     <string name="dialog_camera_settings_quick_connect_period">תקופת חיבור מהיר אוטומטי</string>
     <string name="dialog_camera_settings_quick_connect_period_always">השתמש תמיד בסריקה מהירה</string>
     <string name="dialog_camera_settings_quick_connect_period_other">השתמש בסריקה מהירה למשך %1$s לאחר ניתוק המצלמה, ולאחר מכן חזור למצב חיבור רגיל כדי לחסוך בסוללה</string>
+
+    <string name="dialog_remote_control_title">שלט רחוק</string>
+    <string name="dialog_remote_control_warning">יש להפעיל \"Bluetooth Rmt Ctrl\" בתפריט המצלמה</string>
+    <string name="dialog_remote_control_c1">C1</string>
+    <string name="dialog_remote_control_af_on">AF\nON</string>
+    <string name="dialog_remote_control_zoom">זום</string>
+    <string name="dialog_remote_control_wide">רחב</string>
+    <string name="dialog_remote_control_tele">טלה</string>
+    <string name="dialog_remote_control_focus">פוקוס</string>
+    <string name="dialog_remote_control_near">קרוב</string>
+    <string name="dialog_remote_control_far">רחוק</string>
+    <string name="dialog_remote_control_enable_half_shutter">אפשר חצי לחיצה על התריס</string>
 
 </resources>

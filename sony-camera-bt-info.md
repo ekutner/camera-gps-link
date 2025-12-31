@@ -7,7 +7,7 @@ phone and the camera
 https://gethypoxic.com/blogs/technical/sony-camera-ble-control-protocol-di-remote-control  
 https://gregleeds.com/reverse-engineering-sony-camera-bluetooth/  
 https://github.com/whc2001/ILCE7M3ExternalGps/blob/main/PROTOCOL_EN.md (make sure to also checkout the issues page)
-
+https://github.com/coral/freemote
 
 ## Time Service (*UUID = 8000CC00-CC00-FFFF-FFFF-FFFFFFFFFFFF*)
 
@@ -97,33 +97,47 @@ Data received is a 7 byte buffer
 ### Remote command characteristic (UUID = 0xFF01)
 The data for each command is as follows:
 
-| Command         | Hex Code   |
-|-----------------|------------|
-| Focus Left      | 0x0105     |
-| Focus Down      | 0x0107     |
-| Focus Up        | 0x0106     |
-| Shutter Down    | 0x0109     |
-| Shutter Up      | 0x0108     |
-| AutoFocus Down  | 0x0115     |
-| AutoFocus Up    | 0x0114     |
-| Zoom In Down    | 0x026d20   | 
-| Zoom In Up      | 0x026c00   |
-| Zoom Out Down   | 0x026b20   |
-| Zoom Out Up 	   | 0x026a00   |
-| C1 Down 	       | 0x0121     |
-| C1 Up           | 0x0120     |
-| Toggle Record   | 0x010e     |
-| Focus In? Down  | 0x024720   |
-| Focus In? Up    | 0x024600   |
-| Focus Out? Down | 0x024520   |
-| Focus Out? Up   | 0x024400   |
+| Command              | Hex Code      |
+|----------------------|---------------|
+| Remote Control Probe | 0x0105        |
+| Shutter Half Down    | 0x0107        |
+| Shutter Half Up      | 0x0106        |
+| Shutter Full Down    | 0x0109        |
+| Shutter Full Up      | 0x0108        |
+| AutoFocus Down       | 0x0115        |
+| AutoFocus Up         | 0x0114        |
+| C1 Down 	            | 0x0121        |
+| C1 Up                | 0x0120        |
+| Record Down          | 0x010f        |
+| Record Up            | 0x010e        |
+| Focus Far Down       | 0x026d[00-7f] | 
+| Focus Far Up         | 0x026c00      |
+| Focus Near Down      | 0x026b[00-7f] |
+| Focus Near Up        | 0x026a00      |
+| Zoom Wide Down       | 0x0247[10-8f] |
+| Zoom Wide Up         | 0x024600      |
+| Zoom Tele Down       | 0x0245[10-8f] |
+| Zoom Tele Up         | 0x024400      |
 
-To reliably get the camera to take a picture, you'll want to first send the focus command, 
-so the following 4 commands are needed in this order:
+**Notes:**  
+* To simulate full shutter button press and release the sequence should be:  
+  Shutter half down -> Shutter full down -> Shutter half up -> Shutter full up
+* The values in the brackets are step size allowed for these commands
+* The Remote Control Probe command can be used to test if remote control is enabled 
+  in the camera. It will generate a write error if it's disabled and do nothing if enabled.
 
-    0x0107
-    0x0109
-    0x0108
-    0x0106
+
+### Camera response characteristic (UUID = 0xFF02)
+| Code      | Meaning                 |
+|-----------|-------------------------|
+| 0x023F00  | Focus lost              |
+| 0x023F20  | Focus acquired          |
+| 0x02A000  | Shutter ready           |
+| 0x02A020  | Shutter active          |
+| 0x02D500  | Video recording stopped |
+| 0x02D520  | Video recording started |
+| 0x02C300  | Remote control disabled |
+
+
 
 

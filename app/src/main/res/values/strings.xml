@@ -21,6 +21,7 @@
     <string name="notification_search_long_message">Do not remove this notification!\nIt is required for the app to connect to the camera while in the background.</string>
 
     <string name="action_shutter">Shutter</string>
+    <string name="action_remote">Remote</string>
 
     <string name="default_camera_name">Camera</string>
     <string name="unknown_camera_name">Unknown Camera</string>
@@ -61,6 +62,19 @@
     <string name="dialog_camera_settings_quick_connect_period">Auto Quick Connect Period</string>
     <string name="dialog_camera_settings_quick_connect_period_always">Always use fast scanning</string>
     <string name="dialog_camera_settings_quick_connect_period_other">Use fast scanning for %1$s after the camera disconnects, then switch back to regular connect mode to save battery</string>
+
+    <string name="dialog_remote_control_title">Remote Control</string>
+    <string name="dialog_remote_control_warning">\"Bluetooth Rmt Ctrl\" must be enabled in the camera menu</string>
+    <string name="dialog_remote_control_c1">C1</string>
+    <string name="dialog_remote_control_af_on">AF\nON</string>
+    <string name="dialog_remote_control_zoom">Zoom</string>
+    <string name="dialog_remote_control_wide">Wide</string>
+    <string name="dialog_remote_control_tele">Tele</string>
+    <string name="dialog_remote_control_focus">Focus</string>
+    <string name="dialog_remote_control_near">Near</string>
+    <string name="dialog_remote_control_far">Far</string>
+    <string name="dialog_remote_control_enable_half_shutter">Enable half shutter press</string>
+
     <string name="menu_language">Language</string>
 
 

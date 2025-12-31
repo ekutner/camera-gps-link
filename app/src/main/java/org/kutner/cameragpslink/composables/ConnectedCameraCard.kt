@@ -26,6 +26,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -39,7 +41,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.PopupProperties
+import org.kutner.cameragpslink.AppSettingsManager
 import org.kutner.cameragpslink.R
+import org.kutner.cameragpslink.RemoteCommand
+import org.kutner.cameragpslink.CameraSyncService
 
 @Composable
 fun ConnectedCameraCard(
@@ -47,17 +52,32 @@ fun ConnectedCameraCard(
     cameraAddress: String,
     isConnected: Boolean,
     isConnecting: Boolean,
+    service: CameraSyncService,
     onShutter: () -> Unit,
     onDisconnect: () -> Unit,
-    onCameraSettings: (Int, Boolean, Int) -> Unit
+    onCameraSettings: (Int, Boolean, Int, Boolean) -> Unit,
+    onRemoteCommand: (String, RemoteCommand) -> Unit,
+    onReleaseCommand: (String, RemoteCommand) -> Unit
 ) {
     var showMenu by remember { mutableStateOf(false) }
     var showCameraSettingsDialog by remember { mutableStateOf(false) }
+    var showRemoteControlDialog by remember { mutableStateOf(false) }
     val context = LocalContext.current
+
+    // Observe Remote Control Enabled state
+    val remoteEnabledMap by service.isRemoteControlEnabled.collectAsState()
+    val isRemoteControlEnabled = remoteEnabledMap[cameraAddress] ?: false
 
     // Handle back press to close menu when focusable is false
     BackHandler(enabled = showMenu) {
         showMenu = false
+    }
+
+    // Automatically close RemoteControlDialog if camera disconnects
+    LaunchedEffect(isConnected) {
+        if (!isConnected) {
+            showRemoteControlDialog = false
+        }
     }
 
     Card(
@@ -141,21 +161,44 @@ fun ConnectedCameraCard(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            Button(
-                onClick = onShutter,
-                enabled = isConnected,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary
-                )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Text(
-                    text =  context.getString(R.string.action_shutter),
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Medium
-                )
+                Button(
+                    onClick = { showRemoteControlDialog = true },
+                    enabled = isConnected,
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(56.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        // Changed to Primary to match Shutter button
+                        containerColor = MaterialTheme.colorScheme.primary
+                    )
+                ) {
+                    Text(
+                        text = context.getString(R.string.action_remote),
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+
+                Button(
+                    onClick = onShutter,
+                    enabled = isConnected && isRemoteControlEnabled,
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(56.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary
+                    )
+                ) {
+                    Text(
+                        text = context.getString(R.string.action_shutter),
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
             }
         }
     }
@@ -164,9 +207,28 @@ fun ConnectedCameraCard(
         CameraSettingsDialog(
             cameraAddress = cameraAddress,
             onDismiss = { showCameraSettingsDialog = false },
-            onSave = { mode, enabled, duration ->
-                onCameraSettings(mode, enabled, duration)
+            onSave = { mode, enabled, duration, autoFocus ->
+                onCameraSettings(mode, enabled, duration, autoFocus)
                 showCameraSettingsDialog = false
+            }
+        )
+    }
+
+    if (showRemoteControlDialog) {
+        RemoteControlDialog(
+            cameraAddress = cameraAddress,
+            service = service,
+            onDismiss = { showRemoteControlDialog = false },
+            onRemoteCommand = onRemoteCommand,
+            onReleaseCommand = onReleaseCommand,
+            onSaveAutoFocus = { autoFocus ->
+                val currentSettings = AppSettingsManager.getCameraSettings(context, cameraAddress)
+                onCameraSettings(
+                    currentSettings.connectionMode,
+                    currentSettings.quickConnectEnabled,
+                    currentSettings.quickConnectDurationMinutes,
+                    autoFocus
+                )
             }
         )
     }

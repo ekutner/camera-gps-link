@@ -132,23 +132,12 @@ class NotificationHelper(private val context: Context) {
             .build()
     }
 
-    fun createCameraNotification(connection: CameraConnection): Notification {
+    fun createCameraNotification(connection: CameraConnection, isRemoteControlEnabled: Boolean): Notification {
         val notificationId = connection.device.address.hashCode()
         val pendingIntent: PendingIntent =
             Intent(context, MainActivity::class.java).let { notificationIntent ->
                 PendingIntent.getActivity(context, 0, notificationIntent, PendingIntent.FLAG_IMMUTABLE)
             }
-
-        val shutterIntent = Intent(context, CameraSyncService::class.java).apply {
-            action = Constants.ACTION_TRIGGER_SHUTTER
-            putExtra(Constants.EXTRA_DEVICE_ADDRESS, connection.device.address)
-        }
-        val shutterPendingIntent = PendingIntent.getService(
-            context,
-            notificationId,
-            shutterIntent,
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-        )
 
         val cameraName = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
             ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED) {
@@ -157,23 +146,38 @@ class NotificationHelper(private val context: Context) {
             context.getString(R.string.default_camera_name) // Use string resource
         }
 
-        return NotificationCompat.Builder(context, Constants.NOTIFICATION_CHANNEL_HIGH)
+        val builder = NotificationCompat.Builder(context, Constants.NOTIFICATION_CHANNEL_HIGH)
             .setContentTitle(context.getString(R.string.notification_connected_to, cameraName)) // Use formatted string resource
             .setSmallIcon(R.drawable.ic_notification)
             .setContentIntent(pendingIntent)
             .setOngoing(true)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(NotificationCompat.CATEGORY_STATUS)
-            .addAction(
+
+        if (isRemoteControlEnabled) {
+            val shutterIntent = Intent(context, CameraSyncService::class.java).apply {
+                action = Constants.ACTION_TRIGGER_SHUTTER
+                putExtra(Constants.EXTRA_DEVICE_ADDRESS, connection.device.address)
+            }
+            val shutterPendingIntent = PendingIntent.getService(
+                context,
+                notificationId,
+                shutterIntent,
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+            )
+
+            builder.addAction(
                 R.drawable.appicon,
-                context.getString(R.string.action_shutter), // Use string resource
+                context.getString(R.string.action_shutter),
                 shutterPendingIntent
             )
-            .build()
+        }
+        return builder.build()
     }
 
     fun updateNotifications(
         connectedCameras: Collection<CameraConnection>,
+        remoteControlEnabled: Map<String, Boolean>,
         isForegroundServiceStarted: Boolean,
         log: (String) -> Unit
     ) {
@@ -181,7 +185,7 @@ class NotificationHelper(private val context: Context) {
             connectedCameras.forEach { connection ->
                 val notificationId = connection.device.address.hashCode() + Constants.NOTIFICATION_ID_CONNECTED_CAMERA_OFFSET
                 if (connection.isConnected || connection.isConnecting) {
-                    notify(notificationId, createCameraNotification(connection))
+                    notify(notificationId, createCameraNotification(connection, remoteControlEnabled[connection.device.address] ?: false))
                     log("Created/Updated notification for ${connection.device.address}")
                 } else {
                     cancel(notificationId)

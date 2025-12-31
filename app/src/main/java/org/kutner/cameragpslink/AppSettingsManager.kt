@@ -10,7 +10,8 @@ data class CameraSettings(
     val connectionMode: Int = 1, // 1 = Mode 1, 2 = Mode 2
     val quickConnectEnabled: Boolean = false,
     val quickConnectDurationMinutes: Int = 5,
-    val lastDisconnectTimestamp: Long? = null
+    val lastDisconnectTimestamp: Long? = null,
+    val enableHalfShutterPress: Boolean = false
 )
 
 object AppSettingsManager {
@@ -33,20 +34,21 @@ object AppSettingsManager {
         val allSettings = loadAllCamerasSettings(prefs)
         val settings = allSettings[deviceAddress] ?: CameraSettings(deviceAddress = deviceAddress)
         return settings.copy(
-            connectionMode = settings.connectionMode.coerceAtLeast(1).coerceAtMost(2), // Ensure connectionMode is between 1 and 2 ?:)
+            connectionMode = settings.connectionMode.coerceAtLeast(1).coerceAtMost(2), // Ensure connectionMode is between 1 and 2
             quickConnectDurationMinutes = settings.quickConnectDurationMinutes.coerceAtLeast(0).coerceAtMost(720),
-            quickConnectEnabled = settings.quickConnectEnabled.coerceAtLeast(false).coerceAtMost(true),
-            lastDisconnectTimestamp = settings.lastDisconnectTimestamp?.coerceAtLeast(0)
+            quickConnectEnabled = settings.quickConnectEnabled,
+            lastDisconnectTimestamp = settings.lastDisconnectTimestamp?.coerceAtLeast(0),
+            enableHalfShutterPress = settings.enableHalfShutterPress
         )
     }
 
-    // Renamed and updated to handle all settings
-    fun updateCameraSettings(context: Context, deviceAddress: String, mode: Int, quickConnectEnabled: Boolean, durationMinutes: Int) {
+    fun updateCameraSettings(context: Context, deviceAddress: String, mode: Int, quickConnectEnabled: Boolean, durationMinutes: Int, enableHalfShutterPress: Boolean) {
         val currentSettings = getCameraSettings(context, deviceAddress)
         val updatedSettings = currentSettings.copy(
             connectionMode = mode,
             quickConnectEnabled = quickConnectEnabled,
-            quickConnectDurationMinutes = durationMinutes
+            quickConnectDurationMinutes = durationMinutes,
+            enableHalfShutterPress = enableHalfShutterPress
         )
         saveCameraSettings(context, updatedSettings)
     }

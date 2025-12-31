@@ -49,8 +49,8 @@ import org.kutner.cameragpslink.R
 fun CameraSettingsDialog(
     cameraAddress: String,
     onDismiss: () -> Unit,
-    // Callback now includes Mode, Enabled, Duration
-    onSave: (Int, Boolean, Int) -> Unit
+    // Callback now includes Mode, Enabled, Duration, AutoFocus
+    onSave: (Int, Boolean, Int, Boolean) -> Unit
 ) {
     val context = LocalContext.current
     val currentSettings: CameraSettings = remember {
@@ -60,6 +60,7 @@ fun CameraSettingsDialog(
     var connectionMode by remember { mutableStateOf(currentSettings.connectionMode) }
     var quickConnectEnabled by remember { mutableStateOf(currentSettings.quickConnectEnabled) }
     var durationMinutes by remember { mutableStateOf(currentSettings.quickConnectDurationMinutes) }
+    var enableHalfShutterPress by remember { mutableStateOf(currentSettings.enableHalfShutterPress) }
 
     val durationOptions = listOf(0, 1, 5, 10, 30, 60, 120, 180, 240, 360, 720)
     val scrollState = rememberScrollState()
@@ -210,7 +211,7 @@ fun CameraSettingsDialog(
 
                     // OK Button
                     Button(
-                        onClick = { onSave(connectionMode, quickConnectEnabled, durationMinutes) },
+                        onClick = { onSave(connectionMode, quickConnectEnabled, durationMinutes, enableHalfShutterPress) },
                         modifier = Modifier
                             .align(Alignment.End)
                             .height(48.dp)
@@ -230,7 +231,6 @@ fun CameraSettingsDialog(
     }
 }
 
-// ... VerticalScrollbar and formatDurationMinutes helper functions remain the same ...
 @Composable
 fun VerticalScrollbar(
     modifier: Modifier = Modifier,

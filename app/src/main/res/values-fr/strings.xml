@@ -22,6 +22,7 @@
     <string name="notification_search_long_message">Ne supprimez pas cette notification !\nElle est requise pour que l\'application se connecte à la caméra en arrière-plan.</string>
 
     <string name="action_shutter">Déclencheur</string>
+    <string name="action_remote">Télécommande</string>
 
     <string name="default_camera_name">Caméra</string>
     <string name="unknown_camera_name">Caméra Inconnue</string>
@@ -63,5 +64,17 @@
     <string name="dialog_camera_settings_quick_connect_period">Période de Connexion Rapide Automatique</string>
     <string name="dialog_camera_settings_quick_connect_period_always">Toujours utiliser le scan rapide</string>
     <string name="dialog_camera_settings_quick_connect_period_other">Utiliser le scan rapide pendant %1$s après la déconnexion de la caméra, puis revenir au mode de connexion normal pour économiser la batterie</string>
+
+    <string name="dialog_remote_control_title">Télécommande</string>
+    <string name="dialog_remote_control_warning">\"Ctrl Bluetooth Distance\" doit être activé dans le menu de la caméra</string>
+    <string name="dialog_remote_control_c1">C1</string>
+    <string name="dialog_remote_control_af_on">AF\nACT</string>
+    <string name="dialog_remote_control_zoom">Zoom</string>
+    <string name="dialog_remote_control_wide">Grand angle</string>
+    <string name="dialog_remote_control_tele">Télé</string>
+    <string name="dialog_remote_control_focus">Mise au point</string>
+    <string name="dialog_remote_control_near">Proche</string>
+    <string name="dialog_remote_control_far">Loin</string>
+    <string name="dialog_remote_control_enable_half_shutter">Activer la pression mi-course</string>
 
 </resources>

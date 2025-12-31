@@ -67,6 +67,7 @@ import org.kutner.cameragpslink.composables.LogCard
 import org.kutner.cameragpslink.composables.SearchDialog
 import org.kutner.cameragpslink.ui.theme.CameraGpsLinkTheme
 import org.kutner.cameragpslink.composables.LanguageSelectionDialog
+//import org.kutner.cameragpslink.RemoteCommand
 
 
 class MainActivity : AppCompatActivity() {
@@ -144,6 +145,7 @@ class MainActivity : AppCompatActivity() {
                 if (bound && service != null) {
                     MainScreen(
                         log = service.log,
+                        service = service,
                         connectedCameras = service.connectedCameras,
                         foundDevices = service.foundDevices,
                         isManualScanning = service.isManualScanning,
@@ -158,9 +160,15 @@ class MainActivity : AppCompatActivity() {
                         },
                         onTriggerShutter = { address -> service.triggerShutter(address) },
                         onForgetDevice = { address -> service.forgetDevice(address) },
-                        onCameraSettings = { address, mode, enabled, duration ->
-                            AppSettingsManager.updateCameraSettings(this, address, mode, enabled, duration)
+                        onCameraSettings = { address, mode, enabled, duration, autoFocus ->
+                            AppSettingsManager.updateCameraSettings(this, address, mode, enabled, duration, autoFocus)
                             service.onSettingsChanged(address)
+                        },
+                        onRemoteCommand = { address, command ->
+                            service.sendRemoteCommand(address, command)
+                        },
+                        onReleaseCommand = { address, command ->
+                            service.sendReleaseCommand(address, command)
                         },
                         onClearLog = { service.clearLog() },
                         onShareLog = { shareLog(service.getLogAsString()) },
@@ -232,6 +240,7 @@ class MainActivity : AppCompatActivity() {
 @Composable
 fun MainScreen(
     log: StateFlow<List<String>>,
+    service: CameraSyncService,
     connectedCameras: StateFlow<List<CameraConnection>>,
     foundDevices: StateFlow<List<BluetoothDevice>>,
     isManualScanning: StateFlow<Boolean>,
@@ -241,7 +250,9 @@ fun MainScreen(
     onConnectToDevice: (BluetoothDevice) -> Unit,
     onTriggerShutter: (String) -> Unit,
     onForgetDevice: (String) -> Unit,
-    onCameraSettings: (String, Int, Boolean, Int) -> Unit,
+    onCameraSettings: (String, Int, Boolean, Int, Boolean) -> Unit,
+    onRemoteCommand: (String, RemoteCommand) -> Unit,
+    onReleaseCommand: (String, RemoteCommand) -> Unit,
     onClearLog: () -> Unit,
     onShareLog: () -> Unit,
     onDismissShutterError: () -> Unit
@@ -427,11 +438,14 @@ fun MainScreen(
                                     cameraAddress = connection.device.address,
                                     isConnected = connection.isConnected,
                                     isConnecting = connection.isConnecting,
+                                    service = service,
                                     onShutter = { onTriggerShutter(connection.device.address) },
                                     onDisconnect = { onForgetDevice(connection.device.address) },
-                                    onCameraSettings = { connectionMode, quickConnectEnabled, duration ->
-                                        onCameraSettings(connection.device.address, connectionMode, quickConnectEnabled, duration)
-                                    }
+                                    onCameraSettings = { connectionMode, quickConnectEnabled, duration, autoFocus ->
+                                        onCameraSettings(connection.device.address, connectionMode, quickConnectEnabled, duration, autoFocus)
+                                    },
+                                    onRemoteCommand = onRemoteCommand,
+                                    onReleaseCommand = onReleaseCommand
                                 )
                             }
                         }

@@ -1,28 +1,30 @@
 # Camera GPS Link
 
-This Android app provide time and GPS synchronization for recent generations Sony cameras 
-that require the Creator's App and don't work with the old Imaging Edge Mobile app.  
+This Android app provides GPS and time synchronization, as well as full Bluetooth remote control 
+for recent generations of Sony cameras that use the Sony's Creator's App.
 
-This app essentially does the same thing as Location Linking feature in Creator's App,
+The app essentially does the same thing as Location Linking feature in Creator's App,
 except it actually works reliably and doesn't randomly turn itself off. 
 This issue has affected Creator's App since its first release and Sony are 
-unable, or unwilling, to fix it.
+unable, or unwilling, to fix it.  
+It also provides a fully features Bluetooth based remote control with all the functionality 
+of Sony's RMT-P1BT and RMT-VP2 remotes.
 
 ### **This app is not associated with or endorsed by Sony**
 
 ## Features
-* GPS synchronization (Location Linking) that just works
-* Time synchronization - keeps the camera time always be synchronized with the 
+* **GPS synchronization (Location Linking) that just works**
+* **Time synchronization** - keeps the camera time always be synchronized with the 
   Phone's time, including time zone and daylight savings status, 
   which can't be synced automatically when using the Creator's App
-* Remote shutter release - A simple and quick shutter release remote control (similar to the shutter button on Sony's RMT-P1BT)   
+* **Full Bluetooth remote control** - Full support for all the feature of 
+  Sony's Bluetooth remote controls such as the RMT-P1BT and RMT-VP2   
 * Support for connecting multiple cameras
 * Two connection modes for best connection speed with all phones and camera combinations
 
 ## Screenshots
-| ![](assets/two-cameras-dark.jpeg) | ![](assets/one-camera-light.jpg) | ![](assets/found-camera-dark.jpg) | ![](assets/notifications.jpg) |
+| ![](assets/two-cameras-dark.jpeg) | ![](assets/remote-control-dialog-light.jpg) | ![](assets/found-camera-dark.jpg) | ![](assets/notifications.jpg) |
 |-----------------------------------|----------------------------------|-----------------------------------|-------------------------------|
-
 
 
 
@@ -43,11 +45,25 @@ unable, or unwilling, to fix it.
 ### Remote Control
 1. Enable remote control on the camera:
     MENU → Network → Bluetooth → Bluetooth Rmt Ctrl - Set to "On"
-2. In the app either press the "SHUTTER" button on the app's main screen or 
-   directly from the notification which is displayed when the app is actively connected to the camera  
+2. Press the "SHUTTER" button in the app app's main screen or directly in the 
+   notification which is displayed when the app is actively connected to the camera. 
+   This will trigger an immediate shutter release without pre-focusing.
+3. Use the "Remote" button in the app to open the full featured remote control.  
+   * If "Enable half shutter press" is ON then pressing the shutter button is like 
+     half pressing the shutter on the camera. Then you need to drag the button either to 
+     the left or to thr right to trigger a full shutter release.  
+   * If "Enable half shutter press" is OFF then pressing the shutter button will 
+     trigger an immediate shutter release without pre-focusing.
 
-**Note** that when remote control is enabled the auto power off feature of the camera is automatically 
-  disabled and the camera will have to be manually turned off  
+**Notes** 
+* When remote control is enabled the auto power off feature of the camera is automatically 
+  disabled and the camera will have to be manually turned off
+* The remote control buttons are simulating a press on the corresponding camera buttons, 
+  so they will function in the same way as the corresponding camera button. If you changed 
+  the default configuration of these buttons on the camera then they will do the same thing 
+  when pressed in the remote control.
+* When you enable Bluetooth remote control you will have to turn the camera off and then on again
+  so the app can reconnect and discover that remote control has been enabled.
 
 ### Settings
 Select the "Settings" option from the option from the three dots menu (aka kebab menu) next to the camera:

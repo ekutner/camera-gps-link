@@ -38,7 +38,26 @@ object Constants {
     val LOCATION_CHARACTERISTIC_UUID = UUID.fromString("0000DD11-0000-1000-8000-00805F9B34FB")
     val LOCK_LOCATION_ENDPOINT_UUID = UUID.fromString("0000DD30-0000-1000-8000-00805F9B34FB")
     val ENABLE_LOCATION_UPDATES_UUID = UUID.fromString("0000DD31-0000-1000-8000-00805F9B34FB")
-    val SHUTTER_SERVICE_UUID = UUID.fromString("8000FF00-FF00-FFFF-FFFF-FFFFFFFFFFFF")
-    val SHUTTER_CHARACTERISTIC_UUID = UUID.fromString("0000FF01-0000-1000-8000-00805F9B34FB")
+    val REMOTE_CONTROL_SERVICE_UUID = UUID.fromString("8000FF00-FF00-FFFF-FFFF-FFFFFFFFFFFF")
+    val REMOTE_CONTROL_CHARACTERISTIC_UUID = UUID.fromString("0000FF01-0000-1000-8000-00805F9B34FB")
+    val REMOTE_CONTROL_STATUS_UUID: UUID = UUID.fromString("0000ff02-0000-1000-8000-00805f9b34fb")
+    val CLIENT_CHARACTERISTIC_CONFIG_UUID: UUID = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")
 
+    // REMOTE_CONTROL_STATUS_UUID 3-byte sequences
+    object StatusPackets {
+        // Focus
+        val FOCUS_ACQUIRED = byteArrayOf(0x02.toByte(), 0x3F.toByte(), 0x20.toByte())
+        val FOCUS_LOST = byteArrayOf(0x02.toByte(), 0x3F.toByte(), 0x00.toByte())
+
+        // Shutter
+        val SHUTTER_READY = byteArrayOf(0x02.toByte(), 0xA0.toByte(), 0x00.toByte())
+        val SHUTTER_ACTIVE = byteArrayOf(0x02.toByte(), 0xA0.toByte(), 0x20.toByte())
+
+        // Video
+        val VIDEO_STARTED = byteArrayOf(0x02.toByte(), 0xD5.toByte(), 0x20.toByte())
+        val VIDEO_STOPPED = byteArrayOf(0x02.toByte(), 0xD5.toByte(), 0x00.toByte())
+
+        val REMOTE_CONTROL_DISABLED = byteArrayOf(0x02.toByte(), 0xC3.toByte(), 0x00.toByte())
+
+    }
 }

@@ -22,6 +22,7 @@
     <string name="notification_search_long_message">¡No elimines esta notificación!\nEs necesaria para que la aplicación se conecte a la cámara en segundo plano.</string>
 
     <string name="action_shutter">Obturador</string>
+    <string name="action_remote">Remoto</string>
 
     <string name="default_camera_name">Cámara</string>
     <string name="unknown_camera_name">Cámara Desconocida</string>
@@ -63,5 +64,17 @@
     <string name="dialog_camera_settings_quick_connect_period">Período de Conexión Rápida Automática</string>
     <string name="dialog_camera_settings_quick_connect_period_always">Usar siempre escaneo rápido</string>
     <string name="dialog_camera_settings_quick_connect_period_other">Usar escaneo rápido durante %1$s después de que la cámara se desconecte, luego volver al modo de conexión normal para ahorrar batería</string>
+
+    <string name="dialog_remote_control_title">Control Remoto</string>
+    <string name="dialog_remote_control_warning">\"Control Remoto Bluetooth\" debe estar habilitado en el menú de la cámara</string>
+    <string name="dialog_remote_control_c1">C1</string>
+    <string name="dialog_remote_control_af_on">AF\nACT</string>
+    <string name="dialog_remote_control_zoom">Zoom</string>
+    <string name="dialog_remote_control_wide">Angular</string>
+    <string name="dialog_remote_control_tele">Tele</string>
+    <string name="dialog_remote_control_focus">Enfoque</string>
+    <string name="dialog_remote_control_near">Cerca</string>
+    <string name="dialog_remote_control_far">Lejos</string>
+    <string name="dialog_remote_control_enable_half_shutter">Habilitar presión media del obturador</string>
 
 </resources>
