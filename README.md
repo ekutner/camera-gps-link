@@ -54,6 +54,8 @@ of Sony's RMT-P1BT and RMT-VP2 remotes.
      the left or to thr right to trigger a full shutter release.  
    * If "Enable half shutter press" is OFF then pressing the shutter button will 
      trigger an immediate shutter release without pre-focusing.
+4. The shutter button will turn green when focus is acquired.
+5. The video record button will show a "stop record" icon when video recording is active.
 
 **Notes** 
 * When remote control is enabled the auto power off feature of the camera is automatically 
