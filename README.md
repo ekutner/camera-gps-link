@@ -9,7 +9,7 @@ The app essentially does the same thing as Location Linking feature in Creator's
 except it actually works reliably and doesn't randomly turn itself off. 
 This issue has affected Creator's App since its first release and Sony are 
 unable, or unwilling, to fix it.  
-It also provides a fully features Bluetooth based remote control with all the functionality 
+It also provides a fully featured Bluetooth based remote control with all the functionality 
 of Sony's RMT-P1BT and RMT-VP2 remotes.
 
 ### **This app is not associated with or endorsed by Sony**
