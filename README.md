@@ -23,7 +23,7 @@ of Sony's RMT-P1BT and RMT-VP2 remotes.
 * Two connection modes for best connection speed with all phones and camera combinations
 
 ## Screenshots
-| ![](assets/two-cameras-dark.jpeg) | ![](assets/remote-control-dialog-light.jpg) | ![](assets/found-camera-dark.jpg) | ![](assets/notifications.jpg) |
+| ![](assets/two-cameras-light.jpg) | ![](assets/remote-control-dialog-light.jpg) | ![](assets/notifications.jpg) | ![](assets/found-camera-dark.jpg) |
 |-----------------------------------|----------------------------------|-----------------------------------|-------------------------------|
 
 
