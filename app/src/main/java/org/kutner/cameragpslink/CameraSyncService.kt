@@ -592,33 +592,7 @@ class CameraSyncService : Service() {
                 }
             }
 
-            fun probeRemoteControl(deviceAddress: String, retryCount: Int = 0) {
-                if (retryCount==0) {
-                    val connection = cameraConnections[deviceAddress] ?: return
-                    connection.isGattErrorReceived = false
-                }
 
-                var isRemoteControlDisabled = false
-                val connection = cameraConnections[deviceAddress]
-                if (connection!=null && connection.isGattErrorReceived) {
-                    updateStatusMap(_isRemoteControlEnabled, deviceAddress, false)
-                    isRemoteControlDisabled = true
-                }
-                if (retryCount < 5 && !isRemoteControlDisabled) {
-                    sendRemoteCommand(deviceAddress, RemoteCommand.REMOTE_CONTROL_PROBE)
-                    handler.postDelayed(
-                        {
-                            probeRemoteControl(deviceAddress, retryCount + 1)
-                        }, 250
-                    )
-                }
-                else {
-                    if (!isRemoteControlDisabled) {
-                        updateStatusMap(_isRemoteControlEnabled, deviceAddress, true)
-                    }
-                    notificationHelper.updateNotifications(cameraConnections.values, isRemoteControlEnabled.value, isForegroundServiceStarted,) { log(it) }
-                }
-            }
             // Compatibility for older Android versions
             @Deprecated("Deprecated in Java")
             override fun onCharacteristicChanged(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic) {
@@ -626,6 +600,41 @@ class CameraSyncService : Service() {
                 onCharacteristicChanged(gatt, characteristic, characteristic.value)
             }
 
+        }
+    }
+
+    fun probeRemoteControl(deviceAddress: String) {
+        val connection = cameraConnections[deviceAddress] ?: return
+        connection.isGattErrorReceived = false
+
+        probeRemoteControlInternal(deviceAddress, 0)
+    }
+
+    private fun probeRemoteControlInternal(deviceAddress: String, retryCount: Int) {
+        if (retryCount==0) {
+            val connection = cameraConnections[deviceAddress] ?: return
+            connection.isGattErrorReceived = false
+        }
+
+        var isRemoteControlDisabled = false
+        val connection = cameraConnections[deviceAddress]
+        if (connection!=null && connection.isGattErrorReceived) {
+            updateStatusMap(_isRemoteControlEnabled, deviceAddress, false)
+            isRemoteControlDisabled = true
+        }
+        if (retryCount < 5 && !isRemoteControlDisabled) {
+            sendRemoteCommand(deviceAddress, RemoteCommand.REMOTE_CONTROL_PROBE)
+            handler.postDelayed(
+                {
+                    probeRemoteControlInternal(deviceAddress, retryCount + 1)
+                }, 250
+            )
+        }
+        else {
+            if (!isRemoteControlDisabled) {
+                updateStatusMap(_isRemoteControlEnabled, deviceAddress, true)
+            }
+            notificationHelper.updateNotifications(cameraConnections.values, isRemoteControlEnabled.value, isForegroundServiceStarted,) { log(it) }
         }
     }
 

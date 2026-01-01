@@ -74,6 +74,7 @@
     <string name="dialog_remote_control_near">Near</string>
     <string name="dialog_remote_control_far">Far</string>
     <string name="dialog_remote_control_enable_half_shutter">Enable half shutter press</string>
+    <string name="dialog_remote_control_refresh">Refresh</string>
 
     <string name="menu_language">Language</string>
 

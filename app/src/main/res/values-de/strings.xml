@@ -75,5 +75,6 @@
     <string name="dialog_remote_control_near">Nah</string>
     <string name="dialog_remote_control_far">Fern</string>
     <string name="dialog_remote_control_enable_half_shutter">Halb-Auslöser aktivieren</string>
+    <string name="dialog_remote_control_refresh">Aktualisieren</string>
 
 </resources>

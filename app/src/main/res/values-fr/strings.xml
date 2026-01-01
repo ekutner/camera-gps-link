@@ -76,5 +76,6 @@
     <string name="dialog_remote_control_near">Proche</string>
     <string name="dialog_remote_control_far">Loin</string>
     <string name="dialog_remote_control_enable_half_shutter">Activer la pression mi-course</string>
+    <string name="dialog_remote_control_refresh">Actualiser</string>
 
 </resources>

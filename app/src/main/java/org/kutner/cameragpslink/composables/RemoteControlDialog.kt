@@ -23,7 +23,10 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -129,13 +132,48 @@ fun RemoteControlDialog(
                             .height(300.dp), // Match approximate height of controls
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(
-                            text = context.getString(R.string.dialog_remote_control_warning),
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.error,
-                            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                            modifier = Modifier.padding(16.dp)
-                        )
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Text(
+                                text = context.getString(R.string.dialog_remote_control_warning),
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.error,
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                                modifier = Modifier.padding(16.dp)
+                            )
+
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            // Refresh link using Text with LinkAnnotation
+                            val annotatedString = buildAnnotatedString {
+                                append(context.getString(R.string.dialog_remote_control_refresh))
+                                addStyle(
+                                    style = SpanStyle(
+                                        color = MaterialTheme.colorScheme.primary,
+                                        textDecoration = TextDecoration.Underline
+                                    ),
+                                    start = 0,
+                                    end = length
+                                )
+                                addLink(
+                                    clickable = androidx.compose.ui.text.LinkAnnotation.Clickable(
+                                        tag = "REFRESH",
+                                        linkInteractionListener = {
+                                            service.probeRemoteControl(cameraAddress)
+                                        }
+                                    ),
+                                    start = 0,
+                                    end = length
+                                )
+                            }
+
+                            Text(
+                                text = annotatedString,
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                        }
                     }
                 } else {
                     // Shutter button

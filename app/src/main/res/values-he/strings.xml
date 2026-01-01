@@ -76,5 +76,6 @@
     <string name="dialog_remote_control_near">קרוב</string>
     <string name="dialog_remote_control_far">רחוק</string>
     <string name="dialog_remote_control_enable_half_shutter">אפשר חצי לחיצה על התריס</string>
+    <string name="dialog_remote_control_refresh">רענן</string>
 
 </resources>

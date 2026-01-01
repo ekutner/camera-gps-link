@@ -76,5 +76,6 @@
     <string name="dialog_remote_control_near">Cerca</string>
     <string name="dialog_remote_control_far">Lejos</string>
     <string name="dialog_remote_control_enable_half_shutter">Habilitar presión media del obturador</string>
+    <string name="dialog_remote_control_refresh">Actualizar</string>
 
 </resources>
