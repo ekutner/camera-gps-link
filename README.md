@@ -1,5 +1,7 @@
 # Camera GPS Link
-
+  
+[![Play Store Logo](GetItOnGooglePlay_Badge_Web_color_English.png)](https://play.google.com/store/apps/details?id=org.kutner.cameragpslink)  
+  
 This Android app provides GPS and time synchronization, as well as full Bluetooth remote control 
 for recent generations of Sony cameras that use the Sony's Creator's App.
 
