@@ -42,22 +42,66 @@ object Constants {
     val REMOTE_CONTROL_CHARACTERISTIC_UUID = UUID.fromString("0000FF01-0000-1000-8000-00805F9B34FB")
     val REMOTE_CONTROL_STATUS_UUID: UUID = UUID.fromString("0000ff02-0000-1000-8000-00805f9b34fb")
     val CLIENT_CHARACTERISTIC_CONFIG_UUID: UUID = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")
+}
 
-    // REMOTE_CONTROL_STATUS_UUID 3-byte sequences
-    object StatusPackets {
-        // Focus
-        val FOCUS_ACQUIRED = byteArrayOf(0x02.toByte(), 0x3F.toByte(), 0x20.toByte())
-        val FOCUS_LOST = byteArrayOf(0x02.toByte(), 0x3F.toByte(), 0x00.toByte())
+// Remote Control Command Bytes
+enum class RemoteControlCommand(val bytes: ByteArray) {
+    // Shutter commands
+    FULL_SHUTTER_DOWN(byteArrayOf(0x01, 0x09)),
+    FULL_SHUTTER_UP(byteArrayOf(0x01, 0x08)),
 
-        // Shutter
-        val SHUTTER_READY = byteArrayOf(0x02.toByte(), 0xA0.toByte(), 0x00.toByte())
-        val SHUTTER_ACTIVE = byteArrayOf(0x02.toByte(), 0xA0.toByte(), 0x20.toByte())
+    HALF_SHUTTER_DOWN(byteArrayOf(0x01, 0x07)),
+    HALF_SHUTTER_UP(byteArrayOf(0x01, 0x06)),
 
-        // Video
-        val VIDEO_STARTED = byteArrayOf(0x02.toByte(), 0xD5.toByte(), 0x20.toByte())
-        val VIDEO_STOPPED = byteArrayOf(0x02.toByte(), 0xD5.toByte(), 0x00.toByte())
+    // C1 commands
+    C1_DOWN(byteArrayOf(0x01, 0x21)),
+    C1_UP(byteArrayOf(0x01, 0x20)),
 
-        val REMOTE_CONTROL_DISABLED = byteArrayOf(0x02.toByte(), 0xC3.toByte(), 0x00.toByte())
+    // AutoFocus commands
+    AF_ON_DOWN(byteArrayOf(0x01, 0x15)),
+    AF_ON_UP(byteArrayOf(0x01, 0x14)),
 
+    // Record commands
+    RECORD_DOWN(byteArrayOf(0x01, 0x0f)),
+    RECORD_UP(byteArrayOf(0x01, 0x0e)),
+
+    // Zoom commands
+    ZOOM_TELE_DOWN(byteArrayOf(0x02, 0x45, 0x50)),
+    ZOOM_TELE_UP(byteArrayOf(0x02, 0x44, 0x00)),
+
+    ZOOM_WIDE_DOWN(byteArrayOf(0x02, 0x47, 0x50)),
+    ZOOM_WIDE_UP(byteArrayOf(0x02, 0x46, 0x00)),
+
+    // Focus commands
+    FOCUS_FAR_DOWN(byteArrayOf(0x02, 0x6d.toByte(), 0x50)),
+    FOCUS_FAR_UP(byteArrayOf(0x02, 0x6c.toByte(), 0x00)),
+
+    FOCUS_NEAR_DOWN(byteArrayOf(0x02, 0x6b.toByte(), 0x50)),
+    FOCUS_NEAR_UP(byteArrayOf(0x02, 0x6a.toByte(), 0x00)),
+
+    // Probe command
+    REMOTE_CONTROL_PROBE(byteArrayOf(0x01, 0x05));
+}
+
+// Remote control status bytes
+enum class CameraStatus(val bytes: ByteArray) {
+    // Focus
+    FOCUS_ACQUIRED(byteArrayOf(0x02, 0x3F.toByte(), 0x20)),
+    FOCUS_LOST(byteArrayOf(0x02, 0x3F.toByte(), 0x00)),
+
+    // Shutter
+    SHUTTER_READY(byteArrayOf(0x02, 0xA0.toByte(), 0x00)),
+    SHUTTER_ACTIVE(byteArrayOf(0x02, 0xA0.toByte(), 0x20)),
+
+    // Video
+    VIDEO_STARTED(byteArrayOf(0x02, 0xD5.toByte(), 0x20)),
+    VIDEO_STOPPED(byteArrayOf(0x02, 0xD5.toByte(), 0x00)),
+
+    REMOTE_CONTROL_DISABLED(byteArrayOf(0x02, 0xC3.toByte(), 0x00));
+
+    companion object {
+        fun fromBytes(bytes: ByteArray): CameraStatus? {
+            return entries.find { it.bytes.contentEquals(bytes) }
+        }
     }
 }

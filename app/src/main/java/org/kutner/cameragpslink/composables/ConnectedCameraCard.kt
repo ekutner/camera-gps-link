@@ -43,7 +43,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.PopupProperties
 import org.kutner.cameragpslink.AppSettingsManager
 import org.kutner.cameragpslink.R
-import org.kutner.cameragpslink.RemoteCommand
+import org.kutner.cameragpslink.RemoteControlCommand
 import org.kutner.cameragpslink.CameraSyncService
 
 @Composable
@@ -56,8 +56,7 @@ fun ConnectedCameraCard(
     onShutter: () -> Unit,
     onDisconnect: () -> Unit,
     onCameraSettings: (Int, Boolean, Int, Boolean) -> Unit,
-    onRemoteCommand: (String, RemoteCommand) -> Unit,
-    onReleaseCommand: (String, RemoteCommand) -> Unit
+    onRemoteCommand: (String, RemoteControlCommand) -> Unit
 ) {
     var showMenu by remember { mutableStateOf(false) }
     var showCameraSettingsDialog by remember { mutableStateOf(false) }
@@ -220,7 +219,6 @@ fun ConnectedCameraCard(
             service = service,
             onDismiss = { showRemoteControlDialog = false },
             onRemoteCommand = onRemoteCommand,
-            onReleaseCommand = onReleaseCommand,
             onSaveAutoFocus = { autoFocus ->
                 val currentSettings = AppSettingsManager.getCameraSettings(context, cameraAddress)
                 onCameraSettings(

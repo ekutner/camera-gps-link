@@ -34,17 +34,16 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.kutner.cameragpslink.AppSettingsManager
 import org.kutner.cameragpslink.CameraSyncService
+import org.kutner.cameragpslink.RemoteControlCommand
 import org.kutner.cameragpslink.R
-import org.kutner.cameragpslink.RemoteCommand
 import kotlin.math.abs
 
 @Composable
 fun RemoteControlDialog(
     cameraAddress: String,
-    service: CameraSyncService, // Pass service to access state
+    service: CameraSyncService,
     onDismiss: () -> Unit,
-    onRemoteCommand: (String, RemoteCommand) -> Unit,
-    onReleaseCommand: (String, RemoteCommand) -> Unit,
+    onRemoteCommand: (String, RemoteControlCommand) -> Unit,
     onSaveAutoFocus: (Boolean) -> Unit
 ) {
     val context = LocalContext.current
@@ -110,7 +109,9 @@ fun RemoteControlDialog(
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold
                     )
-                    IconButton(onClick = onDismiss) { Icon(Icons.Default.Close, contentDescription = "Close") }
+                    IconButton(onClick = onDismiss) {
+                        Icon(Icons.Default.Close, contentDescription = "Close")
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
@@ -121,7 +122,7 @@ fun RemoteControlDialog(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(300.dp), // Match approximate height of controls
+                            .height(300.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Column(
@@ -138,7 +139,6 @@ fun RemoteControlDialog(
 
                             Spacer(modifier = Modifier.height(16.dp))
 
-                            // Refresh link using Text with LinkAnnotation
                             val annotatedString = buildAnnotatedString {
                                 append(context.getString(R.string.dialog_remote_control_refresh))
                                 addStyle(
@@ -171,7 +171,10 @@ fun RemoteControlDialog(
                     // Shutter button
                     Box(modifier = Modifier.fillMaxWidth().height(120.dp), contentAlignment = Alignment.Center) {
                         if (halfShutterEnabled) {
-                            val arrowTint = if (isButtonPressed) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+                            val arrowTint = if (isButtonPressed)
+                                MaterialTheme.colorScheme.primary
+                            else
+                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                                 Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, modifier = Modifier.size(32.dp), tint = arrowTint)
                                 Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, modifier = Modifier.size(32.dp), tint = arrowTint)
@@ -189,7 +192,7 @@ fun RemoteControlDialog(
                                             isButtonPressed = true
                                             if (!isHalfPressed) {
                                                 isHalfPressed = true
-                                                onRemoteCommand(cameraAddress, RemoteCommand.HALF_SHUTTER_BUTTON)
+                                                onRemoteCommand(cameraAddress, RemoteControlCommand.HALF_SHUTTER_DOWN)
                                             }
                                             var currentDragOffset = 0f
                                             try {
@@ -205,7 +208,7 @@ fun RemoteControlDialog(
                                                         scope.launch { offsetX.snapTo(currentDragOffset) }
                                                         if (abs(currentDragOffset) > 30f && !isFullPressed) {
                                                             isFullPressed = true
-                                                            onRemoteCommand(cameraAddress, RemoteCommand.FULL_SHUTTER_BUTTON)
+                                                            onRemoteCommand(cameraAddress, RemoteControlCommand.FULL_SHUTTER_DOWN)
                                                         }
                                                     }
                                                 }
@@ -213,13 +216,13 @@ fun RemoteControlDialog(
                                                 isButtonPressed = false
                                                 scope.launch { offsetX.animateTo(0f, animationSpec = tween(200)) }
                                                 if (isHalfPressed) {
-                                                    onReleaseCommand(cameraAddress, RemoteCommand.HALF_SHUTTER_BUTTON)
+                                                    onRemoteCommand(cameraAddress, RemoteControlCommand.HALF_SHUTTER_UP)
                                                     isHalfPressed = false
                                                 }
                                                 if (isFullPressed) {
                                                     scope.launch {
                                                         delay(100)
-                                                        onReleaseCommand(cameraAddress, RemoteCommand.FULL_SHUTTER_BUTTON)
+                                                        onRemoteCommand(cameraAddress, RemoteControlCommand.FULL_SHUTTER_UP)
                                                         isFullPressed = false
                                                     }
                                                 }
@@ -230,11 +233,11 @@ fun RemoteControlDialog(
                                             onPress = {
                                                 isButtonPressed = true
                                                 try {
-                                                    onRemoteCommand(cameraAddress, RemoteCommand.FULL_SHUTTER_BUTTON)
+                                                    onRemoteCommand(cameraAddress, RemoteControlCommand.FULL_SHUTTER_DOWN)
                                                     tryAwaitRelease()
                                                 } finally {
                                                     isButtonPressed = false
-                                                    onReleaseCommand(cameraAddress, RemoteCommand.FULL_SHUTTER_BUTTON)
+                                                    onRemoteCommand(cameraAddress, RemoteControlCommand.FULL_SHUTTER_UP)
                                                 }
                                             }
                                         )
@@ -242,10 +245,9 @@ fun RemoteControlDialog(
                                 },
                             shape = CircleShape,
                             color = when {
-                                isFocused -> Color.Green // TURN GREEN WHEN FOCUSED
+                                isFocused -> Color.Green
                                 isFullPressed -> MaterialTheme.colorScheme.secondary
                                 isHalfPressed -> MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
-//                            isButtonPressed -> MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
                                 else -> MaterialTheme.colorScheme.primary
                             }
                         ) {
@@ -254,7 +256,6 @@ fun RemoteControlDialog(
                             }
                         }
                     }
-
 
                     Spacer(modifier = Modifier.height(24.dp))
 
@@ -265,9 +266,9 @@ fun RemoteControlDialog(
                             modifier = Modifier.size(72.dp).pointerInput(Unit) {
                                 detectTapGestures(onPress = {
                                     isC1Pressed = true
-                                    onRemoteCommand(cameraAddress, RemoteCommand.C1_BUTTON)
+                                    onRemoteCommand(cameraAddress, RemoteControlCommand.C1_DOWN)
                                     tryAwaitRelease()
-                                    onReleaseCommand(cameraAddress, RemoteCommand.C1_BUTTON)
+                                    onRemoteCommand(cameraAddress, RemoteControlCommand.C1_UP)
                                     isC1Pressed = false
                                 })
                             },
@@ -287,9 +288,9 @@ fun RemoteControlDialog(
                             modifier = Modifier.size(72.dp).pointerInput(Unit) {
                                 detectTapGestures(onPress = {
                                     isAFPressed = true
-                                    onRemoteCommand(cameraAddress, RemoteCommand.AF_ON_BUTTON)
+                                    onRemoteCommand(cameraAddress, RemoteControlCommand.AF_ON_DOWN)
                                     tryAwaitRelease()
-                                    onReleaseCommand(cameraAddress, RemoteCommand.AF_ON_BUTTON)
+                                    onRemoteCommand(cameraAddress, RemoteControlCommand.AF_ON_UP)
                                     isAFPressed = false
                                 })
                             },
@@ -310,9 +311,9 @@ fun RemoteControlDialog(
                             modifier = Modifier.size(72.dp).pointerInput(Unit) {
                                 detectTapGestures(onPress = {
                                     isRecordPressed = true
-                                    onRemoteCommand(cameraAddress, RemoteCommand.RECORD_BUTTON)
+                                    onRemoteCommand(cameraAddress, RemoteControlCommand.RECORD_DOWN)
                                     tryAwaitRelease()
-                                    onReleaseCommand(cameraAddress, RemoteCommand.RECORD_BUTTON)
+                                    onRemoteCommand(cameraAddress, RemoteControlCommand.RECORD_UP)
                                     isRecordPressed = false
                                 })
                             },
@@ -338,9 +339,9 @@ fun RemoteControlDialog(
                             modifier = Modifier.weight(1f).height(48.dp).pointerInput(Unit) {
                                 detectTapGestures(onPress = {
                                     isWidePressed = true
-                                    onRemoteCommand(cameraAddress, RemoteCommand.ZOOM_WIDE_BUTTON)
+                                    onRemoteCommand(cameraAddress, RemoteControlCommand.ZOOM_WIDE_DOWN)
                                     tryAwaitRelease()
-                                    onReleaseCommand(cameraAddress, RemoteCommand.ZOOM_WIDE_BUTTON)
+                                    onRemoteCommand(cameraAddress, RemoteControlCommand.ZOOM_WIDE_UP)
                                     isWidePressed = false
                                 })
                             },
@@ -364,9 +365,9 @@ fun RemoteControlDialog(
                             modifier = Modifier.weight(1f).height(48.dp).pointerInput(Unit) {
                                 detectTapGestures(onPress = {
                                     isTelePressed = true
-                                    onRemoteCommand(cameraAddress, RemoteCommand.ZOOM_TELE_BUTTON)
+                                    onRemoteCommand(cameraAddress, RemoteControlCommand.ZOOM_TELE_DOWN)
                                     tryAwaitRelease()
-                                    onReleaseCommand(cameraAddress, RemoteCommand.ZOOM_TELE_BUTTON)
+                                    onRemoteCommand(cameraAddress, RemoteControlCommand.ZOOM_TELE_UP)
                                     isTelePressed = false
                                 })
                             },
@@ -389,9 +390,9 @@ fun RemoteControlDialog(
                             modifier = Modifier.weight(1f).height(48.dp).pointerInput(Unit) {
                                 detectTapGestures(onPress = {
                                     isNearPressed = true
-                                    onRemoteCommand(cameraAddress, RemoteCommand.FOCUS_NEAR_BUTTON)
+                                    onRemoteCommand(cameraAddress, RemoteControlCommand.FOCUS_NEAR_DOWN)
                                     tryAwaitRelease()
-                                    onReleaseCommand(cameraAddress, RemoteCommand.FOCUS_NEAR_BUTTON)
+                                    onRemoteCommand(cameraAddress, RemoteControlCommand.FOCUS_NEAR_UP)
                                     isNearPressed = false
                                 })
                             },
@@ -415,9 +416,9 @@ fun RemoteControlDialog(
                             modifier = Modifier.weight(1f).height(48.dp).pointerInput(Unit) {
                                 detectTapGestures(onPress = {
                                     isFarPressed = true
-                                    onRemoteCommand(cameraAddress, RemoteCommand.FOCUS_FAR_BUTTON)
+                                    onRemoteCommand(cameraAddress, RemoteControlCommand.FOCUS_FAR_DOWN)
                                     tryAwaitRelease()
-                                    onReleaseCommand(cameraAddress, RemoteCommand.FOCUS_FAR_BUTTON)
+                                    onRemoteCommand(cameraAddress, RemoteControlCommand.FOCUS_FAR_UP)
                                     isFarPressed = false
                                 })
                             },
@@ -443,7 +444,10 @@ fun RemoteControlDialog(
                             context.getString(R.string.dialog_remote_control_enable_half_shutter),
                             modifier = Modifier.weight(1f)
                         )
-                        Switch(checked = halfShutterEnabled, onCheckedChange = { halfShutterEnabled = it })
+                        Switch(
+                            checked = halfShutterEnabled,
+                            onCheckedChange = { halfShutterEnabled = it }
+                        )
                     }
                 }
             }

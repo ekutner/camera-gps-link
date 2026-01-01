@@ -167,9 +167,6 @@ class MainActivity : AppCompatActivity() {
                         onRemoteCommand = { address, command ->
                             service.sendRemoteCommand(address, command)
                         },
-                        onReleaseCommand = { address, command ->
-                            service.sendReleaseCommand(address, command)
-                        },
                         onClearLog = { service.clearLog() },
                         onShareLog = { shareLog(service.getLogAsString()) },
                         onDismissShutterError = { service.clearShutterError() }
@@ -251,8 +248,7 @@ fun MainScreen(
     onTriggerShutter: (String) -> Unit,
     onForgetDevice: (String) -> Unit,
     onCameraSettings: (String, Int, Boolean, Int, Boolean) -> Unit,
-    onRemoteCommand: (String, RemoteCommand) -> Unit,
-    onReleaseCommand: (String, RemoteCommand) -> Unit,
+    onRemoteCommand: (String, RemoteControlCommand) -> Unit,
     onClearLog: () -> Unit,
     onShareLog: () -> Unit,
     onDismissShutterError: () -> Unit
@@ -444,8 +440,7 @@ fun MainScreen(
                                     onCameraSettings = { connectionMode, quickConnectEnabled, duration, autoFocus ->
                                         onCameraSettings(connection.device.address, connectionMode, quickConnectEnabled, duration, autoFocus)
                                     },
-                                    onRemoteCommand = onRemoteCommand,
-                                    onReleaseCommand = onReleaseCommand
+                                    onRemoteCommand = onRemoteCommand
                                 )
                             }
                         }

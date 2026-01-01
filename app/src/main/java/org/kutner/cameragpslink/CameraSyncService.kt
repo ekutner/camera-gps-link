@@ -547,42 +547,44 @@ class CameraSyncService : Service() {
             ) {
                 if (characteristic.uuid == Constants.REMOTE_CONTROL_STATUS_UUID) {
                     val address = gatt.device.address
+                    val cameraStatus = CameraStatus.fromBytes(value)
 
                     // Mark remote control as enabled as soon as any status change is received
-                    if (!_isRemoteControlEnabled.value.getOrDefault(address, false) && !value.contentEquals(Constants.StatusPackets.REMOTE_CONTROL_DISABLED)) {
+                    if (!_isRemoteControlEnabled.value.getOrDefault(address, false) &&
+                        cameraStatus != CameraStatus.REMOTE_CONTROL_DISABLED) {
                         updateStatusMap(_isRemoteControlEnabled, address, true)
-                        notificationHelper.updateNotifications(cameraConnections.values, isRemoteControlEnabled.value, isForegroundServiceStarted,) { log(it) }
+                        notificationHelper.updateNotifications(cameraConnections.values, isRemoteControlEnabled.value, isForegroundServiceStarted) { log(it) }
                         log("Remote control is ENABLED for $address")
                     }
 
-                    when {
+                    when (cameraStatus) {
                         // Focus Status
-                        value.contentEquals(Constants.StatusPackets.FOCUS_ACQUIRED) -> {
+                        CameraStatus.FOCUS_ACQUIRED -> {
                             updateStatusMap(_isFocusAcquired, address, true)
                         }
-                        value.contentEquals(Constants.StatusPackets.FOCUS_LOST) -> {
+                        CameraStatus.FOCUS_LOST -> {
                             updateStatusMap(_isFocusAcquired, address, false)
                         }
 
                         // Shutter Status
-                        value.contentEquals(Constants.StatusPackets.SHUTTER_READY) -> {
+                        CameraStatus.SHUTTER_READY -> {
                             updateStatusMap(_isShutterReady, address, true)
                         }
-                        value.contentEquals(Constants.StatusPackets.SHUTTER_ACTIVE) -> {
+                        CameraStatus.SHUTTER_ACTIVE -> {
                             updateStatusMap(_isShutterReady, address, false)
                         }
 
                         // Video Recording Status
-                        value.contentEquals(Constants.StatusPackets.VIDEO_STARTED) -> {
+                        CameraStatus.VIDEO_STARTED -> {
                             updateStatusMap(_isRecordingVideo, address, true)
                         }
-                        value.contentEquals(Constants.StatusPackets.VIDEO_STOPPED) -> {
+                        CameraStatus.VIDEO_STOPPED -> {
                             updateStatusMap(_isRecordingVideo, address, false)
                         }
 
-                        value.contentEquals(Constants.StatusPackets.REMOTE_CONTROL_DISABLED) -> {
+                        CameraStatus.REMOTE_CONTROL_DISABLED -> {
                             updateStatusMap(_isRemoteControlEnabled, address, false)
-                            notificationHelper.updateNotifications(cameraConnections.values, isRemoteControlEnabled.value, isForegroundServiceStarted,) { log(it) }
+                            notificationHelper.updateNotifications(cameraConnections.values, isRemoteControlEnabled.value, isForegroundServiceStarted) { log(it) }
                             log("Remote control is DISABLED for $address")
                         }
                         else -> {
@@ -624,7 +626,7 @@ class CameraSyncService : Service() {
             isRemoteControlDisabled = true
         }
         if (retryCount < 5 && !isRemoteControlDisabled) {
-            sendRemoteCommand(deviceAddress, RemoteCommand.REMOTE_CONTROL_PROBE)
+            sendRemoteCommand(deviceAddress, RemoteControlCommand.REMOTE_CONTROL_PROBE)
             handler.postDelayed(
                 {
                     probeRemoteControlInternal(deviceAddress, retryCount + 1)
@@ -957,21 +959,20 @@ class CameraSyncService : Service() {
     @SuppressLint("MissingPermission")
     fun triggerShutter(deviceAddress: String? = null, fromNotification: Boolean = false) {
         if (deviceAddress != null) {
-            // Track if this shutter was triggered from notification
             if (fromNotification) {
                 _shutterTriggeredFromNotification.value = deviceAddress
             }
 
-            log("Triggering shutter for $deviceAddress}...")
-            sendRemoteCommand(deviceAddress, RemoteCommand.FULL_SHUTTER_BUTTON)
+            log("Triggering shutter for $deviceAddress...")
+            sendRemoteCommand(deviceAddress, RemoteControlCommand.FULL_SHUTTER_DOWN)
             handler.postDelayed({
-                sendReleaseCommand(deviceAddress, RemoteCommand.FULL_SHUTTER_BUTTON)
+                sendRemoteCommand(deviceAddress, RemoteControlCommand.FULL_SHUTTER_UP)
             }, 200)
         }
     }
 
     @SuppressLint("MissingPermission")
-    fun sendRemoteCommand(deviceAddress: String, command: RemoteCommand) {
+    fun sendRemoteCommand(deviceAddress: String, command: RemoteControlCommand) {
         val connection = cameraConnections[deviceAddress]
         if (connection == null || !connection.isConnected) {
             log("Cannot send remote command: Camera $deviceAddress not connected")
@@ -979,40 +980,16 @@ class CameraSyncService : Service() {
         }
 
         val gatt = connection.gatt ?: return
-        val remoteControlChar = gatt.getService(Constants.REMOTE_CONTROL_SERVICE_UUID)?.getCharacteristic(Constants.REMOTE_CONTROL_CHARACTERISTIC_UUID)
+        val remoteControlChar = gatt.getService(Constants.REMOTE_CONTROL_SERVICE_UUID)
+            ?.getCharacteristic(Constants.REMOTE_CONTROL_CHARACTERISTIC_UUID)
         if (remoteControlChar == null) {
             log("Remote control characteristic not found for $deviceAddress")
             return
         }
 
-        log("Sending remote command ${command.name} to ${connection.device.name ?: deviceAddress}: ${command.commandBytes.joinToString(" ") { "0x%02x".format(it) }}")
-        writeCharacteristic(gatt, remoteControlChar, command.commandBytes, BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT)
+        log("Sending remote command ${command.name} to ${connection.device.name ?: deviceAddress}: ${command.bytes.joinToString(" ") { "0x%02x".format(it) }}")
+        writeCharacteristic(gatt, remoteControlChar, command.bytes, BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT)
     }
-
-    @SuppressLint("MissingPermission")
-    fun sendReleaseCommand(deviceAddress: String, command: RemoteCommand) {
-        if (!command.hasRelease()) {
-            log("Command ${command.name} does not have a release")
-            return
-        }
-
-        val connection = cameraConnections[deviceAddress]
-        if (connection == null || !connection.isConnected) {
-            log("Cannot send release command: Camera $deviceAddress not connected")
-            return
-        }
-
-        val gatt = connection.gatt ?: return
-        val remoteControlChar = gatt.getService(Constants.REMOTE_CONTROL_SERVICE_UUID)?.getCharacteristic(Constants.REMOTE_CONTROL_CHARACTERISTIC_UUID)
-        if (remoteControlChar == null) {
-            log("Remote control characteristic not found for $deviceAddress")
-            return
-        }
-
-        log("Sending release command for ${command.name} to ${connection.device.name ?: deviceAddress}: ${command.releaseBytes!!.joinToString(" ") { "0x%02x".format(it) }}")
-        writeCharacteristic(gatt, remoteControlChar, command.releaseBytes, BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT)
-    }
-
 
     @SuppressLint("MissingPermission")
     private fun writeCharacteristic(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic, payload: ByteArray, writeType: Int) {
