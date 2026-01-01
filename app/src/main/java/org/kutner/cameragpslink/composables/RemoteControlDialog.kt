@@ -91,14 +91,6 @@ fun RemoteControlDialog(
         return if (isPressed) baseColor.copy(alpha = 0.7f) else baseColor
     }
 
-    // Determine the button color based on focus status and interaction
-    val shutterButtonColor = when {
-        isFocused -> Color(0xFF4CAF50) // Green when focused
-        isFullPressed -> MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
-        isHalfPressed -> MaterialTheme.colorScheme.secondary
-        else -> MaterialTheme.colorScheme.primary
-    }
-
     Dialog(onDismissRequest = onDismiss) {
         Card(
             modifier = Modifier.fillMaxWidth().wrapContentHeight(),

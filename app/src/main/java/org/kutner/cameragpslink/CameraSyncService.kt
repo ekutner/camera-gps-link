@@ -594,6 +594,7 @@ class CameraSyncService : Service() {
 
 
             // Compatibility for older Android versions
+            @Suppress("OVERRIDE_DEPRECATION")
             @Deprecated("Deprecated in Java")
             override fun onCharacteristicChanged(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic) {
                 @Suppress("DEPRECATION")
@@ -1009,7 +1010,7 @@ class CameraSyncService : Service() {
         }
 
         log("Sending release command for ${command.name} to ${connection.device.name ?: deviceAddress}: ${command.releaseBytes!!.joinToString(" ") { "0x%02x".format(it) }}")
-        writeCharacteristic(gatt, remoteControlChar, command.releaseBytes!!, BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT)
+        writeCharacteristic(gatt, remoteControlChar, command.releaseBytes, BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT)
     }
 
 
