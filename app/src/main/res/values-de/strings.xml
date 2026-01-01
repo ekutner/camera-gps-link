@@ -10,13 +10,13 @@
     <string name="error_shutter_message">Aktivieren Sie \"Bluetooth-Fernsteuerung\" in den Kameraeinstellungen!</string>
     <string name="error_shutter_message_long">Aktivieren Sie \"Bluetooth-Fernsteuerung\" in den Kameraeinstellungen, um die Fernauslösung zu verwenden.</string>
 
-    <string name="notification_searching">Suche nach Kameras...</string>
+    <string name="notification_searching">Suche nach Kameras…</string>
     <string name="notification_connected_single">Mit 1 Kamera verbunden</string>
     <string name="notification_connected_multiple">Mit %d Kameras verbunden</string>
     <string name="notification_connected_to">Verbunden mit %s</string>
     <string name="notification_shutter_failed">Auslöser fehlgeschlagen - %s</string>
     <string name="notification_boot_message">Tippen Sie, um %s nach dem Neustart des Telefons zu aktivieren</string>
-    <string name="notification_searching_title">Suche nach Kameras...</string>
+    <string name="notification_searching_title">Suche nach Kameras…</string>
     <string name="notification_searching_message">Entfernen Sie diese Benachrichtigung nicht!</string>
     <string name="notification_search_long_message">Entfernen Sie diese Benachrichtigung nicht!\nSie wird benötigt, damit sich die App im Hintergrund mit der Kamera verbinden kann.</string>
 
@@ -41,7 +41,7 @@
     <string name="button_connect">Verbinden</string>
 
     <string name="fab_add_new_camera">Neue Kamera hinzufügen</string>
-    <string name="camera_state_connecting">VERBINDE...</string>
+    <string name="camera_state_connecting">VERBINDE…</string>
     <string name="camera_state_connected">VERBUNDEN</string>
     <string name="camera_state_disconnected">GETRENNT</string>
     <string name="camera_state_found">KAMERA GEFUNDEN</string>
@@ -50,7 +50,7 @@
     <string name="dialog_permissions_message">Diese App benötigt Standort- und Bluetooth-Berechtigungen, um nach Ihrer Kamera zu suchen und sich mit ihr zu verbinden. Bitte erteilen Sie diese in den App-Einstellungen.</string>
 
     <string name="dialog_search_title">Suche nach Kameras</string>
-    <string name="dialog_search_wait_message">Bitte warten...</string>
+    <string name="dialog_search_wait_message">Bitte warten…</string>
     <string name="dialog_search_found_message">Kameras gefunden</string>
     <string name="dialog_search_fail_message">Keine Kameras gefunden</string>
 

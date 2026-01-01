@@ -11,13 +11,13 @@
     <string name="error_shutter_message">הפעל \"שלט רחוק בלוטות׳\" בהגדרות המצלמה!</string>
     <string name="error_shutter_message_long">הפעל \"שלט רחוק בלוטות׳\" בהגדרות המצלמה כדי להשתמש בשליטה מרחוק על התריס.</string>
 
-    <string name="notification_searching">מחפש מצלמות...</string>
+    <string name="notification_searching">מחפש מצלמות…</string>
     <string name="notification_connected_single">מחובר למצלמה אחת</string>
     <string name="notification_connected_multiple">מחובר ל-%d מצלמות</string>
     <string name="notification_connected_to">מחובר ל-%s</string>
     <string name="notification_shutter_failed">תריס נכשל - %s</string>
     <string name="notification_boot_message">הקש כדי להפעיל את %s לאחר אתחול הטלפון</string>
-    <string name="notification_searching_title">מחפש מצלמות...</string>
+    <string name="notification_searching_title">מחפש מצלמות…</string>
     <string name="notification_searching_message">אל תסיר התראה זו!</string>
     <string name="notification_search_long_message">אל תסיר התראה זו!\nהיא נדרשת כדי שהאפליקציה תוכל להתחבר למצלמה כשהיא ברקע.</string>
 
@@ -42,7 +42,7 @@
     <string name="button_connect">התחבר</string>
 
     <string name="fab_add_new_camera">הוסף מצלמה חדשה</string>
-    <string name="camera_state_connecting">מתחבר...</string>
+    <string name="camera_state_connecting">מתחבר…</string>
     <string name="camera_state_connected">מחובר</string>
     <string name="camera_state_disconnected">מנותק</string>
     <string name="camera_state_found">נמצאה מצלמה</string>
@@ -51,7 +51,7 @@
     <string name="dialog_permissions_message">אפליקציה זו דורשת הרשאות מיקום ובלוטות׳ כדי לסרוק ולהתחבר למצלמה שלך. אנא אשר אותן בהגדרות האפליקציה.</string>
 
     <string name="dialog_search_title">מחפש מצלמות</string>
-    <string name="dialog_search_wait_message">אנא המתן...</string>
+    <string name="dialog_search_wait_message">אנא המתן…</string>
     <string name="dialog_search_found_message">נמצאו מצלמות</string>
     <string name="dialog_search_fail_message">לא נמצאו מצלמות</string>
 

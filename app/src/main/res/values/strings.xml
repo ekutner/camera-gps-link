@@ -10,13 +10,13 @@
     <string name="error_shutter_message">Enable \"Bluetooth Rmt Ctrl\" in the camera settings!</string>
     <string name="error_shutter_message_long">Enable \"Bluetooth Rmt Ctrl\" in the camera settings to use remote shutter control.</string>
 
-    <string name="notification_searching">Searching for cameras...</string>
+    <string name="notification_searching">Searching for cameras…</string>
     <string name="notification_connected_single">Connected to 1 camera</string>
     <string name="notification_connected_multiple">Connected to %d cameras</string>
     <string name="notification_connected_to">Connected to %s</string>
     <string name="notification_shutter_failed">Shutter Failed - %s</string>
     <string name="notification_boot_message">Tap to activate %s after the phone has rebooted</string>
-    <string name="notification_searching_title">Searching for cameras...</string>
+    <string name="notification_searching_title">Searching for cameras…</string>
     <string name="notification_searching_message">Do not remove this notification!</string>
     <string name="notification_search_long_message">Do not remove this notification!\nIt is required for the app to connect to the camera while in the background.</string>
 
@@ -40,7 +40,7 @@
     <string name="button_connect">Connect</string>
 
     <string name="fab_add_new_camera">Add new camera</string>
-    <string name="camera_state_connecting">CONNECTING...</string>
+    <string name="camera_state_connecting">CONNECTING…</string>
     <string name="camera_state_connected">CONNECTED</string>
     <string name="camera_state_disconnected">DISCONNECTED</string>
     <string name="camera_state_found">FOUND CAMERA</string>
@@ -49,7 +49,7 @@
     <string name="dialog_permissions_message">This app requires location and Bluetooth permissions to scan for and connect to your camera. Please grant them in the app settings.</string>
 
     <string name="dialog_search_title">Searching for cameras</string>
-    <string name="dialog_search_wait_message">Please wait...</string>
+    <string name="dialog_search_wait_message">Please wait…</string>
     <string name="dialog_search_found_message">Found Cameras</string>
     <string name="dialog_search_fail_message">No cameras found</string>
 
