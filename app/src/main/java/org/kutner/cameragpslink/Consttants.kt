@@ -3,11 +3,6 @@ package org.kutner.cameragpslink
 import java.util.UUID
 
 object Constants {
-    // Global Constants
-    // APP_NAME must remain here as it is used in a string formatting below,
-    // but its value is defined in strings.xml
-    const val APP_NAME = "Camera Gps Link"
-
     // Notification Channels
     const val NOTIFICATION_CHANNEL_HIGH = "camera_gps_link_channel_high"
     const val NOTIFICATION_CHANNEL_LOW = "camera_gps_link_channel_low"

@@ -288,7 +288,7 @@ fun MainScreen(
         modifier = Modifier.fillMaxSize(),
         topBar = {
             TopAppBar(
-                title = { Text(Constants.APP_NAME) },
+                title = { Text(context.getString(R.string.app_name)) },
                 actions = {
                     IconButton(onClick = { showMenu = true }) {
                         Icon(
