@@ -30,6 +30,10 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import android.os.Build
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.os.VibratorManager
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.kutner.cameragpslink.AppSettingsManager
@@ -50,6 +54,18 @@ fun RemoteControlDialog(
     val cameraSettings = remember { AppSettingsManager.getCameraSettings(context, cameraAddress) }
     var halfShutterEnabled by remember { mutableStateOf(cameraSettings.enableHalfShutterPress) }
 
+    // Get vibrator service
+    val vibrator = remember {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            // Build.VERSION_CODES.S is Android 12 and API level 31
+            val vibratorManager = context.getSystemService(android.content.Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
+            vibratorManager.defaultVibrator
+        } else {
+            @Suppress("DEPRECATION")
+            context.getSystemService(android.content.Context.VIBRATOR_SERVICE) as Vibrator
+        }
+    }
+
     val layoutDirection = LocalLayoutDirection.current
     val isRtl = layoutDirection == androidx.compose.ui.unit.LayoutDirection.Rtl
 
@@ -60,6 +76,18 @@ fun RemoteControlDialog(
     // Observe Focus State
     val focusStates by service.isFocusAcquired.collectAsState()
     val isFocused = focusStates[cameraAddress] ?: false
+
+    // Track previous focus state to detect changes
+    var previousFocusState by remember { mutableStateOf(false) }
+
+    // Vibrate when focus is acquired
+    LaunchedEffect(isFocused) {
+        if (isFocused && !previousFocusState) {
+            // Focus was just acquired - vibrate
+            vibrator.vibrate(VibrationEffect.createOneShot(100, VibrationEffect.DEFAULT_AMPLITUDE))
+        }
+        previousFocusState = isFocused
+    }
 
     // Observe recording state
     val recordingMap by service.isRecordingVideo.collectAsState()
