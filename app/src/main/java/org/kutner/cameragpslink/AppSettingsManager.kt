@@ -7,11 +7,13 @@ import com.google.gson.reflect.TypeToken
 
 data class CameraSettings(
     val deviceAddress: String,
+    val protocolVersion: Int = Constants.PROTOCOL_VERSION_CREATORS_APP,     // Use this for backward compatibility with previously saved cameras
     val connectionMode: Int = 1, // 1 = Mode 1, 2 = Mode 2
     val quickConnectEnabled: Boolean = false,
     val quickConnectDurationMinutes: Int = 5,
     val lastDisconnectTimestamp: Long? = null,
     val enableHalfShutterPress: Boolean = false
+
 )
 
 object AppSettingsManager {
@@ -22,7 +24,7 @@ object AppSettingsManager {
 
     private val gson = Gson()
 
-    fun saveCameraSettings(context: Context, settings: CameraSettings) {
+    private fun saveCameraSettings(context: Context, settings: CameraSettings) {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         val allSettings = loadAllCamerasSettings(prefs).toMutableMap()
         allSettings[settings.deviceAddress] = settings
@@ -38,7 +40,8 @@ object AppSettingsManager {
             quickConnectDurationMinutes = settings.quickConnectDurationMinutes.coerceAtLeast(0).coerceAtMost(720),
             quickConnectEnabled = settings.quickConnectEnabled,
             lastDisconnectTimestamp = settings.lastDisconnectTimestamp?.coerceAtLeast(0),
-            enableHalfShutterPress = settings.enableHalfShutterPress
+            enableHalfShutterPress = settings.enableHalfShutterPress,
+            protocolVersion = if (settings.protocolVersion == 0) Constants.PROTOCOL_VERSION_CREATORS_APP else settings.protocolVersion
         )
     }
 
@@ -95,9 +98,13 @@ object AppSettingsManager {
         return loadAllCamerasSettings(prefs)
     }
 
-    fun addSavedCamera(context: Context, deviceAddress: String) {
-        val currentSettings = getCameraSettings(context, deviceAddress)
-        saveCameraSettings(context, currentSettings)
+    fun addSavedCamera(context: Context, deviceAddress: String, protocolVersion: Int) {
+//        val currentSettings = getCameraSettings(context, deviceAddress)
+        val newSettings = CameraSettings(
+            deviceAddress = deviceAddress,
+            protocolVersion = protocolVersion
+        )
+        saveCameraSettings(context, newSettings)
     }
 
     fun removeSavedCamera(context: Context, deviceAddress: String) {

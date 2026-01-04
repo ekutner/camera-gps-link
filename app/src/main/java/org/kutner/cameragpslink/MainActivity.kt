@@ -156,7 +156,7 @@ class MainActivity : AppCompatActivity() {
                             // Ensure the service is started as a service, not just bound
                             startCameraService()
                             service.stopManualScan()
-                            service.connectToDevice(it)
+                            service.connectToDevice(it.device, it)
                         },
                         onTriggerShutter = { address -> service.triggerShutter(address) },
                         onForgetDevice = { address -> service.forgetDevice(address) },
@@ -239,12 +239,12 @@ fun MainScreen(
     log: StateFlow<List<String>>,
     service: CameraSyncService,
     connectedCameras: StateFlow<List<CameraConnection>>,
-    foundDevices: StateFlow<List<BluetoothDevice>>,
+    foundDevices: StateFlow<List<FoundDevice>>,
     isManualScanning: StateFlow<Boolean>,
     shutterErrorMessage: StateFlow<String?>,
     onStartScan: () -> Unit,
     onCancelScan: () -> Unit,
-    onConnectToDevice: (BluetoothDevice) -> Unit,
+    onConnectToDevice: (FoundDevice) -> Unit,
     onTriggerShutter: (String) -> Unit,
     onForgetDevice: (String) -> Unit,
     onCameraSettings: (String, Int, Boolean, Int, Boolean) -> Unit,

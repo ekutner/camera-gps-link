@@ -1,7 +1,6 @@
 package org.kutner.cameragpslink.composables
 
 import android.annotation.SuppressLint
-import android.bluetooth.BluetoothDevice
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -26,15 +25,16 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import org.kutner.cameragpslink.FoundDevice
 import org.kutner.cameragpslink.R
 
 @SuppressLint("MissingPermission")
 @Composable
 fun SearchDialog(
     isScanning: Boolean,
-    foundDevices: List<BluetoothDevice>,
+    foundDevices: List<FoundDevice>,
     onDismiss: () -> Unit,
-    onConnect: (BluetoothDevice) -> Unit,
+    onConnect: (FoundDevice) -> Unit,
     onCancelScan: () -> Unit
 ) {
     Dialog(onDismissRequest = onDismiss) {
@@ -104,7 +104,7 @@ fun SearchDialog(
                         ) {
                             items(foundDevices) { device ->
                                 FoundCameraCard(
-                                    device = device,
+                                    foundDevice = device,
                                     onConnect = { onConnect(device) }
                                 )
                             }

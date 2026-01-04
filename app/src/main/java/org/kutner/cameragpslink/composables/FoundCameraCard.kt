@@ -1,7 +1,6 @@
 package org.kutner.cameragpslink.composables
 
 import android.annotation.SuppressLint
-import android.bluetooth.BluetoothDevice
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -29,13 +28,14 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import org.kutner.cameragpslink.FoundDevice
 import org.kutner.cameragpslink.R
 
 @SuppressLint("MissingPermission")
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun FoundCameraCard(
-    device: BluetoothDevice,
+    foundDevice: FoundDevice,
     onConnect: () -> Unit
 ) {
     val context = LocalContext.current
@@ -74,12 +74,12 @@ fun FoundCameraCard(
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = device.name ?: context.getString(R.string.unknown_camera_name),
+                        text = foundDevice.device.name ?: context.getString(R.string.unknown_camera_name),
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.SemiBold
                     )
                     Text(
-                        text = device.address,
+                        text = foundDevice.device.address,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

@@ -6,7 +6,7 @@ phone and the camera
 ## Other sources of information
 https://gethypoxic.com/blogs/technical/sony-camera-ble-control-protocol-di-remote-control  
 https://gregleeds.com/reverse-engineering-sony-camera-bluetooth/  
-https://github.com/whc2001/ILCE7M3ExternalGps/blob/main/PROTOCOL_EN.md (make sure to also checkout the issues page)
+https://github.com/whc2001/ILCE7M3ExternalGps/blob/main/PROTOCOL_EN.md (make sure to also checkout the issues page)  
 https://github.com/coral/freemote
 
 ## Time Service (*UUID = 8000CC00-CC00-FFFF-FFFF-FFFFFFFFFFFF*)

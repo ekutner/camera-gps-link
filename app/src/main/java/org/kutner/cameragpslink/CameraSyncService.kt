@@ -22,6 +22,7 @@ import com.google.android.gms.location.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import org.kutner.cameragpslink.composables.FoundCameraCard
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.text.SimpleDateFormat
@@ -37,7 +38,8 @@ data class CameraConnection(
     var disconnectTimestamp: Long? = null,
     var quickConnectRunnable: Runnable? = null,
     var isGattErrorReceived: Boolean = false,
-    var retries: Long = 0
+    var retries: Long = 0,
+    var isRemoteControlEnabled: Boolean = false
 ) {
     // Override equals and hashCode to ensure updates are detected
     override fun equals(other: Any?): Boolean {
@@ -55,6 +57,13 @@ data class CameraConnection(
         return result
     }
 }
+
+data class FoundDevice(
+    val device: BluetoothDevice,
+    val protocolVersion: Int,
+    val isRemoteControlEnabled: Boolean
+)
+
 
 class CameraSyncService : Service() {
 
@@ -86,8 +95,8 @@ class CameraSyncService : Service() {
     private val _connectedCameras = MutableStateFlow<List<CameraConnection>>(emptyList())
     val connectedCameras: StateFlow<List<CameraConnection>> = _connectedCameras
 
-    private val _foundDevices = MutableStateFlow<List<BluetoothDevice>>(emptyList())
-    val foundDevices: StateFlow<List<BluetoothDevice>> = _foundDevices
+    private val _foundDevices = MutableStateFlow<List<FoundDevice>>(emptyList())
+    val foundDevices: StateFlow<List<FoundDevice>> = _foundDevices
 
     private var lastKnownLocation: Location? = null
     private lateinit var locationCallback: LocationCallback
@@ -211,11 +220,35 @@ class CameraSyncService : Service() {
 
     // --- Core Logic ---
 
+    private fun parseCameraFeatureState(packetData: ByteArray, tagId:Byte, featureMask: Int): Boolean {
+        // Start scanning at position 13.
+        // Each tag is 3 bytes: [1 byte ID] [2 bytes Value (Little Endian)].
+        // We loop as long as there is room for a full 3-byte tag.
+        var i = 6
+        while (i <= packetData.size - 3) {
+            if (packetData[i] == tagId) {
+                // Found the group. Extract the 2-byte value in Little Endian order.
+                // byte[i+1] is the Low Byte, byte[i+2] is the High Byte.
+                val lowByte = packetData[i + 1].toInt() and 0xFF
+                val highByte = packetData[i + 2].toInt() and 0xFF
+
+                val tagValue = (highByte shl 8) or lowByte
+
+                // Perform bitwise AND with the mask and return true if any bits match
+                return (tagValue and featureMask) != 0
+            }
+
+            // Move to the next 3-byte tag
+            i += 3
+        }
+        return false
+    }
     private fun createAutoScanCallback(deviceAddress: String): ScanCallback {
         return object : ScanCallback() {
             @SuppressLint("MissingPermission")
             override fun onScanResult(callbackType: Int, result: ScanResult) {
                 log("Found saved device $deviceAddress. Connecting...")
+                result
                 val connection = cameraConnections[deviceAddress] ?: return
                 if (connection.isConnected || connection.isConnecting) {
                     // This is meant to handle scenarios where the device is discovered multiple time
@@ -223,6 +256,17 @@ class CameraSyncService : Service() {
                     log("Device ${connection.device.name ?: deviceAddress}  is already connected or connecting. Not connecting again.")
                     return
                 }
+
+                val sonyData = result.scanRecord?.getManufacturerSpecificData(Constants.SONY_MANUFACTURER_ID)
+                if (sonyData != null) {
+                    val hexString = sonyData.joinToString(separator = " ") { String.format("%02X", it) }
+                    log("Sony manufacturer data: $deviceAddress: $hexString")
+
+                    connection.isRemoteControlEnabled = parseCameraFeatureState(sonyData, 0x22, 0x04)
+                    updateStatusMap(_isRemoteControlEnabled, deviceAddress, connection.isRemoteControlEnabled)
+                    log("Device ${connection.device.name ?: deviceAddress} Remote Control Enabled: ${connection.isRemoteControlEnabled}")
+                }
+
                 stopAutoScan(deviceAddress)
                 connectToDevice(result.device)
             }
@@ -343,7 +387,7 @@ class CameraSyncService : Service() {
     }
 
     @SuppressLint("MissingPermission")
-    fun connectToDevice(device: BluetoothDevice) {
+    fun connectToDevice(device: BluetoothDevice, foundDevice: FoundDevice? = null) {
         // This method is used both for initiating a connection in mode 1
         // and for adding a new camera in either mode 1 or 2
         if (!hasRequiredPermissions() || !isAdapterAndScannerReady()) return
@@ -372,7 +416,11 @@ class CameraSyncService : Service() {
 
         // Save immediately when connecting to a new camera
         if (!AppSettingsManager.hasSavedCamera(this, address)) {
-            AppSettingsManager.addSavedCamera(this, address)
+            val protocolVersion = foundDevice?.protocolVersion?:0
+            connection.isRemoteControlEnabled = foundDevice?.isRemoteControlEnabled?:false
+            updateStatusMap(_isRemoteControlEnabled, address, connection.isRemoteControlEnabled)
+            log("Saving camera settings for $address with protocol version $protocolVersion and remote control enabled ${connection.isRemoteControlEnabled}")
+            AppSettingsManager.addSavedCamera(this, address, protocolVersion )
         }
 
         updateConnectionsList()
@@ -390,7 +438,6 @@ class CameraSyncService : Service() {
                     connection.isConnected = true
                     connection.isConnecting = false
                     connection.retries = 0
-                    updateStatusMap(_isRemoteControlEnabled, deviceAddress, false)
                     updateStatusMap(_isFocusAcquired, deviceAddress, false)
                     updateStatusMap(_isShutterReady, deviceAddress, false)
                     updateStatusMap(_isRecordingVideo, deviceAddress, false)
@@ -450,11 +497,23 @@ class CameraSyncService : Service() {
 
             @SuppressLint("MissingPermission")
             override fun onServicesDiscovered(gatt: BluetoothGatt, status: Int) {
-                log("Services discovered for ${gatt.device.name ?: deviceAddress}. Locking endpoint...")
-                lockLocationEndpoint(gatt, deviceAddress)
+                val cameraSettings = AppSettingsManager.getCameraSettings(this@CameraSyncService, deviceAddress)
+                if (cameraSettings.protocolVersion == Constants.PROTOCOL_VERSION_CREATORS_APP) {
+                    // Protocol version 0x65 (101) requires the endpoint lock and enable calls to be made before sending location data
+                    lockLocationEndpoint(gatt, deviceAddress)
+                }
+                else {
+                    // Previous protocol using Imaging Edge didn't need the location endpoint lock and enable commands
+                    sendLocationData(deviceAddress)
+                    handler.postDelayed({ startLocationUpdates(deviceAddress) }, 500)
+                }
+                log("Services discovered for ${gatt.device.name ?: deviceAddress}. Locking endpoint... using protocol version ${cameraSettings.protocolVersion}")
                 // These delays were empirically tested with A7R5 and may not work correctly for other cameras
+                if (cameraSettings.connectionMode == 2) {
+                    updateStatusMap(_isRemoteControlEnabled, deviceAddress, false)
+                    handler.postDelayed({ probeRemoteControl(deviceAddress) }, 100)
+                }
                 handler.postDelayed({ setupStatusNotifications(gatt, deviceAddress) }, 50)
-                handler.postDelayed({ probeRemoteControl(deviceAddress) }, 100)
             }
 
             @SuppressLint("MissingPermission")
@@ -779,11 +838,19 @@ class CameraSyncService : Service() {
         @SuppressLint("MissingPermission")
         override fun onScanResult(callbackType: Int, result: ScanResult) {
             val currentDevices = _foundDevices.value.toMutableList()
-            if (currentDevices.none { it.address == result.device.address } &&
+            if (currentDevices.none { it.device.address == result.device.address } &&
                 !cameraConnections.containsKey(result.device.address)) {
-                log("Found manual device: ${result.device.name}")
-                currentDevices.add(result.device)
-                _foundDevices.value = currentDevices
+                // Extract protocol version from manufacturer data
+                val sonyData = result.scanRecord?.getManufacturerSpecificData(Constants.SONY_MANUFACTURER_ID)
+                if (sonyData != null) {
+                    val protocolVersion = sonyData?.getOrNull(2)?.toInt() ?: 0
+                    val isRemoteControlEnabled = parseCameraFeatureState(sonyData, 0x22, 0x04)
+
+                    val device = FoundDevice(result.device, protocolVersion = protocolVersion, isRemoteControlEnabled = isRemoteControlEnabled)
+                    log("Found manual device: ${result.device.name} with address ${result.device.address} and protocol version $protocolVersion")
+                    currentDevices.add(device)
+                    _foundDevices.value = currentDevices
+                }
             }
         }
 
