@@ -2,7 +2,6 @@ package org.kutner.cameragpslink
 
 import android.Manifest
 import android.annotation.SuppressLint
-import android.bluetooth.BluetoothDevice
 import android.content.ComponentName
 import android.content.Intent
 import android.content.ServiceConnection
@@ -31,6 +30,7 @@ import androidx.compose.material.icons.filled.CheckBoxOutlineBlank
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
@@ -62,6 +62,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import androidx.core.os.LocaleListCompat
 import kotlinx.coroutines.flow.StateFlow
+import com.google.android.play.core.review.ReviewManagerFactory
 import org.kutner.cameragpslink.composables.ConnectedCameraCard
 import org.kutner.cameragpslink.composables.LogCard
 import org.kutner.cameragpslink.composables.SearchDialog
@@ -169,6 +170,7 @@ class MainActivity : AppCompatActivity() {
                         },
                         onClearLog = { service.clearLog() },
                         onShareLog = { shareLog(service.getLogAsString()) },
+                        onRateApp = { launchReviewFlow() },
                         onDismissShutterError = { service.clearShutterError() }
                     )
                 } else {
@@ -230,6 +232,22 @@ class MainActivity : AppCompatActivity() {
         }
         startActivity(Intent.createChooser(shareIntent, "Share Log"))
     }
+
+    private fun launchReviewFlow() {
+        val manager = ReviewManagerFactory.create(this)
+        val request = manager.requestReviewFlow()
+        request.addOnCompleteListener { task ->
+            if (task.isSuccessful) {
+                val reviewInfo = task.result
+                val flow = manager.launchReviewFlow(this, reviewInfo)
+                flow.addOnCompleteListener { _ ->
+                    // The flow has finished. The API does not indicate whether the user
+                    // reviewed or not, or even whether the review dialog was shown.
+                }
+            }
+            // If the task fails, we simply do nothing (fail silently)
+        }
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -251,6 +269,7 @@ fun MainScreen(
     onRemoteCommand: (String, RemoteControlCommand) -> Unit,
     onClearLog: () -> Unit,
     onShareLog: () -> Unit,
+    onRateApp: () -> Unit,
     onDismissShutterError: () -> Unit
 ) {
     val context = LocalContext.current
@@ -364,6 +383,19 @@ fun MainScreen(
                             leadingIcon = {
                                 Icon(
                                     imageVector = Icons.AutoMirrored.Filled.Help,
+                                    contentDescription = null
+                                )
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(context.getString(R.string.menu_rate_app)) },
+                            onClick = {
+                                showMenu = false
+                                onRateApp()
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Default.Star,
                                     contentDescription = null
                                 )
                             }

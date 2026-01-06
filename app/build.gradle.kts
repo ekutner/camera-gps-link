@@ -105,7 +105,8 @@ dependencies {
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.appcompat)
-
+    implementation(libs.play.review)
+    implementation(libs.play.review.ktx)
 
     // Material Icons Extended
     implementation(libs.androidx.compose.material.icons.extended)

@@ -33,6 +33,7 @@
     <string name="menu_clear_log">Effacer le Journal</string>
     <string name="menu_share_log">Partager le Journal</string>
     <string name="menu_help">Aide</string>
+    <string name="menu_rate_app">Évaluer l\'application</string>
     <string name="menu_settings">Paramètres</string>
     <string name="menu_remove_camera">Supprimer la Caméra</string>
     <string name="menu_language">Langue</string>

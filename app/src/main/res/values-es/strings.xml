@@ -33,6 +33,7 @@
     <string name="menu_clear_log">Limpiar Registro</string>
     <string name="menu_share_log">Compartir Registro</string>
     <string name="menu_help">Ayuda</string>
+    <string name="menu_rate_app">Calificar aplicación</string>
     <string name="menu_settings">Configuración</string>
     <string name="menu_remove_camera">Eliminar Cámara</string>
     <string name="menu_language">Idioma</string>
