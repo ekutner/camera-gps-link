@@ -510,15 +510,12 @@ class CameraSyncService : Service() {
                     handler.postDelayed({ startLocationUpdates(deviceAddress) }, 500)
                 }
                 // These delays were empirically tested with A7R5 and may not work correctly for other cameras
-                if (cameraSettings.connectionMode == 2 || cameraSettings.protocolVersion != Constants.PROTOCOL_VERSION_CREATORS_APP) {
-                    updateStatusMap(_isRemoteControlEnabled, deviceAddress, false)
-                    handler.postDelayed({ probeRemoteControl(deviceAddress) }, 200)
-                }
-                handler.postDelayed({ setupStatusNotifications(gatt, deviceAddress) }, 100)
+                handler.postDelayed({ setupStatusNotifications(gatt, cameraSettings) }, 100)
             }
 
             @SuppressLint("MissingPermission")
-            private fun setupStatusNotifications(gatt: BluetoothGatt, deviceAddress: String) : Boolean {
+            private fun setupStatusNotifications(gatt: BluetoothGatt, cameraSettings: CameraSettings) : Boolean {
+                val deviceAddress = gatt.device.address
                 val service = gatt.getService(Constants.REMOTE_CONTROL_SERVICE_UUID)
                 val statusChar = service?.getCharacteristic(Constants.REMOTE_CONTROL_STATUS_UUID)
 
@@ -536,6 +533,12 @@ class CameraSyncService : Service() {
                             @Suppress("DEPRECATION")
                             gatt.writeDescriptor(descriptor)
                         }
+
+                        // Check if remote control is enabled when we can't read it from the manufacturer data
+                        if (cameraSettings.connectionMode == 2 || cameraSettings.protocolVersion != Constants.PROTOCOL_VERSION_CREATORS_APP) {
+                            updateStatusMap(_isRemoteControlEnabled, deviceAddress, false)
+                            handler.postDelayed({ probeRemoteControl(deviceAddress) }, 100)
+                        }
                         return true
                     }
                     else {
@@ -544,6 +547,8 @@ class CameraSyncService : Service() {
                 } else {
                     log("Remote control status characteristic not found for ${gatt.device.name ?: deviceAddress}")
                 }
+                val connection = cameraConnections[deviceAddress] ?: return false
+                connection.isGattErrorReceived = true
                 updateStatusMap(_isRemoteControlEnabled, deviceAddress, false )
                 return false
             }
@@ -1049,7 +1054,7 @@ class CameraSyncService : Service() {
     fun sendRemoteCommand(deviceAddress: String, command: RemoteControlCommand) {
         val connection = cameraConnections[deviceAddress]
         if (connection == null || !connection.isConnected) {
-            log("Cannot send remote command: Camera $deviceAddress not connected")
+            log("Cannot send remote command: Camera $deviceAddress not connected when sending command ${command.name}")
             return
         }
 
@@ -1057,7 +1062,7 @@ class CameraSyncService : Service() {
         val remoteControlChar = gatt.getService(Constants.REMOTE_CONTROL_SERVICE_UUID)
             ?.getCharacteristic(Constants.REMOTE_CONTROL_CHARACTERISTIC_UUID)
         if (remoteControlChar == null) {
-            log("Remote control characteristic not found for $deviceAddress")
+            log("Remote control characteristic not found for $deviceAddress when sending command  ${command.name}")
             return
         }
 
