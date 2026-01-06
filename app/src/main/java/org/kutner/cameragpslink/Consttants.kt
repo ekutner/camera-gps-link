@@ -78,7 +78,8 @@ enum class RemoteControlCommand(val bytes: ByteArray) {
     FOCUS_NEAR_UP(byteArrayOf(0x02, 0x6a.toByte(), 0x00)),
 
     // Probe command
-    REMOTE_CONTROL_PROBE(byteArrayOf(0x01, 0x05));
+//    REMOTE_CONTROL_PROBE(byteArrayOf(0x01, 0x05));
+    REMOTE_CONTROL_PROBE(byteArrayOf(0x01, 0x06));
 }
 
 // Remote control status bytes

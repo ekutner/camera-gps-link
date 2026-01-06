@@ -500,29 +500,30 @@ class CameraSyncService : Service() {
                 val cameraSettings = AppSettingsManager.getCameraSettings(this@CameraSyncService, deviceAddress)
                 if (cameraSettings.protocolVersion == Constants.PROTOCOL_VERSION_CREATORS_APP) {
                     // Protocol version 0x65 (101) requires the endpoint lock and enable calls to be made before sending location data
+                    log("Services discovered for ${gatt.device.name ?: deviceAddress}. with protocol version ${cameraSettings.protocolVersion} Locking endpoint...")
                     lockLocationEndpoint(gatt, deviceAddress)
                 }
                 else {
                     // Previous protocol using Imaging Edge didn't need the location endpoint lock and enable commands
+                    log("Services discovered for ${gatt.device.name ?: deviceAddress}. with protocol version ${cameraSettings.protocolVersion} Sending location...")
                     sendLocationData(deviceAddress)
                     handler.postDelayed({ startLocationUpdates(deviceAddress) }, 500)
                 }
-                log("Services discovered for ${gatt.device.name ?: deviceAddress}. Locking endpoint... using protocol version ${cameraSettings.protocolVersion}")
                 // These delays were empirically tested with A7R5 and may not work correctly for other cameras
-                if (cameraSettings.connectionMode == 2) {
+                if (cameraSettings.connectionMode == 2 || cameraSettings.protocolVersion != Constants.PROTOCOL_VERSION_CREATORS_APP) {
                     updateStatusMap(_isRemoteControlEnabled, deviceAddress, false)
-                    handler.postDelayed({ probeRemoteControl(deviceAddress) }, 100)
+                    handler.postDelayed({ probeRemoteControl(deviceAddress) }, 200)
                 }
-                handler.postDelayed({ setupStatusNotifications(gatt, deviceAddress) }, 50)
+                handler.postDelayed({ setupStatusNotifications(gatt, deviceAddress) }, 100)
             }
 
             @SuppressLint("MissingPermission")
-            private fun setupStatusNotifications(gatt: BluetoothGatt, deviceAddress: String) {
+            private fun setupStatusNotifications(gatt: BluetoothGatt, deviceAddress: String) : Boolean {
                 val service = gatt.getService(Constants.REMOTE_CONTROL_SERVICE_UUID)
                 val statusChar = service?.getCharacteristic(Constants.REMOTE_CONTROL_STATUS_UUID)
 
                 if (statusChar != null) {
-                    log("Enabling status notifications for $deviceAddress")
+                    log("Enabling status notifications for ${gatt.device.name ?: deviceAddress}")
                     gatt.setCharacteristicNotification(statusChar, true)
 
                     val descriptor = statusChar.getDescriptor(Constants.CLIENT_CHARACTERISTIC_CONFIG_UUID)
@@ -535,10 +536,16 @@ class CameraSyncService : Service() {
                             @Suppress("DEPRECATION")
                             gatt.writeDescriptor(descriptor)
                         }
+                        return true
+                    }
+                    else {
+                        log("Status characteristic descriptor not found for ${gatt.device.name ?: deviceAddress}")
                     }
                 } else {
-                    log("Remote control status characteristic not found for $deviceAddress")
+                    log("Remote control status characteristic not found for ${gatt.device.name ?: deviceAddress}")
                 }
+                updateStatusMap(_isRemoteControlEnabled, deviceAddress, false )
+                return false
             }
 
             override fun onCharacteristicWrite(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic, status: Int) {
@@ -582,7 +589,7 @@ class CameraSyncService : Service() {
                             }
                         }
                         Constants.REMOTE_CONTROL_CHARACTERISTIC_UUID -> {
-                            if (status == 144) {
+                            if (status == 144 || status == 133) {
                                 // Check if this shutter was triggered from notification
 //                                if (_shutterTriggeredFromNotification.value == deviceAddress) {
 //                                    _shutterTriggeredFromNotification.value = null
