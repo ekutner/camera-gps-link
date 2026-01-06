@@ -22,7 +22,6 @@ import com.google.android.gms.location.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import org.kutner.cameragpslink.composables.FoundCameraCard
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.text.SimpleDateFormat
@@ -37,7 +36,7 @@ data class CameraConnection(
     var locationUpdateRunnable: Runnable? = null,
     var disconnectTimestamp: Long? = null,
     var quickConnectRunnable: Runnable? = null,
-    var isGattErrorReceived: Boolean = false,
+    var isRcProbeErrorReceived: Boolean = false,
     var retries: Long = 0,
     var isRemoteControlEnabled: Boolean = false
 ) {
@@ -548,7 +547,7 @@ class CameraSyncService : Service() {
                     log("Remote control status characteristic not found for ${gatt.device.name ?: deviceAddress}")
                 }
                 val connection = cameraConnections[deviceAddress] ?: return false
-                connection.isGattErrorReceived = true
+                connection.isRcProbeErrorReceived = true
                 updateStatusMap(_isRemoteControlEnabled, deviceAddress, false )
                 return false
             }
@@ -603,7 +602,7 @@ class CameraSyncService : Service() {
 //                                    _shutterErrorMessage.value = this@CameraSyncService.getString(R.string.error_shutter_message_long)
 //                                }
                                 val connection = cameraConnections[deviceAddress] ?: return
-                                connection.isGattErrorReceived = true
+                                connection.isRcProbeErrorReceived = true
                                 updateStatusMap(_isRemoteControlEnabled, deviceAddress, false )
                                 log("Remote control error received for $deviceAddress")
                             }
@@ -679,7 +678,7 @@ class CameraSyncService : Service() {
 
     fun probeRemoteControl(deviceAddress: String) {
         val connection = cameraConnections[deviceAddress] ?: return
-        connection.isGattErrorReceived = false
+        connection.isRcProbeErrorReceived = false
 
         probeRemoteControlInternal(deviceAddress, 0)
     }
@@ -687,12 +686,12 @@ class CameraSyncService : Service() {
     private fun probeRemoteControlInternal(deviceAddress: String, retryCount: Int) {
         if (retryCount==0) {
             val connection = cameraConnections[deviceAddress] ?: return
-            connection.isGattErrorReceived = false
+            connection.isRcProbeErrorReceived = false
         }
 
         var isRemoteControlDisabled = false
         val connection = cameraConnections[deviceAddress]
-        if (connection!=null && connection.isGattErrorReceived) {
+        if (connection!=null && connection.isRcProbeErrorReceived) {
             updateStatusMap(_isRemoteControlEnabled, deviceAddress, false)
             isRemoteControlDisabled = true
         }
