@@ -2,10 +2,12 @@ package org.kutner.cameragpslink
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.content.ActivityNotFoundException
 import android.content.ComponentName
 import android.content.Intent
 import android.content.ServiceConnection
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
@@ -62,13 +64,12 @@ import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import androidx.core.os.LocaleListCompat
 import kotlinx.coroutines.flow.StateFlow
-import com.google.android.play.core.review.ReviewManagerFactory
+//import com.google.android.play.core.review.ReviewManagerFactory
 import org.kutner.cameragpslink.composables.ConnectedCameraCard
 import org.kutner.cameragpslink.composables.LogCard
 import org.kutner.cameragpslink.composables.SearchDialog
 import org.kutner.cameragpslink.ui.theme.CameraGpsLinkTheme
 import org.kutner.cameragpslink.composables.LanguageSelectionDialog
-//import org.kutner.cameragpslink.RemoteCommand
 
 
 class MainActivity : AppCompatActivity() {
@@ -234,18 +235,30 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun launchReviewFlow() {
-        val manager = ReviewManagerFactory.create(this)
-        val request = manager.requestReviewFlow()
-        request.addOnCompleteListener { task ->
-            if (task.isSuccessful) {
-                val reviewInfo = task.result
-                val flow = manager.launchReviewFlow(this, reviewInfo)
-                flow.addOnCompleteListener { _ ->
-                    // The flow has finished. The API does not indicate whether the user
-                    // reviewed or not, or even whether the review dialog was shown.
-                }
-            }
-            // If the task fails, we simply do nothing (fail silently)
+//        val manager = ReviewManagerFactory.create(this)
+//        val request = manager.requestReviewFlow()
+//        request.addOnCompleteListener { task ->
+//            if (task.isSuccessful) {
+//                val reviewInfo = task.result
+//                val flow = manager.launchReviewFlow(this, reviewInfo)
+//                flow.addOnCompleteListener { _ ->
+//                    // The flow has finished. The API does not indicate whether the user
+//                    // reviewed or not, or even whether the review dialog was shown.
+//                }
+//            }
+//            // If the task fails, we simply do nothing (fail silently)
+//        }
+        try {
+            // Try to open the Play Store app directly
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=$packageName"))
+            // This flag is optional but recommended for external links
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            startActivity(intent)
+        } catch (e: ActivityNotFoundException) {
+            // Fallback to the browser if the Play Store app is not installed
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=$packageName"))
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            startActivity(intent)
         }
     }
 }
