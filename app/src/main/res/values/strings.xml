@@ -10,6 +10,14 @@
     <string name="error_shutter_message">Enable \"Bluetooth Rmt Ctrl\" in the camera settings!</string>
     <string name="error_shutter_message_long">Enable \"Bluetooth Rmt Ctrl\" in the camera settings to use remote shutter control.</string>
 
+    <string name="error_bonding_title">Pairing Problem</string>
+    <string name="error_bonding_message">There is something wrong with the pairing to %s</string>
+    <string name="error_bonding_step1">1. Remove the camera from the app</string>
+    <string name="error_bonding_step2">2. Unpair the camera and the phone both on the camera side and on the phone side</string>
+    <string name="error_bonding_step3">3. Go into pairing mode on the camera</string>
+    <string name="error_bonding_step4">4. Add the camera again to the app</string>
+    <string name="error_bonding_step5">5. Make sure to confirm the pairing both on the camera and on the phone</string>
+
     <string name="notification_searching">Searching for cameras…</string>
     <string name="notification_connected_single">Connected to 1 camera</string>
     <string name="notification_connected_multiple">Connected to %d cameras</string>

@@ -11,6 +11,14 @@
     <string name="error_shutter_message">¡Habilite \"Control Remoto Bluetooth\" en la configuración de la cámara!</string>
     <string name="error_shutter_message_long">Habilite \"Control Remoto Bluetooth\" en la configuración de la cámara para usar el control remoto del obturador.</string>
 
+    <string name="error_bonding_title">Problema de emparejamiento</string>
+    <string name="error_bonding_message">Hay un problema con el emparejamiento a %s</string>
+    <string name="error_bonding_step1">1. Elimine la cámara de la aplicación</string>
+    <string name="error_bonding_step2">2. Desempareje la cámara y el teléfono tanto en el lado de la cámara como en el del teléfono</string>
+    <string name="error_bonding_step3">3. Active el modo de emparejamiento en la cámara</string>
+    <string name="error_bonding_step4">4. Agregue la cámara nuevamente a la aplicación</string>
+    <string name="error_bonding_step5">5. Asegúrese de confirmar el emparejamiento tanto en la cámara como en el teléfono</string>
+
     <string name="notification_searching">Buscando cámaras…</string>
     <string name="notification_connected_single">Conectado a 1 cámara</string>
     <string name="notification_connected_multiple">Conectado a %d cámaras</string>

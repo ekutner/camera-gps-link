@@ -38,7 +38,8 @@ data class CameraConnection(
     var quickConnectRunnable: Runnable? = null,
     var isRcProbeErrorReceived: Boolean = false,
     var retries: Long = 0,
-    var isRemoteControlEnabled: Boolean = false
+    var isRemoteControlEnabled: Boolean = false,
+    var bondAttempts: Int = 0
 ) {
     // Override equals and hashCode to ensure updates are detected
     override fun equals(other: Any?): Boolean {
@@ -120,6 +121,9 @@ class CameraSyncService : Service() {
 
     private val _shutterErrorMessage = MutableStateFlow<String?>(null)
     val shutterErrorMessage: StateFlow<String?> = _shutterErrorMessage
+
+    private val _showBondingErrorDialog = MutableStateFlow<String?>(null)
+    val showBondingErrorDialog: StateFlow<String?> = _showBondingErrorDialog
 
     private var isForegroundServiceStarted = false
 
@@ -218,6 +222,10 @@ class CameraSyncService : Service() {
     }
 
     // --- Core Logic ---
+
+    fun dismissBondingErrorDialog() {
+        _showBondingErrorDialog.value = null
+    }
 
     private fun parseCameraFeatureState(packetData: ByteArray, tagId:Byte, featureMask: Int): Boolean {
         // Start scanning at position 13.
@@ -453,8 +461,13 @@ class CameraSyncService : Service() {
                             handler.postDelayed({ gatt.discoverServices() }, 100)
                         }
                         else {
-                            log("Device not bonded. Starting pairing...")
+                            log("onConnectionStateChange: Device not bonded. Starting pairing...")
                             gatt.device.createBond()
+                            connection.bondAttempts += 1
+                            if (connection.bondAttempts >= 3) {
+                                _showBondingErrorDialog.value = deviceAddress
+                                connection.bondAttempts = 0
+                            }
                         }
                     }
                 } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
@@ -485,12 +498,18 @@ class CameraSyncService : Service() {
 
             @SuppressLint("MissingPermission")
             override fun onMtuChanged(gatt: BluetoothGatt, mtu: Int, status: Int) {
+                val connection = cameraConnections[deviceAddress] ?: return
                 if (gatt.device.bondState == BluetoothDevice.BOND_BONDED) {
                     log("MTU set to $mtu for ${gatt.device.name ?: deviceAddress}. Discovering services...")
                     gatt.discoverServices()
                 } else {
-                    log("Device not bonded. Starting pairing...")
+                    log("onMtuChanged: Device not bonded. Starting pairing...")
                     gatt.device.createBond()
+                    connection.bondAttempts += 1
+                    if (connection.bondAttempts >= 3) {
+                        _showBondingErrorDialog.value = deviceAddress
+                        connection.bondAttempts = 0
+                    }
                 }
             }
 

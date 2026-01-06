@@ -11,6 +11,15 @@
     <string name="error_shutter_message">הפעל \"שלט רחוק בלוטות׳\" בהגדרות המצלמה!</string>
     <string name="error_shutter_message_long">הפעל \"שלט רחוק בלוטות׳\" בהגדרות המצלמה כדי להשתמש בשליטה מרחוק על התריס.</string>
 
+    <string name="error_bonding_title">בעיית Pairing</string>
+    <string name="error_bonding_message">יש בעיה עם ה-pairing ל-%s</string>
+    <string name="error_bonding_step1">1. הסר את המצלמה מהאפליקציה</string>
+    <string name="error_bonding_step2">2. בטל את ההתאמה בין המצלמה לטלפון גם בצד המצלמה וגם בצד הטלפון</string>
+    <string name="error_bonding_step3">3. הפעל מצב pairing במצלמה</string>
+    <string name="error_bonding_step4">4. הוסף שוב את המצלמה לאפליקציה</string>
+    <string name="error_bonding_step5">5. ודא לאשר את ה-pairing גם במצלמה וגם בטלפון</string>
+
+
     <string name="notification_searching">מחפש מצלמות…</string>
     <string name="notification_connected_single">מחובר למצלמה אחת</string>
     <string name="notification_connected_multiple">מחובר ל-%d מצלמות</string>

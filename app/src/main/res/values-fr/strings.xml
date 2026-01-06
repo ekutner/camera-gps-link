@@ -11,6 +11,14 @@
     <string name="error_shutter_message">Activez \"Ctrl Bluetooth Distance\" dans les paramètres de la caméra !</string>
     <string name="error_shutter_message_long">Activez \"Ctrl Bluetooth Distance\" dans les paramètres de la caméra pour utiliser le déclenchement à distance.</string>
 
+    <string name="error_bonding_title">Problème de jumelage</string>
+    <string name="error_bonding_message">Il y a un problème avec le jumelage à %s</string>
+    <string name="error_bonding_step1">1. Retirez l\'appareil photo de l\'application</string>
+    <string name="error_bonding_step2">2. Dissociez l\'appareil photo et le téléphone à la fois du côté de l\'appareil photo et du téléphone</string>
+    <string name="error_bonding_step3">3. Activez le mode de jumelage sur l\'appareil photo</string>
+    <string name="error_bonding_step4">4. Ajoutez à nouveau l\'appareil photo à l\'application</string>
+    <string name="error_bonding_step5">5. Assurez-vous de confirmer le jumelage à la fois sur l\'appareil photo et sur le téléphone</string>
+
     <string name="notification_searching">Recherche de caméras…</string>
     <string name="notification_connected_single">Connecté à 1 caméra</string>
     <string name="notification_connected_multiple">Connecté à %d caméras</string>

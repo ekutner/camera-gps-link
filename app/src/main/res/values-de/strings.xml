@@ -10,6 +10,14 @@
     <string name="error_shutter_message">Aktivieren Sie \"Bluetooth-Fernsteuerung\" in den Kameraeinstellungen!</string>
     <string name="error_shutter_message_long">Aktivieren Sie \"Bluetooth-Fernsteuerung\" in den Kameraeinstellungen, um die Fernauslösung zu verwenden.</string>
 
+    <string name="error_bonding_title">Kopplungsproblem</string>
+    <string name="error_bonding_message">Es gibt ein Problem mit der Kopplung zu %s</string>
+    <string name="error_bonding_step1">1. Entfernen Sie die Kamera aus der App</string>
+    <string name="error_bonding_step2">2. Entkoppeln Sie die Kamera und das Telefon sowohl auf der Kameraseite als auch auf der Telefonseite</string>
+    <string name="error_bonding_step3">3. Aktivieren Sie den Kopplungsmodus an der Kamera</string>
+    <string name="error_bonding_step4">4. Fügen Sie die Kamera erneut zur App hinzu</string>
+    <string name="error_bonding_step5">5. Bestätigen Sie die Kopplung sowohl an der Kamera als auch am Telefon</string>
+
     <string name="notification_searching">Suche nach Kameras…</string>
     <string name="notification_connected_single">Mit 1 Kamera verbunden</string>
     <string name="notification_connected_multiple">Mit %d Kameras verbunden</string>

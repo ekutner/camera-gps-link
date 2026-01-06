@@ -64,6 +64,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import androidx.core.os.LocaleListCompat
 import kotlinx.coroutines.flow.StateFlow
+import org.kutner.cameragpslink.composables.BondingErrorDialog
 //import com.google.android.play.core.review.ReviewManagerFactory
 import org.kutner.cameragpslink.composables.ConnectedCameraCard
 import org.kutner.cameragpslink.composables.LogCard
@@ -152,6 +153,7 @@ class MainActivity : AppCompatActivity() {
                         foundDevices = service.foundDevices,
                         isManualScanning = service.isManualScanning,
                         shutterErrorMessage = service.shutterErrorMessage,
+                        showBondingErrorDialog = service.showBondingErrorDialog,
                         onStartScan = { service.startManualScan() },
                         onCancelScan = { service.stopManualScan() },
                         onConnectToDevice = {
@@ -172,7 +174,8 @@ class MainActivity : AppCompatActivity() {
                         onClearLog = { service.clearLog() },
                         onShareLog = { shareLog(service.getLogAsString()) },
                         onRateApp = { launchReviewFlow() },
-                        onDismissShutterError = { service.clearShutterError() }
+                        onDismissShutterError = { service.clearShutterError() },
+                        onDismissBondingError = { service.dismissBondingErrorDialog() }
                     )
                 } else {
                     Box(
@@ -273,6 +276,7 @@ fun MainScreen(
     foundDevices: StateFlow<List<FoundDevice>>,
     isManualScanning: StateFlow<Boolean>,
     shutterErrorMessage: StateFlow<String?>,
+    showBondingErrorDialog: StateFlow<String?>,
     onStartScan: () -> Unit,
     onCancelScan: () -> Unit,
     onConnectToDevice: (FoundDevice) -> Unit,
@@ -283,7 +287,8 @@ fun MainScreen(
     onClearLog: () -> Unit,
     onShareLog: () -> Unit,
     onRateApp: () -> Unit,
-    onDismissShutterError: () -> Unit
+    onDismissShutterError: () -> Unit,
+    onDismissBondingError: () -> Unit
 ) {
     val context = LocalContext.current
     
@@ -292,6 +297,7 @@ fun MainScreen(
     val scanning by isManualScanning.collectAsState()
     val devices by foundDevices.collectAsState()
     val errorMessage by shutterErrorMessage.collectAsState()
+    val bondingErrorDeviceAddress by showBondingErrorDialog.collectAsState()
 
     var showLog by remember { mutableStateOf(AppSettingsManager.isShowLogEnabled(context)) }
     var showMenu by remember { mutableStateOf(false) }
@@ -316,6 +322,16 @@ fun MainScreen(
             }
         )
     }
+    if (bondingErrorDeviceAddress != null) {
+        val cameraName = cameras.find { it.device.address == bondingErrorDeviceAddress }?.device?.name
+            ?: context.getString(R.string.unknown_camera_name)
+
+        BondingErrorDialog(
+            cameraName = cameraName,
+            onDismiss = onDismissBondingError
+        )
+    }
+
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         topBar = {
