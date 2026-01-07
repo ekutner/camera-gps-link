@@ -120,18 +120,41 @@ The app requires the following permission:
 **Notifications** - Required for showing a persistent notification while the
 app is running in the background, waiting to connect with the camera
 
-## FAQ
+## Troubleshooting and FAQ
+* **I'm getting a "Pairing Error" message in the app**
+  This means the app has detected something is wrong with the pairing between the camera
+  and the phone. The best way to resolve this issue is just to pair again from scratch:
+  1. Remove the camera from the app. The option to remove is in the three dots menu in 
+     next to the camera name.
+  2. Unpair the camera from the phone in the phone's Bluetooth menu. it may have already 
+     been removed by the previous step, if so just verify that it's not listed.    
+  3. Unpair the phone from the camera in the camera's Bluetooth menu.
+  4. Pair again. First go to the pairing menu in the camera and then add the camera in 
+     the app using the "+" button.
+  5. Confirm the pairing request on both the camera and the phone.
+  
+* **The camera doesn't receive the location information**  
+  On cameras that work with Imaging Edge Mobile location linking has to be enabled
+  in the camera menu. The menu option is at: 
+  *Location Info. Link Set.* > *Location Info. Link* > On
+
+* **I enabled Bluetooth remote control but the app still tells me to enable it**  
+  If you just enabled it then turn the camera off and then on again. This would allow
+  the app to detect that it has been enabled.
+
 * **The camera only connects to the app when it is running in the foreground**  
   The app has a background process that is searching for paired cameras all the time,
   even when the app is not active in the foreground. That process is displaying a 
   notification in Android notification center saying "Searching for cameras...", if 
   you dismiss this notification (swipe it out), Android will kill the background process
   and the app won't work until you open the app again.
-* **I restarted my phone and now there is a notification to open the app**  
+
+* **Once in a while I get a notification to open the app in the phone's notification center**  
   This is a requirement of Android. Background processes that access the GPS location
-  can't start automatically after a phone restart and can only start after the user 
-  interacts with the app. Just tap the notification, it will open the app and then you 
-  close it until you restart the phone again.
+  can't start automatically after a phone restart or after the app has been upgraded
+  from the Play Store, a user interaction is required for it to start. 
+  Just tap the notification, it will open the app which will allow the background service
+  to work and start searching for cameras.
   
 
 ### Acknowledgements
