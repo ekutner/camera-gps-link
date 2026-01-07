@@ -3,7 +3,7 @@
 [![Play Store Logo](assets/GetItOnGooglePlay_Badge_Web_color_English.png)](https://play.google.com/store/apps/details?id=org.kutner.cameragpslink)  
   
 This Android app provides GPS and time synchronization, as well as full Bluetooth remote control 
-for recent generations of Sony cameras that use the Sony's Creator's App.
+for most Sony cameras.
 
 The app essentially does the same thing as Location Linking feature in Creator's App,
 except it actually works reliably and doesn't randomly turn itself off. 
@@ -23,6 +23,7 @@ of Sony's RMT-P1BT and RMT-VP2 remotes.
   Sony's Bluetooth remote controls such as the RMT-P1BT and RMT-VP2   
 * Support for connecting multiple cameras
 * Two connection modes for best connection speed with all phones and camera combinations
+* Now supports camera that use either Sony's Creator's App or Imaging Edge Mobile
 
 ## Screenshots
 | ![](assets/two-cameras-light.jpg) | ![](assets/remote-control-dialog-light.jpg) | ![](assets/notifications.jpg) | ![](assets/found-camera-dark.jpg) |
@@ -32,21 +33,31 @@ of Sony's RMT-P1BT and RMT-VP2 remotes.
 
 ## Usage
 ### Pairing the camera with the app
-1. On the camera:
+1. On Cameras using the old menu system (cameras that use Imaging Edge Mobile app)
+   Location Information Linking must be enabled in the camera menu before pairing:
+   MENU → Network → Location Info. Link Set. → Location Info. Link - set to "On"
+2. On cameras using the new menu system:
    * Go to MENU → Network → Bluetooth → Bluetooth Function - Set to "On"
    * Go to MENU → Network → Bluetooth → Pairing - The camera will enter pairing mode
-2. In the app:
+   On cameras using the old menu system:
+   * Go to MENU → Network → Bluetooth Settings → Bluetooth Function - Set to "On"
+   * Go to MENU → Network → Bluetooth Settings → Pairing
+3. In the app:
    * Press the "+" button to start searching for cameras
    * when the camera is discovered press the "Connect" button to connect to it   
-3. Confirm the pairing request on both the camera and the phone
-4. Once paired the app will continuously look for the camera and
+4. Confirm the pairing request on both the camera and the phone
+5. Once paired the app will continuously look for the camera and
    will automatically connect to it when it is near by
-5. After restarting the phone you have to open the app once for it to work properly.
+6. After restarting the phone you have to open the app once for it to work properly.
    The app will show a notification reminding you to open it, which will disappear once you do. 
 
 ### Remote Control
-1. Enable remote control on the camera:
-    MENU → Network → Bluetooth → Bluetooth Rmt Ctrl - Set to "On"
+1. Enable remote control on the camera.
+   * On cameras using the new menu system:
+     MENU → Network → Bluetooth → Bluetooth Rmt Ctrl - Set to "On"
+   * On cameras using the old menu system:
+     MENU → Network → Bluetooth Rmt Ctrl - Set to "On"
+   * Turn the camera off and back on again for the app to detect the change
 2. Press the "SHUTTER" button in the app app's main screen or directly in the 
    notification which is displayed when the app is actively connected to the camera. 
    This will trigger an immediate shutter release without pre-focusing.
