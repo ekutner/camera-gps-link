@@ -524,7 +524,8 @@ fun MainScreen(
                         onConnectToDevice(device)
                         showSearchDialog = false
                     },
-                    onCancelScan = onCancelScan
+                    onCancelScan = onCancelScan,
+                    onRefresh = { service.startManualScan() }
                 )
             }
 

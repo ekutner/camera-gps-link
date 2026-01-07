@@ -14,6 +14,7 @@ materialIconsExtended = "1.7.8"
 gson = "2.13.2"
 appcompat = "1.7.0"
 playReview = "2.0.2"
+material3 = "1.4.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -37,6 +38,7 @@ play-services-location = { group = "com.google.android.gms", name = "play-servic
 google-gson = { group = "com.google.code.gson", name = "gson", version.ref = "gson" }
 play-review = { group = "com.google.android.play", name = "review", version.ref = "playReview" }
 play-review-ktx = { group = "com.google.android.play", name = "review-ktx", version.ref = "playReview" }
+androidx-material3 = { group = "androidx.compose.material3", name = "material3", version.ref = "material3" }
 
 
 [plugins]

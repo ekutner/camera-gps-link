@@ -4,11 +4,13 @@ import android.annotation.SuppressLint
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -35,7 +37,8 @@ fun SearchDialog(
     foundDevices: List<FoundDevice>,
     onDismiss: () -> Unit,
     onConnect: (FoundDevice) -> Unit,
-    onCancelScan: () -> Unit
+    onCancelScan: () -> Unit,
+    onRefresh: () -> Unit
 ) {
     Dialog(onDismissRequest = onDismiss) {
         val context = LocalContext.current
@@ -110,14 +113,27 @@ fun SearchDialog(
                             }
                         }
                     }
-
-                    TextButton(
-                        onClick = onDismiss,
+                    Row(
                         modifier = Modifier
-                            .align(Alignment.End)
-                            .padding(16.dp)
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        horizontalArrangement = Arrangement.End
                     ) {
-                        Text("Cancel")
+                        TextButton(
+                            onClick = onRefresh,
+                            enabled = !isScanning
+                        ) {
+                            if (isScanning)
+                                Text(context.getString(R.string.button_searching))
+                            else
+                                Text(context.getString(R.string.button_refresh))
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        TextButton(
+                            onClick = onDismiss
+                        ) {
+                            Text(context.getString(R.string.button_cancel))
+                        }
                     }
                 }
             }

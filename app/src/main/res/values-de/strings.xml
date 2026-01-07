@@ -48,6 +48,11 @@
     <string name="button_ok">OK</string>
     <string name="button_cancel">Abbrechen</string>
     <string name="button_connect">Verbinden</string>
+    <string name="button_refresh">Aktualisieren</string>
+    <string name="button_searching">Suche…</string>
+
+    <string name="dialog_found_camera_not_pairing">Die Kamera ist nicht im Kopplungsmodus</string>
+    <string name="dialog_found_camera_location_linking_disabled">Die Verknüpfung von Standortinformationen ist in der Kamera nicht aktiviert</string>
 
     <string name="fab_add_new_camera">Neue Kamera hinzufügen</string>
     <string name="camera_state_connecting">VERBINDE…</string>

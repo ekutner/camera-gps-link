@@ -116,6 +116,7 @@ dependencies {
 
     // Gson for JSON serialization
     implementation(libs.google.gson)
+    implementation(libs.androidx.material3)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

@@ -49,6 +49,11 @@
     <string name="button_ok">Aceptar</string>
     <string name="button_cancel">Cancelar</string>
     <string name="button_connect">Conectar</string>
+    <string name="button_refresh">Actualizar</string>
+    <string name="button_searching">Buscando…</string>
+
+    <string name="dialog_found_camera_not_pairing">La cámara no está en modo de emparejamiento</string>
+    <string name="dialog_found_camera_location_linking_disabled">El enlace de información de ubicación no está habilitado en la cámara</string>
 
     <string name="fab_add_new_camera">Agregar nueva cámara</string>
     <string name="camera_state_connecting">CONECTANDO…</string>

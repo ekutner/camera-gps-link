@@ -47,6 +47,11 @@
     <string name="button_ok">OK</string>
     <string name="button_cancel">Cancel</string>
     <string name="button_connect">Connect</string>
+    <string name="button_refresh">Refresh</string>
+    <string name="button_searching">Searching…</string>
+
+    <string name="dialog_found_camera_not_pairing">The camera is not in pairing mode</string>
+    <string name="dialog_found_camera_location_linking_disabled">Location Information Linking is not enabled in the camera</string>
 
     <string name="fab_add_new_camera">Add new camera</string>
     <string name="camera_state_connecting">CONNECTING…</string>

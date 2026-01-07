@@ -61,7 +61,9 @@ data class CameraConnection(
 data class FoundDevice(
     val device: BluetoothDevice,
     val protocolVersion: Int,
-    val isRemoteControlEnabled: Boolean
+    val isRemoteControlEnabled: Boolean,
+    val isLocationLinkingEnabled: Boolean,
+    val isPairingEnabled: Boolean
 )
 
 
@@ -875,9 +877,14 @@ class CameraSyncService : Service() {
                 if (sonyData != null) {
                     val protocolVersion = sonyData?.getOrNull(2)?.toInt() ?: 0
                     val isRemoteControlEnabled = parseCameraFeatureState(sonyData, 0x22, 0x04)
+                    val isLocationLinkingEnabled = parseCameraFeatureState(sonyData, 0x22, 0x10)
+                    val isPairingEnabled = parseCameraFeatureState(sonyData, 0x22, 0x40)
 
-                    val device = FoundDevice(result.device, protocolVersion = protocolVersion, isRemoteControlEnabled = isRemoteControlEnabled)
-                    log("Found manual device: ${result.device.name} with address ${result.device.address} and protocol version $protocolVersion")
+                    val device = FoundDevice(result.device, protocolVersion = protocolVersion,
+                        isRemoteControlEnabled = isRemoteControlEnabled, isLocationLinkingEnabled = isLocationLinkingEnabled,
+                        isPairingEnabled = isPairingEnabled)
+                    val hexString = sonyData.joinToString(separator = " ") { String.format("%02X", it) }
+                    log("Found manual device: ${result.device.name} with address ${result.device.address} and data: $hexString\nParsed data: $device")
                     currentDevices.add(device)
                     _foundDevices.value = currentDevices
                 }

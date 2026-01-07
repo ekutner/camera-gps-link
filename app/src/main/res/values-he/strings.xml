@@ -50,6 +50,11 @@
     <string name="button_ok">אישור</string>
     <string name="button_cancel">ביטול</string>
     <string name="button_connect">התחבר</string>
+    <string name="button_refresh">רענן</string>
+    <string name="button_searching">מחפש…</string>
+
+    <string name="dialog_found_camera_not_pairing">המצלמה אינה במצב pairing</string>
+    <string name="dialog_found_camera_location_linking_disabled">יש להפעיל Location Information Linking במצלמה</string>
 
     <string name="fab_add_new_camera">הוסף מצלמה חדשה</string>
     <string name="camera_state_connecting">מתחבר…</string>
