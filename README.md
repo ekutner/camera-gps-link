@@ -33,22 +33,24 @@ of Sony's RMT-P1BT and RMT-VP2 remotes.
 
 ## Usage
 ### Pairing the camera with the app
-1. On Cameras using the old menu system (cameras that use Imaging Edge Mobile app)
+1. Start by unpairing the phone from the camera, both on the phone's Bluetooth menu and
+   in the camera menu 
+2. On Cameras using the old menu system (cameras that use Imaging Edge Mobile app)
    Location Information Linking must be enabled in the camera menu before pairing:
    MENU → Network → Location Info. Link Set. → Location Info. Link - set to "On"
-2. On cameras using the new menu system:
+3. On cameras using the new menu system:
    * Go to MENU → Network → Bluetooth → Bluetooth Function - Set to "On"
    * Go to MENU → Network → Bluetooth → Pairing - The camera will enter pairing mode
    On cameras using the old menu system:
    * Go to MENU → Network → Bluetooth Settings → Bluetooth Function - Set to "On"
    * Go to MENU → Network → Bluetooth Settings → Pairing
-3. In the app:
+4. In the app:
    * Press the "+" button to start searching for cameras
    * when the camera is discovered press the "Connect" button to connect to it   
-4. Confirm the pairing request on both the camera and the phone
-5. Once paired the app will continuously look for the camera and
+5. Confirm the pairing request on both the camera and the phone
+6. Once paired the app will continuously look for the camera and
    will automatically connect to it when it is near by
-6. After restarting the phone you have to open the app once for it to work properly.
+7. After restarting the phone you have to open the app once for it to work properly.
    The app will show a notification reminding you to open it, which will disappear once you do. 
 
 ### Remote Control
