@@ -1180,7 +1180,7 @@ class CameraSyncService : Service() {
         locationCallback = object : LocationCallback() {
             override fun onLocationResult(locationResult: LocationResult) {
                 for (location in locationResult.locations) {
-                    log("Pre-fetched current location: Lat=${location.latitude}, Lon=${location.longitude}")
+                    log("Pre-fetched current location: Lat=${"%.2f".format(location.latitude)}, Lon=${"%.2f".format(location.longitude)}")
                     lastKnownLocation = location
                 }
             }
@@ -1196,7 +1196,7 @@ class CameraSyncService : Service() {
         fusedLocationClient.getLastLocation().addOnSuccessListener { location ->
             if (lastKnownLocation == null) {
                 lastKnownLocation = location
-                log("Pre-fetched last location: Lat=${location.latitude}, Lon=${location.longitude}")
+                log("Pre-fetched last location: Lat=${"%.2f".format(location.latitude)}, Lon=${"%.2f".format(location.longitude)}")
             }
         }
         log("Starting background location fetching")
