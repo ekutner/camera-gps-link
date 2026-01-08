@@ -14,8 +14,8 @@ android {
         applicationId = "org.kutner.cameragpslink"
         minSdk = 26
         targetSdk = 36
-        versionCode = 305
-        versionName = "3.05"
+        versionCode = 306
+        versionName = "3.06"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
