@@ -36,6 +36,7 @@ data class CameraConnection(
     var gatt: BluetoothGatt? = null,
     var isConnected: Boolean = false,
     var isConnecting: Boolean = false,
+    var isBonded: Boolean = true,
     var locationUpdateRunnable: Runnable? = null,
     var disconnectTimestamp: Long? = null,
     var quickConnectRunnable: Runnable? = null,
@@ -50,13 +51,15 @@ data class CameraConnection(
         if (other !is CameraConnection) return false
         return device.address == other.device.address &&
                 isConnected == other.isConnected &&
-                isConnecting == other.isConnecting
+                isConnecting == other.isConnecting &&
+                isBonded == other.isBonded
     }
 
     override fun hashCode(): Int {
         var result = device.address.hashCode()
         result = 31 * result + isConnected.hashCode()
         result = 31 * result + isConnecting.hashCode()
+        result = 31 * result + isBonded.hashCode()
         return result
     }
 }
@@ -162,6 +165,7 @@ class CameraSyncService : Service() {
                     // This resumes the flow interrupted in onConnectionStateChange or onMtuChanged
                     if (connection?.gatt != null) {
                         connection.bondAttempts = 0 // Reset attempts counter
+                        connection.isBonded = true
                         log("Proceeding with service discovery for ${device.address}...")
 
                         // Add a small delay to allow the Bluetooth stack to stabilize after bonding
@@ -175,7 +179,10 @@ class CameraSyncService : Service() {
                     }
                 } else if (state == BluetoothDevice.BOND_NONE && previousState == BluetoothDevice.BOND_BONDING) {
                     log("Bonding failed for ${device.address}.")
+                    val connection = cameraConnections[device.address]
+                    connection?.isBonded = false
                 }
+                updateConnectionsList()
             }
         }
     }
@@ -528,6 +535,7 @@ class CameraSyncService : Service() {
                             log("onConnectionStateChange: Device not bonded. Starting pairing...")
                             gatt.device.createBond()
                             connection.bondAttempts += 1
+                            connection.isBonded = false
                             if (connection.bondAttempts >= 3) {
                                 _showBondingErrorDialog.value = deviceAddress
                                 connection.bondAttempts = 0
@@ -570,10 +578,12 @@ class CameraSyncService : Service() {
                     log("onMtuChanged: Device not bonded. Starting pairing...")
                     gatt.device.createBond()
                     connection.bondAttempts += 1
+                    connection.isBonded = false
                     if (connection.bondAttempts >= 3) {
                         _showBondingErrorDialog.value = deviceAddress
                         connection.bondAttempts = 0
                     }
+                    updateConnectionsList()
                 }
             }
 
@@ -1259,6 +1269,11 @@ class CameraSyncService : Service() {
                 gatt = conn.gatt,
                 isConnected = conn.isConnected,
                 isConnecting = conn.isConnecting,
+                isBonded = conn.isBonded,
+                bondAttempts = conn.bondAttempts,
+                retries = conn.retries,
+                quickConnectRunnable = conn.quickConnectRunnable,
+                disconnectTimestamp = conn.disconnectTimestamp,
                 locationUpdateRunnable = conn.locationUpdateRunnable
             )
         }

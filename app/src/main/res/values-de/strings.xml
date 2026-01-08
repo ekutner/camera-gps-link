@@ -58,6 +58,7 @@
     <string name="camera_state_connecting">VERBINDE…</string>
     <string name="camera_state_connected">VERBUNDEN</string>
     <string name="camera_state_disconnected">GETRENNT</string>
+    <string name="camera_state_pairing_not_completed">KOPPLUNG NICHT ABGESCHLOSSEN</string>
     <string name="camera_state_found">KAMERA GEFUNDEN</string>
 
     <string name="dialog_permissions_title">Berechtigungen erforderlich</string>

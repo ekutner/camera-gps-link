@@ -57,6 +57,7 @@
     <string name="camera_state_connecting">CONNECTING…</string>
     <string name="camera_state_connected">CONNECTED</string>
     <string name="camera_state_disconnected">DISCONNECTED</string>
+    <string name="camera_state_pairing_not_completed">PAIRING NOT COMPLETED</string>
     <string name="camera_state_found">FOUND CAMERA</string>
 
     <string name="dialog_permissions_title">Permissions Required</string>

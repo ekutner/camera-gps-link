@@ -59,6 +59,7 @@
     <string name="camera_state_connecting">מתחבר…</string>
     <string name="camera_state_connected">מחובר</string>
     <string name="camera_state_disconnected">מנותק</string>
+    <string name="camera_state_pairing_not_completed">ה-PAIRING לא הושלם</string>
     <string name="camera_state_found">נמצאה מצלמה</string>
 
     <string name="dialog_permissions_title">נדרשות הרשאות</string>

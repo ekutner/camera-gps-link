@@ -2,6 +2,7 @@ package org.kutner.cameragpslink
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.bluetooth.BluetoothDevice
 import android.content.ActivityNotFoundException
 import android.content.ComponentName
 import android.content.Intent
@@ -493,6 +494,7 @@ fun MainScreen(
                                 ConnectedCameraCard(
                                     cameraName = connection.device.name ?: context.getString(R.string.unknown_camera_name),
                                     cameraAddress = connection.device.address,
+                                    isBonded = connection.isBonded,
                                     isConnected = connection.isConnected,
                                     isConnecting = connection.isConnecting,
                                     service = service,

@@ -50,6 +50,7 @@ import org.kutner.cameragpslink.CameraSyncService
 fun ConnectedCameraCard(
     cameraName: String,
     cameraAddress: String,
+    isBonded: Boolean,
     isConnected: Boolean,
     isConnecting: Boolean,
     service: CameraSyncService,
@@ -106,12 +107,14 @@ fun ConnectedCameraCard(
                     Column {
                         Text(
                             text = when {
+                                !isBonded -> context.getString(R.string.camera_state_pairing_not_completed)
                                 isConnected -> context.getString(R.string.camera_state_connected)
                                 isConnecting -> context.getString(R.string.camera_state_connecting)
                                 else -> context.getString(R.string.camera_state_disconnected)
                             },
                             style = MaterialTheme.typography.labelSmall,
                             color = when {
+                                !isBonded -> MaterialTheme.colorScheme.error
                                 isConnected -> Color(0xFF4CAF50)
                                 isConnecting -> MaterialTheme.colorScheme.primary
                                 else -> MaterialTheme.colorScheme.error
