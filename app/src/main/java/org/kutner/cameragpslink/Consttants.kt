@@ -22,7 +22,8 @@ object Constants {
     // Bluetooth Related Constants
     const val EXTRA_DEVICE_ADDRESS = "device_address"
     const val SONY_MANUFACTURER_ID = 0x012D
-    const val MANUAL_SCAN_PERIOD: Long = 15000
+    val SONY_DEVICE_TYPE_CAMERA = byteArrayOf(0x03, 0x00)
+    const val MANUAL_SCAN_PERIOD: Long = 10000
     const val LOCATION_UPDATE_INTERVAL: Long = 10000
     const val REQUEST_MTU_SIZE = 517
 

@@ -701,26 +701,21 @@ class CameraSyncService : Service() {
         val connection = cameraConnections[deviceAddress] ?: return
         connection.isRcProbeErrorReceived = false
 
-        probeRemoteControlInternal(deviceAddress, 0)
+        probeRemoteControlInternal(deviceAddress, 5)
     }
 
     private fun probeRemoteControlInternal(deviceAddress: String, retryCount: Int) {
-        if (retryCount==0) {
-            val connection = cameraConnections[deviceAddress] ?: return
-            connection.isRcProbeErrorReceived = false
-        }
-
         var isRemoteControlDisabled = false
         val connection = cameraConnections[deviceAddress]
         if (connection!=null && connection.isRcProbeErrorReceived) {
             updateStatusMap(_isRemoteControlEnabled, deviceAddress, false)
             isRemoteControlDisabled = true
         }
-        if (retryCount < 5 && !isRemoteControlDisabled) {
+        if (retryCount > 0 && !isRemoteControlDisabled) {
             sendRemoteCommand(deviceAddress, RemoteControlCommand.REMOTE_CONTROL_PROBE)
             handler.postDelayed(
                 {
-                    probeRemoteControlInternal(deviceAddress, retryCount + 1)
+                    probeRemoteControlInternal(deviceAddress, retryCount - 1)
                 }, 250
             )
         }
@@ -859,7 +854,7 @@ class CameraSyncService : Service() {
         _isManualScanning.value = true
         _foundDevices.value = emptyList()
 
-        val scanFilter = ScanFilter.Builder().setManufacturerData(Constants.SONY_MANUFACTURER_ID, byteArrayOf()).build()
+        val scanFilter = ScanFilter.Builder().setManufacturerData(Constants.SONY_MANUFACTURER_ID, Constants.SONY_DEVICE_TYPE_CAMERA).build()
         val scanSettings = ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).build()
         bleScanner.startScan(listOf(scanFilter), scanSettings, manualScanCallback)
 
@@ -877,7 +872,7 @@ class CameraSyncService : Service() {
                 if (sonyData != null) {
                     val protocolVersion = sonyData?.getOrNull(2)?.toInt() ?: 0
                     val isRemoteControlEnabled = parseCameraFeatureState(sonyData, 0x22, 0x04)
-                    val isLocationLinkingEnabled = parseCameraFeatureState(sonyData, 0x22, 0x10)
+                    val isLocationLinkingEnabled = true // parseCameraFeatureState(sonyData, 0x22, 0x10)
                     val isPairingEnabled = parseCameraFeatureState(sonyData, 0x22, 0x40)
 
                     val device = FoundDevice(result.device, protocolVersion = protocolVersion,
@@ -1088,6 +1083,9 @@ class CameraSyncService : Service() {
             ?.getCharacteristic(Constants.REMOTE_CONTROL_CHARACTERISTIC_UUID)
         if (remoteControlChar == null) {
             log("Remote control characteristic not found for $deviceAddress when sending command  ${command.name}")
+            connection.isRcProbeErrorReceived = true
+            connection.isRemoteControlEnabled = false
+            updateStatusMap(_isRemoteControlEnabled, deviceAddress, false)
             return
         }
 
