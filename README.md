@@ -34,7 +34,7 @@ of Sony's RMT-P1BT and RMT-VP2 remotes.
 ## Usage
 ### Pairing the camera with the app
 1. Start by unpairing the phone from the camera, both on the phone's Bluetooth menu and
-   in the camera menu 
+   in the camera menu. **DO NOT PAIR AGAIN FROM THE PHONE's BLUETOOTH MENU**
 2. On Cameras using the old menu system (cameras that use Imaging Edge Mobile app)
    Location Information Linking must be enabled in the camera menu before pairing:
    MENU → Network → Location Info. Link Set. → Location Info. Link - set to "On"
