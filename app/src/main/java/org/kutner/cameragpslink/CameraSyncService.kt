@@ -292,7 +292,7 @@ class CameraSyncService : Service() {
         _showBondingErrorDialog.value = null
     }
 
-    private fun parseCameraFeatureState(packetData: ByteArray, tagId:Byte, featureMask: Int): Boolean {
+    private fun parseCameraFeatureState(packetData: ByteArray, tagId:Byte, featureMask: Int, defaultValue: Boolean): Boolean {
         // Start scanning at position 13.
         // Each tag is 3 bytes: [1 byte ID] [2 bytes Value (Little Endian)].
         // We loop as long as there is room for a full 3-byte tag.
@@ -313,13 +313,13 @@ class CameraSyncService : Service() {
             // Move to the next 3-byte tag
             i += 3
         }
-        return false
+        return defaultValue
     }
     private fun createAutoScanCallback(deviceAddress: String): ScanCallback {
         return object : ScanCallback() {
             @SuppressLint("MissingPermission")
             override fun onScanResult(callbackType: Int, result: ScanResult) {
-                log("Found saved device $deviceAddress. Connecting...")
+                log("Found saved device ${getDeviceDisplayString(deviceAddress)}. Connecting...")
                 result
                 val connection = cameraConnections[deviceAddress] ?: return
                 if (connection.isConnected || connection.isConnecting) {
@@ -335,12 +335,12 @@ class CameraSyncService : Service() {
                     log("Sony manufacturer data: $deviceAddress: $hexString")
 
                     // When "Cnct. while power off" is enabled the camera will still be discoverable even when it's off
-                    val isCameraOn = parseCameraFeatureState(sonyData, 0x21, 0x40)
+                    val isCameraOn = parseCameraFeatureState(sonyData, 0x21, 0x40, true)
                     if (!isCameraOn) {
                         log("The camera ${getDeviceDisplayString(connection)} is powered off. Not connecting.")
                         return
                     }
-                    connection.isRemoteControlEnabled = parseCameraFeatureState(sonyData, 0x22, 0x04)
+                    connection.isRemoteControlEnabled = parseCameraFeatureState(sonyData, 0x22, 0x04, false)
                     updateStatusMap(_isRemoteControlEnabled, deviceAddress, connection.isRemoteControlEnabled)
                     log("Device ${getDeviceDisplayString(connection)} Remote Control Enabled: ${connection.isRemoteControlEnabled}")
                 }
@@ -943,9 +943,9 @@ class CameraSyncService : Service() {
                 val sonyData = result.scanRecord?.getManufacturerSpecificData(Constants.SONY_MANUFACTURER_ID)
                 if (sonyData != null) {
                     val protocolVersion = sonyData?.getOrNull(2)?.toInt() ?: 0
-                    val isRemoteControlEnabled = parseCameraFeatureState(sonyData, 0x22, 0x04)
+                    val isRemoteControlEnabled = parseCameraFeatureState(sonyData, 0x22, 0x04, false)
                     val isLocationLinkingEnabled = true // parseCameraFeatureState(sonyData, 0x22, 0x10)
-                    val isPairingEnabled = parseCameraFeatureState(sonyData, 0x22, 0x40)
+                    val isPairingEnabled = parseCameraFeatureState(sonyData, 0x22, 0x40, true)
 
                     val device = FoundDevice(result.device, protocolVersion = protocolVersion,
                         isRemoteControlEnabled = isRemoteControlEnabled, isLocationLinkingEnabled = isLocationLinkingEnabled,
