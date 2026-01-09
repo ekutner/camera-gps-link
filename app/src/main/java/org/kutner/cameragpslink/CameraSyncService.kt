@@ -332,7 +332,7 @@ class CameraSyncService : Service() {
                 val sonyData = result.scanRecord?.getManufacturerSpecificData(Constants.SONY_MANUFACTURER_ID)
                 if (sonyData != null) {
                     val hexString = sonyData.joinToString(separator = " ") { String.format("%02X", it) }
-                    log("Sony manufacturer data: $deviceAddress: $hexString")
+                    log("Sony manufacturer data: ${getDeviceDisplayString(deviceAddress)}: $hexString")
 
                     // When "Cnct. while power off" is enabled the camera will still be discoverable even when it's off
                     val isCameraOn = parseCameraFeatureState(sonyData, 0x21, 0x40, true)
@@ -350,7 +350,7 @@ class CameraSyncService : Service() {
             }
 
             override fun onScanFailed(errorCode: Int) {
-                log("Auto-scan failed for $deviceAddress: $errorCode. Retrying...")
+                log("Auto-scan failed for ${getDeviceDisplayString(deviceAddress)}: $errorCode. Retrying...")
                 handler.postDelayed({ startAutoScan(deviceAddress) }, 3000)
             }
         }
@@ -367,11 +367,11 @@ class CameraSyncService : Service() {
             val connectedDevices = bluetoothManager.getConnectedDevices(BluetoothProfile.GATT)
             val isConnected = connectedDevices.contains(connection.device)
             if (isConnected) {
-                log("startAutoScan() found previous active gatt connection for $deviceAddress disconnecting it")
+                log("startAutoScan() found previous active gatt connection for ${getDeviceDisplayString(deviceAddress)} disconnecting it")
                 connection.gatt?.disconnect()
                 return
             }
-            log("startAutoScan() found previous gatt connection for $deviceAddress but it's not connected so destroying it")
+            log("startAutoScan() found previous gatt connection for ${getDeviceDisplayString(deviceAddress)} but it's not connected so destroying it")
             connection.gatt?.close()
             connection.gatt = null
             connection.isConnected = false
@@ -390,7 +390,7 @@ class CameraSyncService : Service() {
                     ScanSettings.SCAN_MODE_LOW_LATENCY -> "LOW_LATENCY (Quick Connect)"
                     else -> "LOW_POWER"
                 }
-                log("Connection mode 1: Starting auto-scan for $deviceAddress with scan mode: $scanModeText")
+                log("Connection mode 1: Starting auto-scan for ${getDeviceDisplayString(deviceAddress)} deviceAddress with scan mode: $scanModeText")
 
                 val callback = createAutoScanCallback(deviceAddress)
                 autoScanCallbacks[deviceAddress] = callback
@@ -403,7 +403,7 @@ class CameraSyncService : Service() {
                 createQuickConnectTimer(connection, cameraSettings, deviceAddress)
             }
             else {
-                log("Auto-scan already in progress for $deviceAddress.")
+                log("Auto-scan already in progress for ${getDeviceDisplayString(deviceAddress)}.")
             }
         }
         else {
@@ -419,7 +419,7 @@ class CameraSyncService : Service() {
                 createGattCallback(deviceAddress),
                 BluetoothDevice.TRANSPORT_AUTO
             )
-            log("Connection mode 2: Created GATT connection with autoConnect=true for $deviceAddress")
+            log("Connection mode 2: Created GATT connection with autoConnect=true for ${getDeviceDisplayString(deviceAddress)}")
         }
     }
     @SuppressLint("MissingPermission")
@@ -432,7 +432,7 @@ class CameraSyncService : Service() {
                     bleScanner.stopScan(callback)
                     autoScanCallbacks.remove(deviceAddress)
                 } catch (e: Exception) {
-                    log("Error stopping auto scan for $deviceAddress: ${e.message}")
+                    log("Error stopping auto scan for ${getDeviceDisplayString(deviceAddress)}: ${e.message}")
                 }
             }
             cancelQuickConnectTimer(deviceAddress)
@@ -665,7 +665,7 @@ class CameraSyncService : Service() {
                             synchronizeTime(gatt, deviceAddress)
                         }
 //                        Constants.TIME_CHARACTERISTIC_UUID -> {
-//                            log("Time synced for $deviceAddress. Starting location data stream.")
+//                            log("Time synced for ${getDeviceDisplayString(deviceAddress)}. Starting location data stream.")
 //                            startLocationUpdates(deviceAddress)
 //                        }
                     }
@@ -845,9 +845,9 @@ class CameraSyncService : Service() {
         val remainingMillis = durationMillis - elapsedMillis
 
         if (remainingMillis > 0) {
-            log("Quick Connect timer set for $deviceAddress: ${remainingMillis / 1000} seconds remaining")
+            log("Quick Connect timer set for ${getDeviceDisplayString(deviceAddress)}: ${remainingMillis / 1000} seconds remaining")
             val runnable = Runnable {
-                log("Quick Connect period expired for $deviceAddress, switching to low power scan")
+                log("Quick Connect period expired for ${getDeviceDisplayString(deviceAddress)}, switching to low power scan")
                 // Restart scan with low power mode
                 resetAutoScan(deviceAddress)
             }
@@ -869,7 +869,7 @@ class CameraSyncService : Service() {
 
     @SuppressLint("MissingPermission")
     fun forgetDevice(deviceAddress: String) {
-        log("Forgetting device $deviceAddress...")
+        log("Forgetting device ${getDeviceDisplayString(deviceAddress)}...")
 
         cameraConnections[deviceAddress]?.let { connection ->
             // Cancel quick connect timer
@@ -893,14 +893,14 @@ class CameraSyncService : Service() {
             // Update UI
             updateConnectionsList()
 
-            log("Device $deviceAddress forgotten successfully")
+            log("Device ${getDeviceDisplayString(deviceAddress)} forgotten successfully")
 
             // Stop service if no more cameras
             if (cameraConnections.isEmpty()) {
                 log("No more cameras, stopping service")
                 stopService()
             }
-        } ?: log("Device $deviceAddress not found in connections")
+        } ?: log("Device ${getDeviceDisplayString(deviceAddress)} not found in connections")
 
         notificationHelper.updateNotifications(cameraConnections.values, isRemoteControlEnabled.value, isForegroundServiceStarted) { log(it) }
     }
@@ -978,7 +978,7 @@ class CameraSyncService : Service() {
     private fun lockLocationEndpoint(gatt: BluetoothGatt, deviceAddress: String) {
         val lockChar = gatt.getService(Constants.PICT_SERVICE_UUID)?.getCharacteristic(Constants.LOCK_LOCATION_ENDPOINT_UUID)
         if (lockChar == null) {
-            log("Lock Location Endpoint characteristic (dd30) not found for $deviceAddress!")
+            log("Lock Location Endpoint characteristic (dd30) not found for ${getDeviceDisplayString(deviceAddress)}!")
             return
         }
         writeCharacteristic(gatt, lockChar, byteArrayOf(0x01), BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT)
@@ -988,7 +988,7 @@ class CameraSyncService : Service() {
     private fun enableLocationUpdates(gatt: BluetoothGatt, deviceAddress: String) {
         val enableChar = gatt.getService(Constants.PICT_SERVICE_UUID)?.getCharacteristic(Constants.ENABLE_LOCATION_UPDATES_UUID)
         if (enableChar == null) {
-            log("Enable Location Updates characteristic (dd31) not found for $deviceAddress!")
+            log("Enable Location Updates characteristic (dd31) not found for ${getDeviceDisplayString(deviceAddress)}!")
             return
         }
         writeCharacteristic(gatt, enableChar, byteArrayOf(0x01), BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT)
@@ -1134,7 +1134,7 @@ class CameraSyncService : Service() {
                 _shutterTriggeredFromNotification.value = deviceAddress
             }
 
-            log("Triggering shutter for $deviceAddress...")
+            log("Triggering shutter for ${getDeviceDisplayString(deviceAddress)}...")
             sendRemoteCommand(deviceAddress, RemoteControlCommand.FULL_SHUTTER_DOWN)
             handler.postDelayed({
                 sendRemoteCommand(deviceAddress, RemoteControlCommand.FULL_SHUTTER_UP)
@@ -1146,7 +1146,7 @@ class CameraSyncService : Service() {
     fun sendRemoteCommand(deviceAddress: String, command: RemoteControlCommand) {
         val connection = cameraConnections[deviceAddress]
         if (connection == null || !connection.isConnected) {
-            log("Cannot send remote command: Camera $deviceAddress not connected when sending command ${command.name}")
+            log("Cannot send remote command: Camera ${getDeviceDisplayString(deviceAddress)} not connected when sending command ${command.name}")
             return
         }
 
@@ -1154,7 +1154,7 @@ class CameraSyncService : Service() {
         val remoteControlChar = gatt.getService(Constants.REMOTE_CONTROL_SERVICE_UUID)
             ?.getCharacteristic(Constants.REMOTE_CONTROL_CHARACTERISTIC_UUID)
         if (remoteControlChar == null) {
-            log("Remote control characteristic not found for $deviceAddress when sending command  ${command.name}")
+            log("Remote control characteristic not found for ${getDeviceDisplayString(deviceAddress)} when sending command  ${command.name}")
             connection.isRcProbeErrorReceived = true
             connection.isRemoteControlEnabled = false
             updateStatusMap(_isRemoteControlEnabled, deviceAddress, false)
