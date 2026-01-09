@@ -2,7 +2,6 @@ package org.kutner.cameragpslink
 
 import android.Manifest
 import android.annotation.SuppressLint
-import android.bluetooth.BluetoothDevice
 import android.content.ActivityNotFoundException
 import android.content.ComponentName
 import android.content.Intent
@@ -20,11 +19,19 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Help
 import androidx.compose.material.icons.filled.Add
@@ -479,39 +486,73 @@ fun MainScreen(
                         LogCard(logMessages, Modifier.weight(1f))
                     }
                 }
-            }
-            else {
-                Column(modifier = Modifier.fillMaxSize()) {
-                    // Connected cameras
-                    if (cameras.isNotEmpty()) {
-                        LazyColumn(
-                            modifier = Modifier
-//                                .then(if (showLog) Modifier.weight(1f) else Modifier.fillMaxSize())
-                                .padding(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            items(cameras, key = { it.device.address }) { connection ->
-                                ConnectedCameraCard(
-                                    cameraName = connection.device.name ?: context.getString(R.string.unknown_camera_name),
-                                    cameraAddress = connection.device.address,
-                                    isBonded = connection.isBonded,
-                                    isConnected = connection.isConnected,
-                                    isConnecting = connection.isConnecting,
-                                    service = service,
-                                    onShutter = { onTriggerShutter(connection.device.address) },
-                                    onDisconnect = { onForgetDevice(connection.device.address) },
-                                    onCameraSettings = { connectionMode, quickConnectEnabled, duration, autoFocus ->
-                                        onCameraSettings(connection.device.address, connectionMode, quickConnectEnabled, duration, autoFocus)
-                                    },
-                                    onRemoteCommand = onRemoteCommand
-                                )
+            } else {
+                if (showLog) {
+                    // When log is shown, use BoxWithConstraints to manage space
+                    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+                        val minLogHeight = 400.dp
+                        val maxCameraHeight = maxHeight - minLogHeight
+
+                        Column(modifier = Modifier.fillMaxSize()) {
+                            // Connected cameras - limited to leave room for log
+                            LazyColumn(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .heightIn(max = maxCameraHeight)
+                                    .padding(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                items(cameras, key = { it.device.address }) { connection ->
+                                    ConnectedCameraCard(
+                                        cameraName = connection.device.name ?: context.getString(R.string.unknown_camera_name),
+                                        cameraAddress = connection.device.address,
+                                        isBonded = connection.isBonded,
+                                        isConnected = connection.isConnected,
+                                        isConnecting = connection.isConnecting,
+                                        service = service,
+                                        onShutter = { onTriggerShutter(connection.device.address) },
+                                        onDisconnect = { onForgetDevice(connection.device.address) },
+                                        onCameraSettings = { connectionMode, quickConnectEnabled, duration, autoFocus ->
+                                            onCameraSettings(connection.device.address, connectionMode, quickConnectEnabled, duration, autoFocus)
+                                        },
+                                        onRemoteCommand = onRemoteCommand
+                                    )
+                                }
                             }
+
+                            // Log section - fills all remaining space
+                            LogCard(
+                                logMessages,
+                                Modifier
+                                    .fillMaxWidth()
+                                    .fillMaxHeight()
+                            )
                         }
                     }
-
-                    // Log section - fills remaining space
-                    if (showLog) {
-                        LogCard(logMessages, Modifier.weight(1f))
+                } else {
+                    // When log is hidden, cameras take full height
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        items(cameras, key = { it.device.address }) { connection ->
+                            ConnectedCameraCard(
+                                cameraName = connection.device.name ?: context.getString(R.string.unknown_camera_name),
+                                cameraAddress = connection.device.address,
+                                isBonded = connection.isBonded,
+                                isConnected = connection.isConnected,
+                                isConnecting = connection.isConnecting,
+                                service = service,
+                                onShutter = { onTriggerShutter(connection.device.address) },
+                                onDisconnect = { onForgetDevice(connection.device.address) },
+                                onCameraSettings = { connectionMode, quickConnectEnabled, duration, autoFocus ->
+                                    onCameraSettings(connection.device.address, connectionMode, quickConnectEnabled, duration, autoFocus)
+                                },
+                                onRemoteCommand = onRemoteCommand
+                            )
+                        }
                     }
                 }
             }
