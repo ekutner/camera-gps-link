@@ -136,6 +136,15 @@ object AppSettingsManager {
                 list.forEach { settings ->
                     map[settings.deviceAddress] = settings
                 }
+
+                // Add mock cameras for testing
+//                for (i in 55..60) {
+//                    val mockSettings = CameraSettings(
+//                        deviceAddress = "00:11:22:33:44:$i",
+//                        protocolVersion = Constants.PROTOCOL_VERSION_CREATORS_APP
+//                    )
+//                    map[mockSettings.deviceAddress] = mockSettings
+//                }
                 return map
             }
         } catch (e: Exception) {
