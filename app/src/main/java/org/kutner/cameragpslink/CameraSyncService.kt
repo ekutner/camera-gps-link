@@ -1342,7 +1342,7 @@ class CameraSyncService : Service() {
         if (device.name != null) {
             return "${device.name} [${device.address}]"
         }
-        return "[$device.address]"
+        return "[${device.address}]"
     }
     private fun getDeviceDisplayString(address: String): String {
         val connection = cameraConnections[address] ?: return "[$address]"        
