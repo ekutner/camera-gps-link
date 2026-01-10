@@ -1,7 +1,9 @@
 package org.kutner.cameragpslink.composables
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,6 +16,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -38,6 +41,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.PopupProperties
@@ -46,18 +50,25 @@ import org.kutner.cameragpslink.R
 import org.kutner.cameragpslink.RemoteControlCommand
 import org.kutner.cameragpslink.CameraSyncService
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ConnectedCameraCard(
+    modifier: Modifier = Modifier,
     cameraName: String,
     cameraAddress: String,
     isBonded: Boolean,
     isConnected: Boolean,
     isConnecting: Boolean,
     service: CameraSyncService,
+    isReorderMode: Boolean = false,
+    isDragging: Boolean = false,
+    elevation: Dp = 2.dp,
+    dragModifier: Modifier = Modifier,
     onShutter: () -> Unit,
     onDisconnect: () -> Unit,
     onCameraSettings: (Int, Boolean, Int, Boolean) -> Unit,
-    onRemoteCommand: (String, RemoteControlCommand) -> Unit
+    onRemoteCommand: (String, RemoteControlCommand) -> Unit,
+    onLongPress: () -> Unit = {}
 ) {
     var showMenu by remember { mutableStateOf(false) }
     var showCameraSettingsDialog by remember { mutableStateOf(false) }
@@ -81,125 +92,167 @@ fun ConnectedCameraCard(
     }
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        modifier = modifier.then(
+            if (!isReorderMode) {
+                Modifier.combinedClickable(
+                    onClick = {},
+                    onLongClick = onLongPress
+                )
+            } else {
+                Modifier
+            }
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = elevation)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier
-                            .size(48.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.primaryContainer),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "📷",
-                            fontSize = 24.sp
-                        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+                .then(
+                    if (isDragging) {
+                        Modifier.background(MaterialTheme.colorScheme.surfaceVariant)
+                    } else {
+                        Modifier
                     }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column {
-                        Text(
-                            text = when {
-                                !isBonded -> context.getString(R.string.camera_state_pairing_not_completed)
-                                isConnected -> context.getString(R.string.camera_state_connected)
-                                isConnecting -> context.getString(R.string.camera_state_connecting)
-                                else -> context.getString(R.string.camera_state_disconnected)
-                            },
-                            style = MaterialTheme.typography.labelSmall,
-                            color = when {
-                                !isBonded -> MaterialTheme.colorScheme.error
-                                isConnected -> Color(0xFF4CAF50)
-                                isConnecting -> MaterialTheme.colorScheme.primary
-                                else -> MaterialTheme.colorScheme.error
-                            },
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = cameraName,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                        Text(
-                            text = cameraAddress,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-
-                Box {
-                    IconButton(onClick = { showMenu = true }) {
-                        Icon(Icons.Default.MoreVert, contentDescription = "Options")
-                    }
-                    DropdownMenu(
-                        expanded = showMenu,
-                        properties = PopupProperties(focusable = false),
-                        onDismissRequest = { showMenu = false }
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text(context.getString(R.string.menu_settings)) },
-                            onClick = {
-                                showCameraSettingsDialog = true
-                                showMenu = false
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = { Text(context.getString(R.string.menu_remove_camera)) },
-                            onClick = {
-                                onDisconnect()
-                                showMenu = false
-                            }
-                        )
-                    }
-                }
+                ),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Drag handle - only visible in reorder mode
+            if (isReorderMode) {
+                Icon(
+                    imageVector = Icons.Default.DragHandle,
+                    contentDescription = "Drag to reorder",
+                    modifier = Modifier
+                        .size(32.dp)
+                        .padding(end = 8.dp)
+                        .then(dragModifier),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
-            if (isConnected) {
+            // Rest of the card content
+            Column(modifier = Modifier.weight(1f)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.Top
                 ) {
-                    Button(
-                        onClick = { showRemoteControlDialog = true },
-                        enabled = isConnected,
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(56.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            // Changed to Primary to match Shutter button
-                            containerColor = MaterialTheme.colorScheme.primary
-                        )
-                    ) {
-                        Text(
-                            text = context.getString(R.string.action_remote),
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Medium
-                        )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(48.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.primaryContainer),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "📷",
+                                fontSize = 24.sp
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text(
+                                text = when {
+                                    !isBonded -> context.getString(R.string.camera_state_pairing_not_completed)
+                                    isConnected -> context.getString(R.string.camera_state_connected)
+                                    isConnecting -> context.getString(R.string.camera_state_connecting)
+                                    else -> context.getString(R.string.camera_state_disconnected)
+                                },
+                                style = MaterialTheme.typography.labelSmall,
+                                color = when {
+                                    !isBonded -> MaterialTheme.colorScheme.error
+                                    isConnected -> Color(0xFF4CAF50)
+                                    isConnecting -> MaterialTheme.colorScheme.primary
+                                    else -> MaterialTheme.colorScheme.error
+                                },
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = cameraName,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Text(
+                                text = cameraAddress,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
 
-                    Button(
-                        onClick = onShutter,
-                        enabled = isConnected && isRemoteControlEnabled,
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(56.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary
-                        )
-                    ) {
-                        Text(
-                            text = context.getString(R.string.action_shutter),
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Medium
-                        )
+                    // Hide menu in reorder mode
+                    if (!isReorderMode) {
+                        Box {
+                            IconButton(onClick = { showMenu = true }) {
+                                Icon(Icons.Default.MoreVert, contentDescription = "Options")
+                            }
+                            DropdownMenu(
+                                expanded = showMenu,
+                                properties = PopupProperties(focusable = false),
+                                onDismissRequest = { showMenu = false }
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text(context.getString(R.string.menu_settings)) },
+                                    onClick = {
+                                        showCameraSettingsDialog = true
+                                        showMenu = false
+                                    }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text(context.getString(R.string.menu_remove_camera)) },
+                                    onClick = {
+                                        onDisconnect()
+                                        showMenu = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // Hide buttons in reorder mode
+                if (!isReorderMode) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    if (isConnected) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Button(
+                                onClick = { showRemoteControlDialog = true },
+                                enabled = isConnected,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(56.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.primary
+                                )
+                            ) {
+                                Text(
+                                    text = context.getString(R.string.action_remote),
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+
+                            Button(
+                                onClick = onShutter,
+                                enabled = isConnected && isRemoteControlEnabled,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(56.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.primary
+                                )
+                            ) {
+                                Text(
+                                    text = context.getString(R.string.action_shutter),
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
                     }
                 }
             }

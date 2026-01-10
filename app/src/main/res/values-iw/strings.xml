@@ -45,6 +45,7 @@
     <string name="menu_settings">הגדרות</string>
     <string name="menu_remove_camera">הסר מצלמה</string>
     <string name="menu_language">שפה</string>
+    <string name="menu_rearrange_cameras">שנה סדר מצלמות</string>
 
     <string name="button_ok">אישור</string>
     <string name="button_cancel">ביטול</string>

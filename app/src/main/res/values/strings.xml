@@ -43,6 +43,8 @@
     <string name="menu_rate_app">Rate this app</string>
     <string name="menu_settings">Settings</string>
     <string name="menu_remove_camera">Remove Camera</string>
+    <string name="menu_language">Language</string>
+    <string name="menu_rearrange_cameras">Rearrange Cameras</string>
 
     <string name="button_ok">OK</string>
     <string name="button_cancel">Cancel</string>
@@ -90,8 +92,5 @@
     <string name="dialog_remote_control_far">Far</string>
     <string name="dialog_remote_control_enable_half_shutter">Enable half shutter press</string>
     <string name="dialog_remote_control_refresh">Refresh</string>
-
-    <string name="menu_language">Language</string>
-
 
 </resources>

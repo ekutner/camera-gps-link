@@ -18,28 +18,19 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.wrapContentHeight
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Help
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckBox
 import androidx.compose.material.icons.filled.CheckBoxOutlineBlank
-import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material3.AlertDialog
@@ -73,13 +64,11 @@ import androidx.core.net.toUri
 import androidx.core.os.LocaleListCompat
 import kotlinx.coroutines.flow.StateFlow
 import org.kutner.cameragpslink.composables.BondingErrorDialog
-//import com.google.android.play.core.review.ReviewManagerFactory
-import org.kutner.cameragpslink.composables.ConnectedCameraCard
 import org.kutner.cameragpslink.composables.LogCard
 import org.kutner.cameragpslink.composables.SearchDialog
 import org.kutner.cameragpslink.ui.theme.CameraGpsLinkTheme
 import org.kutner.cameragpslink.composables.LanguageSelectionDialog
-
+import org.kutner.cameragpslink.composables.ReorderableCameraList
 
 class MainActivity : AppCompatActivity() {
 
@@ -246,23 +235,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun launchReviewFlow() {
-//        val manager = ReviewManagerFactory.create(this)
-//        val request = manager.requestReviewFlow()
-//        request.addOnCompleteListener { task ->
-//            if (task.isSuccessful) {
-//                val reviewInfo = task.result
-//                val flow = manager.launchReviewFlow(this, reviewInfo)
-//                flow.addOnCompleteListener { _ ->
-//                    // The flow has finished. The API does not indicate whether the user
-//                    // reviewed or not, or even whether the review dialog was shown.
-//                }
-//            }
-//            // If the task fails, we simply do nothing (fail silently)
-//        }
         try {
             // Try to open the Play Store app directly
             val intent = Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=$packageName"))
-            // This flag is optional but recommended for external links
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             startActivity(intent)
         } catch (e: ActivityNotFoundException) {
@@ -299,7 +274,7 @@ fun MainScreen(
     onDismissBondingError: () -> Unit
 ) {
     val context = LocalContext.current
-    
+
     val logMessages by log.collectAsState()
     val cameras by connectedCameras.collectAsState()
     val scanning by isManualScanning.collectAsState()
@@ -311,10 +286,21 @@ fun MainScreen(
     var showMenu by remember { mutableStateOf(false) }
     var showSearchDialog by remember { mutableStateOf(false) }
     var showLanguageDialog by remember { mutableStateOf(false) }
+    var isReorderMode by remember { mutableStateOf(false) }
 
-    // Handle back press to close menu when focusable is false
-    BackHandler(enabled = showMenu) {
-        showMenu = false
+    // Cameras are already sorted by AppSettingsManager order
+    var reorderableCameras by remember(cameras) { mutableStateOf(cameras) }
+
+    // Handle back press to close menu or exit reorder mode
+    BackHandler(enabled = showMenu || isReorderMode) {
+        when {
+            showMenu -> showMenu = false
+            isReorderMode -> {
+                isReorderMode = false
+                // Revert to original order if cancelled
+                reorderableCameras = cameras
+            }
+        }
     }
 
     // Show error dialog when there's an error message
@@ -346,87 +332,121 @@ fun MainScreen(
             TopAppBar(
                 title = { Text(context.getString(R.string.app_name)) },
                 actions = {
-                    IconButton(onClick = { showMenu = true }) {
-                        Icon(
-                            imageVector = Icons.Default.MoreVert,
-                            contentDescription = "Menu"
-                        )
-                    }
-                    DropdownMenu(
-                        expanded = showMenu,
-                        onDismissRequest = { showMenu = false },
-                        properties = PopupProperties(focusable = false)
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text(context.getString(R.string.menu_show_log)) },
-                            onClick = {
-                                showLog = !showLog
-                                AppSettingsManager.setShowLogEnabled(context, showLog)
-                                showMenu = false
-                            },
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = if (showLog) Icons.Default.CheckBox else Icons.Default.CheckBoxOutlineBlank,
-                                    contentDescription = null
+                    if (isReorderMode) {
+                        // Show checkmark in reorder mode
+                        IconButton(onClick = {
+                            // Save the new order
+                            val newOrder = reorderableCameras.map { it.device.address }
+                            AppSettingsManager.reorderCameras(context, newOrder)
+                            isReorderMode = false
+                        }) {
+                            Icon(
+                                imageVector = Icons.Default.CheckBox,
+                                contentDescription = "Save order"
+                            )
+                        }
+                    } else {
+                        // Show normal menu
+                        IconButton(onClick = { showMenu = true }) {
+                            Icon(
+                                imageVector = Icons.Default.MoreVert,
+                                contentDescription = "Menu"
+                            )
+                        }
+                        DropdownMenu(
+                            expanded = showMenu,
+                            onDismissRequest = { showMenu = false },
+                            properties = PopupProperties(focusable = false)
+                        ) {
+                            if (cameras.size > 1) {
+                                DropdownMenuItem(
+                                    text = { Text(context.getString(R.string.menu_rearrange_cameras)) },
+                                    onClick = {
+                                        isReorderMode = true
+                                        reorderableCameras = cameras
+                                        showMenu = false
+                                    },
+                                    leadingIcon = {
+                                        Icon(
+                                            imageVector = Icons.Default.DragHandle,
+                                            contentDescription = null
+                                        )
+                                    }
                                 )
                             }
-                        )
-                        DropdownMenuItem(
-                            text = { Text(context.getString(R.string.menu_language)) },
-                            onClick = {
-                                showLanguageDialog = true
-                                showMenu = false
-                            },
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = Icons.Default.Language,
-                                    contentDescription = null
-                                )
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = { Text(context.getString(R.string.menu_help)) },
-                            onClick = {
-                                val helpIntent = Intent(Intent.ACTION_VIEW, context.getString(R.string.help_page_url).toUri())
-                                context.startActivity(helpIntent)
-                                showMenu = false
-                            },
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = Icons.AutoMirrored.Filled.Help,
-                                    contentDescription = null
-                                )
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = { Text(context.getString(R.string.menu_rate_app)) },
-                            onClick = {
-                                showMenu = false
-                                onRateApp()
-                            },
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = Icons.Default.Star,
-                                    contentDescription = null
-                                )
-                            }
-                        )
+                            DropdownMenuItem(
+                                text = { Text(context.getString(R.string.menu_show_log)) },
+                                onClick = {
+                                    showLog = !showLog
+                                    AppSettingsManager.setShowLogEnabled(context, showLog)
+                                    showMenu = false
+                                },
+                                leadingIcon = {
+                                    Icon(
+                                        imageVector = if (showLog) Icons.Default.CheckBox else Icons.Default.CheckBoxOutlineBlank,
+                                        contentDescription = null
+                                    )
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text(context.getString(R.string.menu_language)) },
+                                onClick = {
+                                    showLanguageDialog = true
+                                    showMenu = false
+                                },
+                                leadingIcon = {
+                                    Icon(
+                                        imageVector = Icons.Default.Language,
+                                        contentDescription = null
+                                    )
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text(context.getString(R.string.menu_help)) },
+                                onClick = {
+                                    val helpIntent = Intent(Intent.ACTION_VIEW, context.getString(R.string.help_page_url).toUri())
+                                    context.startActivity(helpIntent)
+                                    showMenu = false
+                                },
+                                leadingIcon = {
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.Help,
+                                        contentDescription = null
+                                    )
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text(context.getString(R.string.menu_rate_app)) },
+                                onClick = {
+                                    showMenu = false
+                                    onRateApp()
+                                },
+                                leadingIcon = {
+                                    Icon(
+                                        imageVector = Icons.Default.Star,
+                                        contentDescription = null
+                                    )
+                                }
+                            )
+                        }
                     }
                 }
             )
         },
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = {
-                    showSearchDialog = true
-                    onStartScan()
-                },
-                containerColor = MaterialTheme.colorScheme.primary
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = "Add Camera"
-                )
+            if (!isReorderMode) {
+                FloatingActionButton(
+                    onClick = {
+                        showSearchDialog = true
+                        onStartScan()
+                    },
+                    containerColor = MaterialTheme.colorScheme.primary
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "Add Camera"
+                    )
+                }
             }
         }
     ) { paddingValues ->
@@ -437,7 +457,7 @@ fun MainScreen(
         ) {
             // Main content
             if (cameras.isEmpty()) {
-                // Empty state - show when no cameras are connected/saved
+                // Empty state
                 Column(
                     modifier = Modifier.fillMaxSize(),
                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -455,7 +475,6 @@ fun MainScreen(
                             textAlign = TextAlign.Center,
                         )
                     }
-                    // Log section - fills remaining space
                     if (showLog) {
                         LogCard(
                             logMessages = logMessages,
@@ -467,39 +486,36 @@ fun MainScreen(
                 }
             } else {
                 if (showLog) {
-                    // When log is shown, use BoxWithConstraints to manage space
                     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
                         val minLogHeight = 400.dp
                         val maxCameraHeight = maxHeight - minLogHeight
 
                         Column(modifier = Modifier.fillMaxSize()) {
-                            // Connected cameras - limited to leave room for log
-                            LazyColumn(
+                            ReorderableCameraList(
+                                cameras = reorderableCameras,
+                                isReorderMode = isReorderMode,
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .heightIn(max = maxCameraHeight)
                                     .padding(16.dp),
-                                verticalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                items(cameras, key = { it.device.address }) { connection ->
-                                    ConnectedCameraCard(
-                                        cameraName = connection.device.name ?: context.getString(R.string.unknown_camera_name),
-                                        cameraAddress = connection.device.address,
-                                        isBonded = connection.isBonded,
-                                        isConnected = connection.isConnected,
-                                        isConnecting = connection.isConnecting,
-                                        service = service,
-                                        onShutter = { onTriggerShutter(connection.device.address) },
-                                        onDisconnect = { onForgetDevice(connection.device.address) },
-                                        onCameraSettings = { connectionMode, quickConnectEnabled, duration, autoFocus ->
-                                            onCameraSettings(connection.device.address, connectionMode, quickConnectEnabled, duration, autoFocus)
-                                        },
-                                        onRemoteCommand = onRemoteCommand
-                                    )
+                                service = service,
+                                onReorder = { fromIndex, toIndex ->
+                                    reorderableCameras = reorderableCameras.toMutableList().apply {
+                                        add(toIndex, removeAt(fromIndex))
+                                    }
+                                },
+                                onTriggerShutter = onTriggerShutter,
+                                onForgetDevice = onForgetDevice,
+                                onCameraSettings = onCameraSettings,
+                                onRemoteCommand = onRemoteCommand,
+                                onLongPress = {
+                                    if (!isReorderMode) {
+                                        isReorderMode = true
+                                        reorderableCameras = cameras
+                                    }
                                 }
-                            }
+                            )
 
-                            // Log section - fills all remaining space
                             LogCard(
                                 logMessages = logMessages,
                                 modifier = Modifier
@@ -511,30 +527,29 @@ fun MainScreen(
                         }
                     }
                 } else {
-                    // When log is hidden, cameras take full height
-                    LazyColumn(
+                    ReorderableCameraList(
+                        cameras = reorderableCameras,
+                        isReorderMode = isReorderMode,
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        items(cameras, key = { it.device.address }) { connection ->
-                            ConnectedCameraCard(
-                                cameraName = connection.device.name ?: context.getString(R.string.unknown_camera_name),
-                                cameraAddress = connection.device.address,
-                                isBonded = connection.isBonded,
-                                isConnected = connection.isConnected,
-                                isConnecting = connection.isConnecting,
-                                service = service,
-                                onShutter = { onTriggerShutter(connection.device.address) },
-                                onDisconnect = { onForgetDevice(connection.device.address) },
-                                onCameraSettings = { connectionMode, quickConnectEnabled, duration, autoFocus ->
-                                    onCameraSettings(connection.device.address, connectionMode, quickConnectEnabled, duration, autoFocus)
-                                },
-                                onRemoteCommand = onRemoteCommand
-                            )
+                        service = service,
+                        onReorder = { fromIndex, toIndex ->
+                            reorderableCameras = reorderableCameras.toMutableList().apply {
+                                add(toIndex, removeAt(fromIndex))
+                            }
+                        },
+                        onTriggerShutter = onTriggerShutter,
+                        onForgetDevice = onForgetDevice,
+                        onCameraSettings = onCameraSettings,
+                        onRemoteCommand = onRemoteCommand,
+                        onLongPress = {
+                            if (!isReorderMode) {
+                                isReorderMode = true
+                                reorderableCameras = cameras
+                            }
                         }
-                    }
+                    )
                 }
             }
 

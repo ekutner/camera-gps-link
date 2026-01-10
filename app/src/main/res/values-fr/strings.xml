@@ -45,6 +45,7 @@
     <string name="menu_settings">Paramètres</string>
     <string name="menu_remove_camera">Supprimer la Caméra</string>
     <string name="menu_language">Langue</string>
+    <string name="menu_rearrange_cameras">Réorganiser les caméras</string>
 
     <string name="button_ok">OK</string>
     <string name="button_cancel">Annuler</string>
