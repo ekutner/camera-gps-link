@@ -372,32 +372,6 @@ fun MainScreen(
                             }
                         )
                         DropdownMenuItem(
-                            text = { Text(context.getString(R.string.menu_clear_log)) },
-                            onClick = {
-                                onClearLog()
-                                showMenu = false
-                            },
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = Icons.Default.Delete,
-                                    contentDescription = null
-                                )
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = { Text(context.getString(R.string.menu_share_log)) },
-                            onClick = {
-                                onShareLog()
-                                showMenu = false
-                            },
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = Icons.Default.Share,
-                                    contentDescription = null
-                                )
-                            }
-                        )
-                        DropdownMenuItem(
                             text = { Text(context.getString(R.string.menu_language)) },
                             onClick = {
                                 showLanguageDialog = true
@@ -483,7 +457,12 @@ fun MainScreen(
                     }
                     // Log section - fills remaining space
                     if (showLog) {
-                        LogCard(logMessages, Modifier.weight(1f))
+                        LogCard(
+                            logMessages = logMessages,
+                            modifier = Modifier.weight(1f),
+                            onClearLog = onClearLog,
+                            onShareLog = onShareLog
+                        )
                     }
                 }
             } else {
@@ -522,10 +501,12 @@ fun MainScreen(
 
                             // Log section - fills all remaining space
                             LogCard(
-                                logMessages,
-                                Modifier
+                                logMessages = logMessages,
+                                modifier = Modifier
                                     .fillMaxWidth()
-                                    .fillMaxHeight()
+                                    .fillMaxHeight(),
+                                onClearLog = onClearLog,
+                                onShareLog = onShareLog
                             )
                         }
                     }
