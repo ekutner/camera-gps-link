@@ -134,6 +134,7 @@ class CameraSyncService : Service() {
     val showBondingErrorDialog: StateFlow<String?> = _showBondingErrorDialog
 
     private var isForegroundServiceStarted = false
+    private var isFetchingLocation = false
 
     inner class LocalBinder : Binder() {
         fun getService(): CameraSyncService = this@CameraSyncService
@@ -1202,9 +1203,13 @@ class CameraSyncService : Service() {
             log("Cannot start location updates: Permissions not granted")
             return
         }
+        if (isFetchingLocation) {
+            log("Not starting background location fetching - it's already running")
+            return
+        }
         // Fetch last known location so we have something immediately and then start fetching more accurate updates
-        fusedLocationClient.getLastLocation().addOnSuccessListener { location ->
-            if (lastKnownLocation == null) {
+        if (lastKnownLocation == null) {
+            fusedLocationClient.getLastLocation().addOnSuccessListener { location ->
                 lastKnownLocation = location
                 log("Pre-fetched last location: Lat=${"%.2f".format(location.latitude)}, Lon=${"%.2f".format(location.longitude)}")
             }
@@ -1213,12 +1218,24 @@ class CameraSyncService : Service() {
         val locationRequest = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, Constants.LOCATION_UPDATE_INTERVAL)
             .build()
         fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper())
+        isFetchingLocation = true
     }
 
     private fun stopBackgroundLocationFetching() {
-        log("Stopping background location fetching")
+        val anyCameraConnected = cameraConnections.values.any { it.isConnected }
+        if (anyCameraConnected) {
+            log("stopBackgroundLocationFetching() called, but active connections remain. Continuing location updates.")
+            return
+        }
+
+        if (!isFetchingLocation) {
+            return
+        }
+
+        log("Stopping background location fetching (no active cameras)")
         fusedLocationClient.removeLocationUpdates(locationCallback)
         lastKnownLocation = null
+        isFetchingLocation = false
     }
 
     // --- Utility Methods ---
@@ -1259,6 +1276,15 @@ class CameraSyncService : Service() {
                     }
                 }
             }
+
+            // Add mock cameras for testing the UI
+//            for (i in 55 until 55 ) {
+//                val mockAddress = "00:11:22:33:44:$i"
+//                val mockDevice = bluetoothAdapter.getRemoteDevice(mockAddress)
+//                val mockConnection = CameraConnection(device = mockDevice)
+//                cameraConnections[mockAddress] = mockConnection
+//            }
+
             updateConnectionsList()
         }
     }
