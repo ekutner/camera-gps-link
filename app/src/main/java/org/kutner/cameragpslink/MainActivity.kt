@@ -288,18 +288,11 @@ fun MainScreen(
     var showLanguageDialog by remember { mutableStateOf(false) }
     var isReorderMode by remember { mutableStateOf(false) }
 
-    // Cameras are already sorted by AppSettingsManager order
-    var reorderableCameras by remember(cameras) { mutableStateOf(cameras) }
-
     // Handle back press to close menu or exit reorder mode
     BackHandler(enabled = showMenu || isReorderMode) {
         when {
             showMenu -> showMenu = false
-            isReorderMode -> {
-                isReorderMode = false
-                // Revert to original order if cancelled
-                reorderableCameras = cameras
-            }
+            isReorderMode -> isReorderMode = false
         }
     }
 
@@ -335,9 +328,6 @@ fun MainScreen(
                     if (isReorderMode) {
                         // Show checkmark in reorder mode
                         IconButton(onClick = {
-                            // Save the new order
-                            val newOrder = reorderableCameras.map { it.device.address }
-                            AppSettingsManager.reorderCameras(context, newOrder)
                             isReorderMode = false
                         }) {
                             Icon(
@@ -363,7 +353,6 @@ fun MainScreen(
                                     text = { Text(context.getString(R.string.menu_rearrange_cameras)) },
                                     onClick = {
                                         isReorderMode = true
-                                        reorderableCameras = cameras
                                         showMenu = false
                                     },
                                     leadingIcon = {
@@ -492,18 +481,13 @@ fun MainScreen(
 
                         Column(modifier = Modifier.fillMaxSize()) {
                             ReorderableCameraList(
-                                cameras = reorderableCameras,
+                                connectedCameras = cameras,
                                 isReorderMode = isReorderMode,
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .heightIn(max = maxCameraHeight)
                                     .padding(16.dp),
                                 service = service,
-                                onReorder = { fromIndex, toIndex ->
-                                    reorderableCameras = reorderableCameras.toMutableList().apply {
-                                        add(toIndex, removeAt(fromIndex))
-                                    }
-                                },
                                 onTriggerShutter = onTriggerShutter,
                                 onForgetDevice = onForgetDevice,
                                 onCameraSettings = onCameraSettings,
@@ -511,7 +495,6 @@ fun MainScreen(
                                 onLongPress = {
                                     if (!isReorderMode) {
                                         isReorderMode = true
-                                        reorderableCameras = cameras
                                     }
                                 }
                             )
@@ -528,17 +511,12 @@ fun MainScreen(
                     }
                 } else {
                     ReorderableCameraList(
-                        cameras = reorderableCameras,
+                        connectedCameras = cameras,
                         isReorderMode = isReorderMode,
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(16.dp),
                         service = service,
-                        onReorder = { fromIndex, toIndex ->
-                            reorderableCameras = reorderableCameras.toMutableList().apply {
-                                add(toIndex, removeAt(fromIndex))
-                            }
-                        },
                         onTriggerShutter = onTriggerShutter,
                         onForgetDevice = onForgetDevice,
                         onCameraSettings = onCameraSettings,
@@ -546,7 +524,6 @@ fun MainScreen(
                         onLongPress = {
                             if (!isReorderMode) {
                                 isReorderMode = true
-                                reorderableCameras = cameras
                             }
                         }
                     )

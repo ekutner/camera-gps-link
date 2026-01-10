@@ -90,6 +90,7 @@ object AppSettingsManager {
         // Create new LinkedHashMap with the specified order
         val newCache = LinkedHashMap<String, CameraSettings>()
 
+        // Add cameras in the new order
         orderedAddresses.forEach { address ->
             oldCache[address]?.let { settings ->
                 newCache[address] = settings
@@ -126,11 +127,11 @@ object AppSettingsManager {
         val json = prefs.getString(CAMERA_SETTINGS_KEY, null) ?: return LinkedHashMap()
 
         try {
-            // Try to parse as list first (new format)
+            // Try to parse as list first (new format - maintains order)
             val listType = object : TypeToken<List<CameraSettings>>() {}.type
             val list = gson.fromJson<List<CameraSettings>>(json, listType)
             if (list != null) {
-                // Convert list to LinkedHashMap, preserving order
+                // Convert list to LinkedHashMap, preserving order from the list
                 val map = LinkedHashMap<String, CameraSettings>()
                 list.forEach { settings ->
                     map[settings.deviceAddress] = settings
@@ -164,6 +165,7 @@ object AppSettingsManager {
     // --- Saved Cameras Management ---
     fun getSavedCameras(context: Context): List<String> {
         ensureCacheLoaded(context)
+        // Return keys as a list - LinkedHashMap preserves insertion/reorder order
         return cameraSettingsCache!!.keys.toList()
     }
 

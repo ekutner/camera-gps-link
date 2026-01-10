@@ -18,14 +18,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
+import org.kutner.cameragpslink.AppSettingsManager
 import org.kutner.cameragpslink.CameraConnection
 import org.kutner.cameragpslink.CameraSyncService
 import org.kutner.cameragpslink.R
@@ -34,11 +33,10 @@ import org.kutner.cameragpslink.RemoteControlCommand
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ReorderableCameraList(
-    cameras: List<CameraConnection>,
+    connectedCameras: List<CameraConnection>,
     isReorderMode: Boolean,
     modifier: Modifier = Modifier,
     service: CameraSyncService,
-    onReorder: (Int, Int) -> Unit,
     onTriggerShutter: (String) -> Unit,
     onForgetDevice: (String) -> Unit,
     onCameraSettings: (String, Int, Boolean, Int, Boolean) -> Unit,
@@ -48,7 +46,35 @@ fun ReorderableCameraList(
     val context = LocalContext.current
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
-    val dragDropState = rememberDragDropState(listState, onReorder, scope)
+
+    // Get the saved camera order from AppSettingsManager
+    val savedCameraAddresses = remember(connectedCameras) {
+        AppSettingsManager.getSavedCameras(context)
+    }
+
+    // Create a map for quick lookup of connections by address
+    val connectionMap = remember(connectedCameras) {
+        connectedCameras.associateBy { it.device.address }
+    }
+
+    // Mutable list for reordering
+    var reorderableAddresses by remember(savedCameraAddresses) {
+        mutableStateOf(savedCameraAddresses)
+    }
+
+    val dragDropState = rememberDragDropState(
+        lazyListState = listState,
+        onMove = { fromIndex, toIndex ->
+            reorderableAddresses = reorderableAddresses.toMutableList().apply {
+                add(toIndex, removeAt(fromIndex))
+            }
+        },
+        onDragEnd = {
+            // Save the new order when dragging ends
+            AppSettingsManager.reorderCameras(context, reorderableAddresses)
+        },
+        scope = scope
+    )
 
     LazyColumn(
         state = listState,
@@ -57,63 +83,69 @@ fun ReorderableCameraList(
         contentPadding = PaddingValues(bottom = 80.dp)
     ) {
         itemsIndexed(
-            items = cameras,
-            key = { _, connection -> connection.device.address }
-        ) { index, connection ->
-            val dragging = index == dragDropState.draggingItemIndex
-            val itemModifier = if (dragging) {
-                Modifier
-                    .zIndex(1f)
-                    .graphicsLayer {
-                        translationY = dragDropState.draggingItemOffset
-                    }
-            } else {
-                Modifier.animateItem()
-            }
+            items = reorderableAddresses,
+            key = { _, address -> address }
+        ) { index, address ->
+            // Look up the connection for this address
+            val connection = connectionMap[address]
 
-            // Use a side effect to keep track of current index
-            val currentIndex = remember { mutableIntStateOf(index) }
-            LaunchedEffect(index) {
-                currentIndex.intValue = index
-            }
-
-            Column(modifier = itemModifier.fillMaxWidth()) {
-                ConnectedCameraCard(
-                    modifier = Modifier.fillMaxWidth(),
-                    cameraName = connection.device.name ?: context.getString(R.string.unknown_camera_name),
-                    cameraAddress = connection.device.address,
-                    isBonded = connection.isBonded,
-                    isConnected = connection.isConnected,
-                    isConnecting = connection.isConnecting,
-                    service = service,
-                    isReorderMode = isReorderMode,
-                    isDragging = dragging,
-                    elevation = if (dragging) 8.dp else 2.dp,
-                    dragModifier = if (isReorderMode) {
-                        Modifier.pointerInput(connection.device.address) {
-                            detectDragGestures(
-                                onDragStart = { offset ->
-                                    dragDropState.onDragStartAtIndex(currentIndex.intValue)
-                                },
-                                onDrag = { change, offset ->
-                                    change.consume()
-                                    dragDropState.onDrag(offset)
-                                },
-                                onDragEnd = { dragDropState.onDragInterrupted() },
-                                onDragCancel = { dragDropState.onDragInterrupted() }
-                            )
+            // Only display if we have a connection for this address
+            if (connection != null) {
+                val dragging = index == dragDropState.draggingItemIndex
+                val itemModifier = if (dragging) {
+                    Modifier
+                        .zIndex(1f)
+                        .graphicsLayer {
+                            translationY = dragDropState.draggingItemOffset
                         }
-                    } else {
-                        Modifier
-                    },
-                    onShutter = { onTriggerShutter(connection.device.address) },
-                    onDisconnect = { onForgetDevice(connection.device.address) },
-                    onCameraSettings = { mode, qe, dur, af ->
-                        onCameraSettings(connection.device.address, mode, qe, dur, af)
-                    },
-                    onRemoteCommand = onRemoteCommand,
-                    onLongPress = onLongPress
-                )
+                } else {
+                    Modifier.animateItem()
+                }
+
+                // Use a side effect to keep track of current index
+                val currentIndex = remember { mutableIntStateOf(index) }
+                LaunchedEffect(index) {
+                    currentIndex.intValue = index
+                }
+
+                Column(modifier = itemModifier.fillMaxWidth()) {
+                    ConnectedCameraCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        cameraName = connection.device.name ?: context.getString(R.string.unknown_camera_name),
+                        cameraAddress = connection.device.address,
+                        isBonded = connection.isBonded,
+                        isConnected = connection.isConnected,
+                        isConnecting = connection.isConnecting,
+                        service = service,
+                        isReorderMode = isReorderMode,
+                        isDragging = dragging,
+                        elevation = if (dragging) 8.dp else 2.dp,
+                        dragModifier = if (isReorderMode) {
+                            Modifier.pointerInput(address) {
+                                detectDragGestures(
+                                    onDragStart = { offset ->
+                                        dragDropState.onDragStartAtIndex(currentIndex.intValue)
+                                    },
+                                    onDrag = { change, offset ->
+                                        change.consume()
+                                        dragDropState.onDrag(offset)
+                                    },
+                                    onDragEnd = { dragDropState.onDragInterrupted() },
+                                    onDragCancel = { dragDropState.onDragInterrupted() }
+                                )
+                            }
+                        } else {
+                            Modifier
+                        },
+                        onShutter = { onTriggerShutter(connection.device.address) },
+                        onDisconnect = { onForgetDevice(connection.device.address) },
+                        onCameraSettings = { mode, qe, dur, af ->
+                            onCameraSettings(connection.device.address, mode, qe, dur, af)
+                        },
+                        onRemoteCommand = onRemoteCommand,
+                        onLongPress = onLongPress
+                    )
+                }
             }
         }
     }
@@ -130,12 +162,14 @@ fun ReorderableCameraList(
 fun rememberDragDropState(
     lazyListState: LazyListState,
     onMove: (Int, Int) -> Unit,
+    onDragEnd: () -> Unit,
     scope: CoroutineScope
 ): DragDropState {
     return remember(lazyListState) {
         DragDropState(
             state = lazyListState,
             onMove = onMove,
+            onDragEnd = onDragEnd,
             scope = scope
         )
     }
@@ -144,6 +178,7 @@ fun rememberDragDropState(
 class DragDropState(
     private val state: LazyListState,
     private val onMove: (Int, Int) -> Unit,
+    private val onDragEnd: () -> Unit,
     private val scope: CoroutineScope
 ) {
     var draggingItemIndex by mutableStateOf<Int?>(null)
@@ -188,6 +223,7 @@ class DragDropState(
         draggingItemDraggedDelta = 0f
         draggingItemIndex = null
         draggingItemInitialOffset = 0
+        onDragEnd()
     }
 
     internal fun onDrag(offset: Offset) {
