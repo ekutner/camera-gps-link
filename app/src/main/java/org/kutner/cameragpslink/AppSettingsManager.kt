@@ -7,13 +7,12 @@ import com.google.gson.reflect.TypeToken
 
 data class CameraSettings(
     val deviceAddress: String,
-    val protocolVersion: Int = Constants.PROTOCOL_VERSION_CREATORS_APP,     // Use this for backward compatibility with previously saved cameras
-    val connectionMode: Int = 1, // 1 = Mode 1, 2 = Mode 2
+    val protocolVersion: Int = Constants.PROTOCOL_VERSION_CREATORS_APP,
+    val connectionMode: Int = 1,
     val quickConnectEnabled: Boolean = false,
     val quickConnectDurationMinutes: Int = 5,
     val lastDisconnectTimestamp: Long? = null,
     val enableHalfShutterPress: Boolean = false
-
 )
 
 object AppSettingsManager {
@@ -24,19 +23,46 @@ object AppSettingsManager {
 
     private val gson = Gson()
 
-    private fun saveCameraSettings(context: Context, settings: CameraSettings) {
+    // In-memory cache using LinkedHashMap to preserve order
+    private var cameraSettingsCache: LinkedHashMap<String, CameraSettings>? = null
+
+    // Ensure cache is loaded
+    private fun ensureCacheLoaded(context: Context) {
+        if (cameraSettingsCache == null) {
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            cameraSettingsCache = loadAllCamerasSettingsFromStorage(prefs)
+        }
+    }
+
+    // Persist cache to storage
+    private fun persistCache(context: Context) {
+        val cache = cameraSettingsCache ?: return
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        val allSettings = loadAllCamerasSettings(prefs).toMutableMap()
-        allSettings[settings.deviceAddress] = settings
-        saveAllSettings(prefs, allSettings)
+
+        // Convert LinkedHashMap to List to guarantee order in JSON
+        val settingsList = cache.values.toList()
+        val json = gson.toJson(settingsList)
+        prefs.edit().putString(CAMERA_SETTINGS_KEY, json).apply()
+    }
+
+    private fun saveCameraSettings(context: Context, settings: CameraSettings) {
+        ensureCacheLoaded(context)
+
+        // Update or add to cache
+        cameraSettingsCache!![settings.deviceAddress] = settings
+
+        // Persist to storage
+        persistCache(context)
     }
 
     fun getCameraSettings(context: Context, deviceAddress: String): CameraSettings {
-        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        val allSettings = loadAllCamerasSettings(prefs)
-        val settings = allSettings[deviceAddress] ?: CameraSettings(deviceAddress = deviceAddress)
+        ensureCacheLoaded(context)
+
+        val settings = cameraSettingsCache!![deviceAddress]
+            ?: CameraSettings(deviceAddress = deviceAddress)
+
         return settings.copy(
-            connectionMode = settings.connectionMode.coerceAtLeast(1).coerceAtMost(2), // Ensure connectionMode is between 1 and 2
+            connectionMode = settings.connectionMode.coerceAtLeast(1).coerceAtMost(2),
             quickConnectDurationMinutes = settings.quickConnectDurationMinutes.coerceAtLeast(0).coerceAtMost(720),
             quickConnectEnabled = settings.quickConnectEnabled,
             lastDisconnectTimestamp = settings.lastDisconnectTimestamp?.coerceAtLeast(0),
@@ -56,6 +82,32 @@ object AppSettingsManager {
         saveCameraSettings(context, updatedSettings)
     }
 
+    fun reorderCameras(context: Context, orderedAddresses: List<String>) {
+        ensureCacheLoaded(context)
+
+        val oldCache = cameraSettingsCache!!
+
+        // Create new LinkedHashMap with the specified order
+        val newCache = LinkedHashMap<String, CameraSettings>()
+
+        orderedAddresses.forEach { address ->
+            oldCache[address]?.let { settings ->
+                newCache[address] = settings
+            }
+        }
+
+        // Add any cameras that weren't in the ordered list (shouldn't happen, but safety)
+        oldCache.forEach { (address, settings) ->
+            if (!newCache.containsKey(address)) {
+                newCache[address] = settings
+            }
+        }
+
+        // Replace cache and persist
+        cameraSettingsCache = newCache
+        persistCache(context)
+    }
+
     fun updateDisconnectTimestamp(context: Context, deviceAddress: String, timestamp: Long) {
         val currentSettings = getCameraSettings(context, deviceAddress)
         val updatedSettings = currentSettings.copy(lastDisconnectTimestamp = timestamp)
@@ -63,43 +115,59 @@ object AppSettingsManager {
     }
 
     fun removeSettings(context: Context, deviceAddress: String) {
-        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        val allSettings = loadAllCamerasSettings(prefs).toMutableMap()
-        if (allSettings.remove(deviceAddress) != null) {
-            saveAllSettings(prefs, allSettings)
+        ensureCacheLoaded(context)
+
+        if (cameraSettingsCache!!.remove(deviceAddress) != null) {
+            persistCache(context)
         }
     }
 
-    private fun saveAllSettings(prefs: SharedPreferences, settings: Map<String, CameraSettings>) {
-        val json = gson.toJson(settings)
-        prefs.edit().putString(CAMERA_SETTINGS_KEY, json).apply()
-    }
+    private fun loadAllCamerasSettingsFromStorage(prefs: SharedPreferences): LinkedHashMap<String, CameraSettings> {
+        val json = prefs.getString(CAMERA_SETTINGS_KEY, null) ?: return LinkedHashMap()
 
-    private fun loadAllCamerasSettings(prefs: SharedPreferences): Map<String, CameraSettings> {
-        var map = mutableMapOf<String, CameraSettings>()
-        val json = prefs.getString(CAMERA_SETTINGS_KEY, null)
-        if (json != null) {
-            try {
-                val type = object : TypeToken<Map<String, CameraSettings>>() {}.type
-                map = gson.fromJson<Map<String, CameraSettings>>(json, type).toMutableMap()
-            } catch (e: Exception) {
-                map = mutableMapOf()
+        try {
+            // Try to parse as list first (new format)
+            val listType = object : TypeToken<List<CameraSettings>>() {}.type
+            val list = gson.fromJson<List<CameraSettings>>(json, listType)
+            if (list != null) {
+                // Convert list to LinkedHashMap, preserving order
+                val map = LinkedHashMap<String, CameraSettings>()
+                list.forEach { settings ->
+                    map[settings.deviceAddress] = settings
+                }
+                return map
             }
+        } catch (e: Exception) {
+            // Not a list, try as map
         }
-        return map
+
+        try {
+            // Try to parse as map (old format)
+            val mapType = object : TypeToken<LinkedHashMap<String, CameraSettings>>() {}.type
+            val oldMap = gson.fromJson<LinkedHashMap<String, CameraSettings>>(json, mapType)
+
+            if (oldMap != null) {
+                // Migrate to new format by persisting as list
+                val settingsList = oldMap.values.toList()
+                val newJson = gson.toJson(settingsList)
+                prefs.edit().putString(CAMERA_SETTINGS_KEY, newJson).apply()
+
+                return oldMap
+            }
+        } catch (e: Exception) {
+            // Parsing failed
+        }
+
+        return LinkedHashMap()
     }
 
     // --- Saved Cameras Management ---
-    fun getSavedCameras(context: Context): List<String> = getSavedCamerasMap(context).keys.toList()
-
-    // Helper to avoid re-loading for list
-    private fun getSavedCamerasMap(context: Context): Map<String, CameraSettings> {
-        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        return loadAllCamerasSettings(prefs)
+    fun getSavedCameras(context: Context): List<String> {
+        ensureCacheLoaded(context)
+        return cameraSettingsCache!!.keys.toList()
     }
 
     fun addSavedCamera(context: Context, deviceAddress: String, protocolVersion: Int) {
-//        val currentSettings = getCameraSettings(context, deviceAddress)
         val newSettings = CameraSettings(
             deviceAddress = deviceAddress,
             protocolVersion = protocolVersion
@@ -112,7 +180,8 @@ object AppSettingsManager {
     }
 
     fun hasSavedCamera(context: Context, deviceAddress: String): Boolean {
-        return getSavedCameras(context).contains(deviceAddress)
+        ensureCacheLoaded(context)
+        return cameraSettingsCache!!.containsKey(deviceAddress)
     }
 
     // --- UI Preferences ---
