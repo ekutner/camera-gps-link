@@ -162,44 +162,45 @@ fun ConnectedCameraCard(
             }
 
             Spacer(modifier = Modifier.height(12.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Button(
-                    onClick = { showRemoteControlDialog = true },
-                    enabled = isConnected,
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(56.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        // Changed to Primary to match Shutter button
-                        containerColor = MaterialTheme.colorScheme.primary
-                    )
+            if (isConnected) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Text(
-                        text = context.getString(R.string.action_remote),
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
+                    Button(
+                        onClick = { showRemoteControlDialog = true },
+                        enabled = isConnected,
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(56.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            // Changed to Primary to match Shutter button
+                            containerColor = MaterialTheme.colorScheme.primary
+                        )
+                    ) {
+                        Text(
+                            text = context.getString(R.string.action_remote),
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
 
-                Button(
-                    onClick = onShutter,
-                    enabled = isConnected && isRemoteControlEnabled,
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(56.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary
-                    )
-                ) {
-                    Text(
-                        text = context.getString(R.string.action_shutter),
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Medium
-                    )
+                    Button(
+                        onClick = onShutter,
+                        enabled = isConnected && isRemoteControlEnabled,
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(56.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary
+                        )
+                    ) {
+                        Text(
+                            text = context.getString(R.string.action_shutter),
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
                 }
             }
         }
