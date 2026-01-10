@@ -78,7 +78,7 @@ fun ReorderableCameraList(
 
     LazyColumn(
         state = listState,
-        modifier = modifier.dragContainer(dragDropState, isReorderMode, onLongPress),
+        modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(12.dp),
         contentPadding = PaddingValues(bottom = 80.dp)
     ) {
@@ -267,29 +267,6 @@ class DragDropState(
             if (overscroll != 0f) {
                 scrollChannel.trySend(overscroll)
             }
-        }
-    }
-}
-
-fun Modifier.dragContainer(
-    dragDropState: DragDropState,
-    isReorderMode: Boolean,
-    onLongPress: () -> Unit
-): Modifier {
-    return pointerInput(isReorderMode) {
-        if (!isReorderMode) {
-            detectDragGesturesAfterLongPress(
-                onDragStart = { offset ->
-                    onLongPress()
-                    dragDropState.onDragStart(offset)
-                },
-                onDrag = { change, offset ->
-                    change.consume()
-                    dragDropState.onDrag(offset)
-                },
-                onDragEnd = { dragDropState.onDragInterrupted() },
-                onDragCancel = { dragDropState.onDragInterrupted() }
-            )
         }
     }
 }

@@ -92,16 +92,7 @@ fun ConnectedCameraCard(
     }
 
     Card(
-        modifier = modifier.then(
-            if (!isReorderMode) {
-                Modifier.combinedClickable(
-                    onClick = {},
-                    onLongClick = onLongPress
-                )
-            } else {
-                Modifier
-            }
-        ),
+        modifier = modifier,
         elevation = CardDefaults.cardElevation(defaultElevation = elevation)
     ) {
         Row(
@@ -133,7 +124,18 @@ fun ConnectedCameraCard(
             // Rest of the card content
             Column(modifier = Modifier.weight(1f)) {
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .then(
+                            if (!isReorderMode) {
+                                Modifier.combinedClickable(
+                                    onClick = {},
+                                    onLongClick = onLongPress
+                                )
+                            } else {
+                                Modifier
+                            }
+                        ),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.Top
                 ) {
@@ -211,19 +213,26 @@ fun ConnectedCameraCard(
                     }
                 }
 
-                // Hide buttons in reorder mode
-                if (!isReorderMode) {
+                // Show buttons only when not in reorder mode AND connected
+                if (!isReorderMode && isConnected) {
                     Spacer(modifier = Modifier.height(12.dp))
-                    if (isConnected) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .combinedClickable(
+                                    onClick = { showRemoteControlDialog = true },
+                                    onLongClick = { /* Consume long press - do nothing */ }
+                                )
                         ) {
                             Button(
                                 onClick = { showRemoteControlDialog = true },
                                 enabled = isConnected,
                                 modifier = Modifier
-                                    .weight(1f)
+                                    .fillMaxWidth()
                                     .height(56.dp),
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = MaterialTheme.colorScheme.primary
@@ -235,12 +244,21 @@ fun ConnectedCameraCard(
                                     fontWeight = FontWeight.Medium
                                 )
                             }
+                        }
 
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .combinedClickable(
+                                    onClick = onShutter,
+                                    onLongClick = { /* Consume long press - do nothing */ }
+                                )
+                        ) {
                             Button(
                                 onClick = onShutter,
                                 enabled = isConnected && isRemoteControlEnabled,
                                 modifier = Modifier
-                                    .weight(1f)
+                                    .fillMaxWidth()
                                     .height(56.dp),
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = MaterialTheme.colorScheme.primary
