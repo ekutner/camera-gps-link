@@ -1,5 +1,6 @@
 package org.kutner.cameragpslink.composables
 
+import android.content.Context
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -39,7 +40,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -59,6 +61,7 @@ fun ConnectedCameraCard(
     isBonded: Boolean,
     isConnected: Boolean,
     isConnecting: Boolean,
+    context: Context,
     service: CameraSyncService,
     isReorderMode: Boolean = false,
     isDragging: Boolean = false,
@@ -73,11 +76,14 @@ fun ConnectedCameraCard(
     var showMenu by remember { mutableStateOf(false) }
     var showCameraSettingsDialog by remember { mutableStateOf(false) }
     var showRemoteControlDialog by remember { mutableStateOf(false) }
-    val context = LocalContext.current
 
     // Observe Remote Control Enabled state
     val remoteEnabledMap by service.isRemoteControlEnabled.collectAsState()
     val isRemoteControlEnabled = remoteEnabledMap[cameraAddress] ?: false
+
+    // Observe Focus State
+    val focusStates by service.isFocusAcquired.collectAsState()
+    val isFocused = focusStates[cameraAddress] ?: false
 
     // Handle back press to close menu when focusable is false
     BackHandler(enabled = showMenu) {
@@ -142,14 +148,24 @@ fun ConnectedCameraCard(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Box(
                             modifier = Modifier
-                                .size(48.dp)
+                                .size(72.dp)
                                 .clip(CircleShape)
                                 .background(MaterialTheme.colorScheme.primaryContainer),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text(
-                                text = "📷",
-                                fontSize = 24.sp
+                            androidx.compose.foundation.Image(
+                                painter = painterResource(id = R.mipmap.ic_launcher_foreground),
+                                contentDescription = "App Icon",
+                                modifier = Modifier.size(80.dp),
+                                colorFilter = if (!isConnected) {
+                                    ColorFilter.colorMatrix(
+                                        androidx.compose.ui.graphics.ColorMatrix().apply {
+                                            setToSaturation(0f)
+                                        }
+                                    )
+                                } else {
+                                    null
+                                }
                             )
                         }
                         Spacer(modifier = Modifier.width(12.dp))
@@ -261,7 +277,7 @@ fun ConnectedCameraCard(
                                     .fillMaxWidth()
                                     .height(56.dp),
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = MaterialTheme.colorScheme.primary
+                                    containerColor = if (isFocused) Color.Green else MaterialTheme.colorScheme.primary
                                 )
                             ) {
                                 Text(

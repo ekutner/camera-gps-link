@@ -115,6 +115,7 @@ fun ReorderableCameraList(
                         isBonded = connection.isBonded,
                         isConnected = connection.isConnected,
                         isConnecting = connection.isConnecting,
+                        context = context,
                         service = service,
                         isReorderMode = isReorderMode,
                         isDragging = dragging,
