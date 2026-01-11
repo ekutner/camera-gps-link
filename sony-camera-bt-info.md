@@ -9,6 +9,49 @@ https://gregleeds.com/reverse-engineering-sony-camera-bluetooth/
 https://github.com/whc2001/ILCE7M3ExternalGps/blob/main/PROTOCOL_EN.md (make sure to also checkout the issues page)  
 https://github.com/coral/freemote
 
+
+## Scan Response Manufacturer Data 
+| Offset | 	Content                                                                               |
+|--------|----------------------------------------------------------------------------------------|
+| [0:1]  | Manufacturer ID (0x012D = Sony)                                                        |
+| [2:3]  | Device Type ID (0x0003 = Camera)                                                       |
+| [4:5]  | BLE Protocol Version (0x64 = Imaging Edge  0x65 = Creator's App)	                      |  
+| [6:7]  | ASCII Model Code (known values are "E1", "A1", "U1")	                                  |
+| [8: ]  | Custom sony tags in 3 byte blocks with format: <Tag ID><2 byte value in little endian> |
+
+
+### Known Tags
+#### Tag = 0x21
+| mask   | Meaning                                             |
+|--------|-----------------------------------------------------|
+| 0x0010 | Wifi Handover Enabled (?)                           |
+| 0x0020 | Supports Wifi Handover (?)                          |
+| 0x0040 | Camera Powered On  (✅)                              |
+| 0x0080 | Remote Power On Enabled (✅)                         |
+
+#### Tag = 0x22
+| mask   | Meaning                                       |
+|--------|-----------------------------------------------|
+| 0x0002 | Remote Control Enabled (?)                    |
+| 0x0004 | Remote Control Enabled (✅ in protocol 0x65)   | 
+| 0x0010 | Location linking enabled (?)                  |
+| 0x0020 | Location linking supported (?)                |
+| 0x0040 | Camera in pairing mode  (✅)                   |
+| 0x0080 | Pairing is supported (?)                      |
+
+#### Tag = 0x23
+| mask   | Meaning                                                         |
+|--------|-----------------------------------------------------------------|
+| 0x0001 | Push Notifications Enabled (?)                                  |
+| 0x0002 | Supports Push Notifications (?)                                 |
+| 0x000C | Mobile Image Transfer Enabled  (if masked result is 0x0004) (?) | 
+| 0x0010 | Supports Mobile Image Transfer (?)                              |
+| 0x0060 | Mobile Remote Control Enabled (if masked result is 0x0020) (?)  |
+| 0x0080 | Supports Mobile Remote Control (?)                              |
+
+Only items with ✅ have been conformed by me
+
+
 ## Time Service (*UUID = 8000CC00-CC00-FFFF-FFFF-FFFFFFFFFFFF*)
 
 ### Set time characteristic (UUID = 0xCC13)
