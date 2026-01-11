@@ -2,7 +2,6 @@ package org.kutner.cameragpslink.composables
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -240,10 +239,17 @@ class DragDropState(
         }
 
         if (targetItem != null) {
-            val scrollToIndex = if (targetItem.index == state.firstVisibleItemIndex) {
-                draggingItem.index
-            } else if (draggingItem.index == state.firstVisibleItemIndex) {
-                targetItem.index
+            // Determine if we need to preserve scroll position
+            val needsScrollAdjustment = when {
+                // Moving from first position to second
+                draggingItem.index == 0 && targetItem.index == 1 -> true
+                // Moving from second position to first
+                draggingItem.index == 1 && targetItem.index == 0 -> true
+                else -> false
+            }
+
+            val scrollOffsetBefore = if (needsScrollAdjustment) {
+                state.firstVisibleItemScrollOffset
             } else {
                 null
             }
@@ -251,22 +257,27 @@ class DragDropState(
             onMove.invoke(draggingItem.index, targetItem.index)
             draggingItemIndex = targetItem.index
 
-            if (scrollToIndex != null) {
+            // Restore scroll position if needed
+            if (scrollOffsetBefore != null) {
                 scope.launch {
-                    state.scrollToItem(scrollToIndex, state.firstVisibleItemScrollOffset)
+                    state.scrollToItem(
+                        index = state.firstVisibleItemIndex,
+                        scrollOffset = scrollOffsetBefore
+                    )
                 }
             }
-        } else {
-            val overscroll = when {
-                draggingItemDraggedDelta > 0 ->
-                    (endOffset - state.layoutInfo.viewportEndOffset).coerceAtLeast(0f)
-                draggingItemDraggedDelta < 0 ->
-                    (startOffset - state.layoutInfo.viewportStartOffset).coerceAtMost(0f)
-                else -> 0f
-            }
-            if (overscroll != 0f) {
-                scrollChannel.trySend(overscroll)
-            }
+        }
+
+        // Always handle overscroll for smooth edge scrolling
+        val overscroll = when {
+            draggingItemDraggedDelta > 0 ->
+                (endOffset - state.layoutInfo.viewportEndOffset).coerceAtLeast(0f)
+            draggingItemDraggedDelta < 0 ->
+                (startOffset - state.layoutInfo.viewportStartOffset).coerceAtMost(0f)
+            else -> 0f
+        }
+        if (overscroll != 0f) {
+            scrollChannel.trySend(overscroll)
         }
     }
 }
