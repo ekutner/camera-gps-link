@@ -559,14 +559,14 @@ class CameraSyncService : Service() {
                     stopBackgroundLocationFetching()
 
                     notificationHelper.clearShutterErrorNotification(deviceAddress)
-                    notificationHelper.updateNotifications(cameraConnections.values, isRemoteControlEnabled.value, isForegroundServiceStarted,) { log(it) }
+//                    notificationHelper.updateNotifications(cameraConnections.values, isRemoteControlEnabled.value, isForegroundServiceStarted,) { log(it) }
 
                     // Restart auto-scan for this device
                     startAutoScan(deviceAddress)
                 }
 
                 updateConnectionsList()
-//                notificationHelper.updateNotifications(cameraConnections.values, isRemoteControlEnabled.value, isForegroundServiceStarted, ) { log(it) }
+                notificationHelper.updateNotifications(cameraConnections.values, isRemoteControlEnabled.value, isForegroundServiceStarted, ) { log(it) }
             }
 
             @SuppressLint("MissingPermission")
