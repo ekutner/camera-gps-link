@@ -81,10 +81,15 @@ of Sony's RMT-P1BT and RMT-VP2 remotes.
   when pressed in the remote control.
 * When you enable Bluetooth remote control you will have to turn the camera off and then on again
   so the app can reconnect and discover that remote control has been enabled.
+* Some cameras like the a6400 and a7 III do not allow remote control and location linking to be enabled
+  at the same time. If you enable one the other one gets automatically disabled. This is a limitation
+  of the camera, not the app.
+
 
 ### Settings
 Select the "Settings" option from the option from the three dots menu (aka kebab menu) next to the camera:
 ![](assets/camera-menu.jpg)
+
 
 #### Available Options
 ![](assets/camera-settings-dialog.jpg)
@@ -168,7 +173,11 @@ app is running in the background, waiting to connect with the camera
   from the Play Store, a user interaction is required for it to start. 
   Just tap the notification, it will open the app which will allow the background service
   to work and start searching for cameras.
-  
+
+* **When I enable Bluetooth Remote Control in the camera geotagging stops working**
+  This ia limitation of some cameras like the a6400 and the a7 III which do not allow
+  remote control and location linking to be enabled at the same time. If you enable one
+  the other one gets automatically disabled.
 
 ### Acknowledgements
 This app is inspired by previous work done by:  
