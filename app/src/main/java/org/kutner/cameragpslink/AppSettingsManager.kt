@@ -212,10 +212,10 @@ object AppSettingsManager {
     }
 
     // --- Camera Name Resolution ---
-    fun getCameraName(context: Context, deviceAddress: String, deviceName: String?): String {
+    fun getCameraName(context: Context, deviceAddress: String, deviceName: String?, useUnknownName: Boolean=true): String {
         val settings = getCameraSettings(context, deviceAddress)
         return if (settings.customName != null)
-            settings.customName.ifEmpty { deviceName ?: context.getString(R.string.unknown_camera_name) }
+            settings.customName.ifEmpty { deviceName ?: if (useUnknownName) context.getString(R.string.unknown_camera_name)  else "" }
         else
             deviceName ?: context.getString(R.string.unknown_camera_name)
 

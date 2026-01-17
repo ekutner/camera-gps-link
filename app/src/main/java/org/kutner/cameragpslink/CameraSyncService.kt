@@ -915,6 +915,8 @@ class CameraSyncService : Service() {
                 resetAutoScan(deviceAddress)
             }
         }
+        // update the notifications in case the camera name has changed
+        notificationHelper.updateNotifications(cameraConnections.values, isRemoteControlEnabled.value, isForegroundServiceStarted) { log(it) }
     }
 
     // --- New device scan ---
@@ -1339,13 +1341,14 @@ class CameraSyncService : Service() {
 
     @SuppressLint("MissingPermission")
     private fun getDeviceDisplayString(device: BluetoothDevice): String {
-        if (device.name != null) {
-            return "${device.name} [${device.address}]"
+        val name = AppSettingsManager.getCameraName(baseContext, device.address, device.name, false)
+        if (!name.isEmpty()) {
+            return "$name [${device.address}]"
         }
         return "[${device.address}]"
     }
     private fun getDeviceDisplayString(address: String): String {
-        val connection = cameraConnections[address] ?: return "[$address]"        
+        val connection = cameraConnections[address] ?: return "[$address]"
         val device = connection.device
         return getDeviceDisplayString(device)
     }

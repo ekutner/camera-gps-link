@@ -139,15 +139,10 @@ class NotificationHelper(private val context: Context) {
                 PendingIntent.getActivity(context, 0, notificationIntent, PendingIntent.FLAG_IMMUTABLE)
             }
 
-        val cameraName = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
-            ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED) {
-            connection.device.name ?: context.getString(R.string.default_camera_name) // Use string resource
-        } else {
-            context.getString(R.string.default_camera_name) // Use string resource
-        }
+        val cameraName = AppSettingsManager.getCameraName(context, connection.device.address, connection.device.name)
 
         val builder = NotificationCompat.Builder(context, Constants.NOTIFICATION_CHANNEL_HIGH)
-            .setContentTitle(context.getString(R.string.notification_connected_to, cameraName)) // Use formatted string resource
+            .setContentTitle(context.getString(R.string.notification_connected_to, cameraName))
             .setSmallIcon(R.drawable.ic_notification)
             .setContentIntent(pendingIntent)
             .setOngoing(true)
