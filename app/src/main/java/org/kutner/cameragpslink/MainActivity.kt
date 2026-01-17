@@ -7,6 +7,9 @@ import android.content.ComponentName
 import android.content.Intent
 import android.content.ServiceConnection
 import android.content.pm.PackageManager
+import android.content.pm.ShortcutInfo
+import android.content.pm.ShortcutManager
+import android.graphics.drawable.Icon
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -47,6 +50,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -69,11 +73,13 @@ import org.kutner.cameragpslink.composables.SearchDialog
 import org.kutner.cameragpslink.ui.theme.CameraGpsLinkTheme
 import org.kutner.cameragpslink.composables.LanguageSelectionDialog
 import org.kutner.cameragpslink.composables.ReorderableCameraList
+import org.kutner.cameragpslink.composables.RemoteControlDialog
 
 class MainActivity : AppCompatActivity() {
 
     private var cameraSyncService: CameraSyncService? = null
     private val isBound: MutableState<Boolean> = mutableStateOf(false)
+    private val deepLinkCameraAddress: MutableState<String?> = mutableStateOf(null)
 
     private val connection = object : ServiceConnection {
         override fun onServiceConnected(className: ComponentName, service: IBinder) {
@@ -137,10 +143,13 @@ class MainActivity : AppCompatActivity() {
 
         super.onCreate(savedInstanceState)
 
+        handleIntent(intent)
+
         setContent {
             CameraGpsLinkTheme {
                 val bound = isBound.value
                 val service = cameraSyncService
+                val deepLinkAddress = deepLinkCameraAddress.value
 
                 if (bound && service != null) {
                     MainScreen(
@@ -151,6 +160,7 @@ class MainActivity : AppCompatActivity() {
                         isManualScanning = service.isManualScanning,
                         shutterErrorMessage = service.shutterErrorMessage,
                         showBondingErrorDialog = service.showBondingErrorDialog,
+                        deepLinkCameraAddress = deepLinkAddress,
                         onStartScan = { service.startManualScan() },
                         onCancelScan = { service.stopManualScan() },
                         onConnectToDevice = {
@@ -168,11 +178,15 @@ class MainActivity : AppCompatActivity() {
                         onRemoteCommand = { address, command ->
                             service.sendRemoteCommand(address, command)
                         },
+                        onAddToHomeScreen = { address, cameraName ->
+                            createRemoteControlShortcut(address, cameraName)
+                        },
                         onClearLog = { service.clearLog() },
                         onShareLog = { shareLog(service.getLogAsString()) },
                         onRateApp = { launchReviewFlow() },
                         onDismissShutterError = { service.clearShutterError() },
-                        onDismissBondingError = { service.dismissBondingErrorDialog() }
+                        onDismissBondingError = { service.dismissBondingErrorDialog() },
+                        onDismissDeepLink = { deepLinkCameraAddress.value = null }
                     )
                 } else {
                     Box(
@@ -182,6 +196,54 @@ class MainActivity : AppCompatActivity() {
                         CircularProgressIndicator()
                     }
                 }
+            }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleIntent(intent)
+    }
+
+    private fun handleIntent(intent: Intent?) {
+        // Check if the activity was launched from the Recent Apps list
+        val isFromHistory = ((intent?.flags ?: 0) and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY) != 0
+        if (isFromHistory) {
+            return
+        }
+
+        intent?.data?.let { uri ->
+            if (uri.scheme == "cameragpslink" && uri.host == "remote") {
+                val cameraAddress = uri.getQueryParameter("address")
+                deepLinkCameraAddress.value = cameraAddress
+
+                // Clear the data from the intent so it isn't processed again
+                // if handleIntent is called by a configuration change (like rotation)
+                intent.data = null
+            }
+        }
+    }
+
+    private fun createRemoteControlShortcut(cameraAddress: String, cameraName: String) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val shortcutManager = getSystemService(ShortcutManager::class.java)
+
+            if (shortcutManager.isRequestPinShortcutSupported) {
+                val intent = Intent(Intent.ACTION_VIEW).apply {
+                    data = Uri.parse("cameragpslink://remote?address=$cameraAddress")
+                    setClass(this@MainActivity, MainActivity::class.java)
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                }
+
+                val shortcut = ShortcutInfo.Builder(this, "remote_$cameraAddress")
+                    .setShortLabel(getString(R.string.shortcut_remote_control_short, cameraName))
+                    .setLongLabel(getString(R.string.shortcut_remote_control_long, cameraName))
+                    .setIcon(Icon.createWithResource(this, R.mipmap.ic_launcher))
+                    .setIntent(intent)
+                    .build()
+
+                shortcutManager.requestPinShortcut(shortcut, null)
             }
         }
     }
@@ -260,6 +322,7 @@ fun MainScreen(
     isManualScanning: StateFlow<Boolean>,
     shutterErrorMessage: StateFlow<String?>,
     showBondingErrorDialog: StateFlow<String?>,
+    deepLinkCameraAddress: String?,
     onStartScan: () -> Unit,
     onCancelScan: () -> Unit,
     onConnectToDevice: (FoundDevice) -> Unit,
@@ -267,11 +330,13 @@ fun MainScreen(
     onForgetDevice: (String) -> Unit,
     onCameraSettings: (String, Int, Boolean, Int, Boolean, String?) -> Unit,
     onRemoteCommand: (String, RemoteControlCommand) -> Unit,
+    onAddToHomeScreen: (String, String) -> Unit,
     onClearLog: () -> Unit,
     onShareLog: () -> Unit,
     onRateApp: () -> Unit,
     onDismissShutterError: () -> Unit,
-    onDismissBondingError: () -> Unit
+    onDismissBondingError: () -> Unit,
+    onDismissDeepLink: () -> Unit
 ) {
     val context = LocalContext.current
 
@@ -289,6 +354,19 @@ fun MainScreen(
     var isReorderMode by remember { mutableStateOf(false) }
 
     var uiRefreshTrigger by remember { mutableStateOf(0) }
+
+    // Handle deep link to show remote control dialog
+    LaunchedEffect(deepLinkCameraAddress) {
+        if (deepLinkCameraAddress != null) {
+            // Find if camera exists in saved cameras
+            val hasSavedCamera = AppSettingsManager.hasSavedCamera(context, deepLinkCameraAddress)
+            if (hasSavedCamera) {
+                // Show remote control dialog for this camera
+                // This will be handled below
+            }
+        }
+    }
+
     val handleCameraSettings: (String, Int, Boolean, Int, Boolean, String?) -> Unit = { address, mode, enabled, duration, autoFocus, customName ->
         onCameraSettings(address, mode, enabled, duration, autoFocus, customName)
         uiRefreshTrigger++  // Trigger UI refresh after settings are saved
@@ -321,6 +399,31 @@ fun MainScreen(
         BondingErrorDialog(
             cameraName = cameraName,
             onDismiss = onDismissBondingError
+        )
+    }
+
+    // Deep link remote control dialog
+    if (deepLinkCameraAddress != null) {
+        val connection = cameras.find { it.device.address == deepLinkCameraAddress }
+        val cameraName = AppSettingsManager.getCameraName(context, deepLinkCameraAddress, connection?.device?.name)
+
+        RemoteControlDialog(
+            cameraAddress = deepLinkCameraAddress,
+            service = service,
+            isConnected = connection?.isConnected ?: false,
+            onDismiss = onDismissDeepLink,
+            onRemoteCommand = onRemoteCommand,
+            onSaveAutoFocus = { autoFocus ->
+                val currentSettings = AppSettingsManager.getCameraSettings(context, deepLinkCameraAddress)
+                handleCameraSettings(
+                    deepLinkCameraAddress,
+                    currentSettings.connectionMode,
+                    currentSettings.quickConnectEnabled,
+                    currentSettings.quickConnectDurationMinutes,
+                    autoFocus,
+                    currentSettings.customName ?: ""
+                )
+            }
         )
     }
 
@@ -502,7 +605,8 @@ fun MainScreen(
                                     if (!isReorderMode) {
                                         isReorderMode = true
                                     }
-                                }
+                                },
+                                onAddToHomeScreen = onAddToHomeScreen
                             )
 
                             LogCard(
@@ -532,7 +636,8 @@ fun MainScreen(
                             if (!isReorderMode) {
                                 isReorderMode = true
                             }
-                        }
+                        },
+                        onAddToHomeScreen = onAddToHomeScreen
                     )
                 }
             }

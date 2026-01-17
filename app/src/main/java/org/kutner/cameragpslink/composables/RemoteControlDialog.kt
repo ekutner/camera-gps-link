@@ -46,6 +46,7 @@ import kotlin.math.abs
 fun RemoteControlDialog(
     cameraAddress: String,
     service: CameraSyncService,
+    isConnected: Boolean = true,  // Initial state, but we'll observe actual state
     onDismiss: () -> Unit,
     onRemoteCommand: (String, RemoteControlCommand) -> Unit,
     onSaveAutoFocus: (Boolean) -> Unit
@@ -54,10 +55,14 @@ fun RemoteControlDialog(
     val cameraSettings = remember { AppSettingsManager.getCameraSettings(context, cameraAddress) }
     var halfShutterEnabled by remember { mutableStateOf(cameraSettings.enableHalfShutterPress) }
 
+    // Observe connection state dynamically
+    val connectedCameras by service.connectedCameras.collectAsState()
+    val currentConnection = connectedCameras.find { it.device.address == cameraAddress }
+    val isCurrentlyConnected = currentConnection?.isConnected ?: false
+
     // Get vibrator service
     val vibrator = remember {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            // Build.VERSION_CODES.S is Android 12 and API level 31
             val vibratorManager = context.getSystemService(android.content.Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
             vibratorManager.defaultVibrator
         } else {
@@ -83,7 +88,6 @@ fun RemoteControlDialog(
     // Vibrate when focus is acquired
     LaunchedEffect(isFocused) {
         if (isFocused && !previousFocusState) {
-            // Focus was just acquired - vibrate
             vibrator.vibrate(VibrationEffect.createOneShot(100, VibrationEffect.DEFAULT_AMPLITUDE))
         }
         previousFocusState = isFocused
@@ -144,8 +148,24 @@ fun RemoteControlDialog(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Conditional Content
-                if (!isRemoteControlEnabled) {
+                // Conditional Content - use isCurrentlyConnected (dynamic state)
+                if (!isCurrentlyConnected) {
+                    // Display "Not Connected" Message
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(300.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = context.getString(R.string.dialog_remote_control_not_connected),
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.error,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                            modifier = Modifier.padding(16.dp)
+                        )
+                    }
+                } else if (!isRemoteControlEnabled) {
                     // Display Warning Message
                     Box(
                         modifier = Modifier

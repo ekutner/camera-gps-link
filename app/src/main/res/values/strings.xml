@@ -45,6 +45,7 @@
     <string name="menu_remove_camera">Remove Camera</string>
     <string name="menu_language">Language</string>
     <string name="menu_rearrange_cameras">Rearrange Cameras</string>
+    <string name="menu_add_remote_to_home">Add Remote to Home Screen</string>
 
     <string name="button_ok">OK</string>
     <string name="button_cancel">Cancel</string>
@@ -83,6 +84,7 @@
 
     <string name="dialog_remote_control_title">Remote Control</string>
     <string name="dialog_remote_control_warning">\"Bluetooth Rmt Ctrl\" must be enabled in the camera menu</string>
+    <string name="dialog_remote_control_not_connected">The camera is not connected</string>
     <string name="dialog_remote_control_c1">C1</string>
     <string name="dialog_remote_control_af_on">AF\nON</string>
     <string name="dialog_remote_control_zoom">Zoom</string>
@@ -93,5 +95,8 @@
     <string name="dialog_remote_control_far">Far</string>
     <string name="dialog_remote_control_enable_half_shutter">Enable half shutter press</string>
     <string name="dialog_remote_control_refresh">Refresh</string>
+
+    <string name="shortcut_remote_control_short">%s Remote</string>
+    <string name="shortcut_remote_control_long">%s Remote Control</string>
 
 </resources>

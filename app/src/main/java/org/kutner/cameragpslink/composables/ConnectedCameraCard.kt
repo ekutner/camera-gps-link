@@ -71,7 +71,8 @@ fun ConnectedCameraCard(
     onDisconnect: () -> Unit,
     onCameraSettings: (Int, Boolean, Int, Boolean, String?) -> Unit,
     onRemoteCommand: (String, RemoteControlCommand) -> Unit,
-    onLongPress: () -> Unit = {}
+    onLongPress: () -> Unit = {},
+    onAddToHomeScreen: (String, String) -> Unit
 ) {
     var showMenu by remember { mutableStateOf(false) }
     var showCameraSettingsDialog by remember { mutableStateOf(false) }
@@ -214,6 +215,13 @@ fun ConnectedCameraCard(
                                     text = { Text(context.getString(R.string.menu_settings)) },
                                     onClick = {
                                         showCameraSettingsDialog = true
+                                        showMenu = false
+                                    }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text(context.getString(R.string.menu_add_remote_to_home)) },
+                                    onClick = {
+                                        onAddToHomeScreen(cameraAddress, cameraName)
                                         showMenu = false
                                     }
                                 )

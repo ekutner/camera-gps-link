@@ -46,6 +46,7 @@
     <string name="menu_remove_camera">הסר מצלמה</string>
     <string name="menu_language">שפה</string>
     <string name="menu_rearrange_cameras">שנה סדר מצלמות</string>
+    <string name="menu_add_remote_to_home">הוסף שלט רחוק למסך הבית</string>
 
     <string name="button_ok">אישור</string>
     <string name="button_cancel">ביטול</string>
@@ -84,6 +85,7 @@
 
     <string name="dialog_remote_control_title">שלט רחוק</string>
     <string name="dialog_remote_control_warning">יש להפעיל \"Bluetooth Rmt Ctrl\" בתפריט המצלמה</string>
+    <string name="dialog_remote_control_not_connected">המצלמה לא מחוברת</string>
     <string name="dialog_remote_control_c1">C1</string>
     <string name="dialog_remote_control_af_on">AF\nON</string>
     <string name="dialog_remote_control_zoom">זום</string>
@@ -94,5 +96,8 @@
     <string name="dialog_remote_control_far">רחוק</string>
     <string name="dialog_remote_control_enable_half_shutter">אפשר חצי לחיצה על התריס</string>
     <string name="dialog_remote_control_refresh">רענן</string>
+
+    <string name="shortcut_remote_control_short">%sשלט ל-</string>
+    <string name="shortcut_remote_control_long">%sשלט רחוק ל-</string>
 
 </resources>

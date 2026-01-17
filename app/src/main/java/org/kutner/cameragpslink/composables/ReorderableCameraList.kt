@@ -41,7 +41,8 @@ fun ReorderableCameraList(
     onForgetDevice: (String) -> Unit,
     onCameraSettings: (String, Int, Boolean, Int, Boolean, String?) -> Unit,
     onRemoteCommand: (String, RemoteControlCommand) -> Unit,
-    onLongPress: () -> Unit
+    onLongPress: () -> Unit,
+    onAddToHomeScreen: (String, String) -> Unit
 ) {
     val context = LocalContext.current
     val listState = rememberLazyListState()
@@ -149,7 +150,8 @@ fun ReorderableCameraList(
                             onCameraSettings(connection.device.address, mode, qe, dur, af, customName)
                         },
                         onRemoteCommand = onRemoteCommand,
-                        onLongPress = onLongPress
+                        onLongPress = onLongPress,
+                        onAddToHomeScreen = onAddToHomeScreen
                     )
                 }
             }

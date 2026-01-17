@@ -45,6 +45,7 @@
     <string name="menu_remove_camera">Kamera entfernen</string>
     <string name="menu_language">Sprache</string>
     <string name="menu_rearrange_cameras">Kameras neu anordnen</string>
+    <string name="menu_add_remote_to_home">Fernbedienung zum Startbildschirm hinzufügen</string>
 
     <string name="button_ok">OK</string>
     <string name="button_cancel">Abbrechen</string>
@@ -83,6 +84,7 @@
 
     <string name="dialog_remote_control_title">Fernsteuerung</string>
     <string name="dialog_remote_control_warning">\"Bluetooth-Fernsteuerung\" muss im Kameramenü aktiviert sein</string>
+    <string name="dialog_remote_control_not_connected">Die Kamera ist nicht verbunden</string>
     <string name="dialog_remote_control_c1">C1</string>
     <string name="dialog_remote_control_af_on">AF\nEIN</string>
     <string name="dialog_remote_control_zoom">Zoom</string>
@@ -93,5 +95,8 @@
     <string name="dialog_remote_control_far">Fern</string>
     <string name="dialog_remote_control_enable_half_shutter">Halb-Auslöser aktivieren</string>
     <string name="dialog_remote_control_refresh">Aktualisieren</string>
+
+    <string name="shortcut_remote_control_short">%s-Fernbedienung</string>
+    <string name="shortcut_remote_control_long">%s-Fernbedienung</string>
 
 </resources>
