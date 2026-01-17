@@ -1,5 +1,7 @@
 package org.kutner.cameragpslink.composables
 
+import android.annotation.SuppressLint
+import android.bluetooth.BluetoothManager
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.layout.Arrangement
@@ -22,6 +24,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -44,19 +47,29 @@ import org.kutner.cameragpslink.CameraSettings
 import org.kutner.cameragpslink.AppSettingsManager
 import org.kutner.cameragpslink.R
 
+@SuppressLint("MissingPermission")
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun CameraSettingsDialog(
     cameraAddress: String,
     onDismiss: () -> Unit,
-    // Callback now includes Mode, Enabled, Duration, AutoFocus
-    onSave: (Int, Boolean, Int, Boolean) -> Unit
+    // Callback now includes Mode, Enabled, Duration, AutoFocus, CustomName
+    onSave: (Int, Boolean, Int, Boolean, String) -> Unit
 ) {
     val context = LocalContext.current
     val currentSettings: CameraSettings = remember {
         AppSettingsManager.getCameraSettings(context, cameraAddress)
     }
 
+    // Get the device name from Bluetooth
+    val bluetoothManager = context.getSystemService(android.content.Context.BLUETOOTH_SERVICE) as BluetoothManager
+    val deviceName = try {
+        bluetoothManager.adapter.getRemoteDevice(cameraAddress)?.name ?: context.getString(R.string.unknown_camera_name)
+    } catch (e: Exception) {
+        context.getString(R.string.unknown_camera_name)
+    }
+
+    var customName by remember { mutableStateOf(currentSettings.customName ?: "") }
     var connectionMode by remember { mutableStateOf(currentSettings.connectionMode) }
     var quickConnectEnabled by remember { mutableStateOf(currentSettings.quickConnectEnabled) }
     var durationMinutes by remember { mutableStateOf(currentSettings.quickConnectDurationMinutes) }
@@ -88,6 +101,24 @@ fun CameraSettingsDialog(
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold
                     )
+
+                    // --- SECTION 0: Camera Name ---
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(
+                            text = context.getString(R.string.dialog_camera_settings_camera_name),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        OutlinedTextField(
+                            value = customName,
+                            onValueChange = { customName = it },
+                            modifier = Modifier.fillMaxWidth(),
+                            placeholder = { Text(deviceName) },
+                            singleLine = true
+                        )
+                    }
+
+                    androidx.compose.material3.HorizontalDivider()
 
                     // --- SECTION 1: Connection Mode ---
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -201,7 +232,7 @@ fun CameraSettingsDialog(
                         Text(
                             text = when (durationMinutes) {
                                 0 -> context.getString(R.string.dialog_camera_settings_quick_connect_period_always)
-                                else -> context.getString(R.string.dialog_camera_settings_quick_connect_period_other,formatDurationMinutes(durationMinutes))
+                                else -> context.getString(R.string.dialog_camera_settings_quick_connect_period_other, formatDurationMinutes(durationMinutes))
                             },
                             style = MaterialTheme.typography.bodySmall,
                             color = if (isQuickConnectEditable && quickConnectEnabled) MaterialTheme.colorScheme.onSurfaceVariant
@@ -211,7 +242,9 @@ fun CameraSettingsDialog(
 
                     // OK Button
                     Button(
-                        onClick = { onSave(connectionMode, quickConnectEnabled, durationMinutes, enableHalfShutterPress) },
+                        onClick = {
+                            onSave(connectionMode, quickConnectEnabled, durationMinutes, enableHalfShutterPress, customName)
+                        },
                         modifier = Modifier
                             .align(Alignment.End)
                             .height(48.dp)

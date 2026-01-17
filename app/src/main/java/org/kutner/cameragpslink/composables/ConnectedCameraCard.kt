@@ -69,7 +69,7 @@ fun ConnectedCameraCard(
     dragModifier: Modifier = Modifier,
     onShutter: () -> Unit,
     onDisconnect: () -> Unit,
-    onCameraSettings: (Int, Boolean, Int, Boolean) -> Unit,
+    onCameraSettings: (Int, Boolean, Int, Boolean, String?) -> Unit,
     onRemoteCommand: (String, RemoteControlCommand) -> Unit,
     onLongPress: () -> Unit = {}
 ) {
@@ -297,8 +297,8 @@ fun ConnectedCameraCard(
         CameraSettingsDialog(
             cameraAddress = cameraAddress,
             onDismiss = { showCameraSettingsDialog = false },
-            onSave = { mode, enabled, duration, autoFocus ->
-                onCameraSettings(mode, enabled, duration, autoFocus)
+            onSave = { mode, enabled, duration, autoFocus, customName ->
+                onCameraSettings(mode, enabled, duration, autoFocus, customName)
                 showCameraSettingsDialog = false
             }
         )
@@ -316,7 +316,8 @@ fun ConnectedCameraCard(
                     currentSettings.connectionMode,
                     currentSettings.quickConnectEnabled,
                     currentSettings.quickConnectDurationMinutes,
-                    autoFocus
+                    autoFocus,
+                    currentSettings.customName
                 )
             }
         )

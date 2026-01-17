@@ -161,8 +161,8 @@ class MainActivity : AppCompatActivity() {
                         },
                         onTriggerShutter = { address -> service.triggerShutter(address) },
                         onForgetDevice = { address -> service.forgetDevice(address) },
-                        onCameraSettings = { address, mode, enabled, duration, autoFocus ->
-                            AppSettingsManager.updateCameraSettings(this, address, mode, enabled, duration, autoFocus)
+                        onCameraSettings = { address, mode, enabled, duration, autoFocus, customName ->
+                            AppSettingsManager.updateCameraSettings(this, address, mode, enabled, duration, autoFocus, customName)
                             service.onSettingsChanged(address)
                         },
                         onRemoteCommand = { address, command ->
@@ -265,7 +265,7 @@ fun MainScreen(
     onConnectToDevice: (FoundDevice) -> Unit,
     onTriggerShutter: (String) -> Unit,
     onForgetDevice: (String) -> Unit,
-    onCameraSettings: (String, Int, Boolean, Int, Boolean) -> Unit,
+    onCameraSettings: (String, Int, Boolean, Int, Boolean, String?) -> Unit,
     onRemoteCommand: (String, RemoteControlCommand) -> Unit,
     onClearLog: () -> Unit,
     onShareLog: () -> Unit,
@@ -287,6 +287,12 @@ fun MainScreen(
     var showSearchDialog by remember { mutableStateOf(false) }
     var showLanguageDialog by remember { mutableStateOf(false) }
     var isReorderMode by remember { mutableStateOf(false) }
+
+    var uiRefreshTrigger by remember { mutableStateOf(0) }
+    val handleCameraSettings: (String, Int, Boolean, Int, Boolean, String?) -> Unit = { address, mode, enabled, duration, autoFocus, customName ->
+        onCameraSettings(address, mode, enabled, duration, autoFocus, customName)
+        uiRefreshTrigger++  // Trigger UI refresh after settings are saved
+    }
 
     // Handle back press to close menu or exit reorder mode
     BackHandler(enabled = showMenu || isReorderMode) {
@@ -310,9 +316,8 @@ fun MainScreen(
         )
     }
     if (bondingErrorDeviceAddress != null) {
-        val cameraName = cameras.find { it.device.address == bondingErrorDeviceAddress }?.device?.name
-            ?: context.getString(R.string.unknown_camera_name)
-
+        val connection = cameras.find { it.device.address == bondingErrorDeviceAddress }
+        val cameraName = AppSettingsManager.getCameraName(context, bondingErrorDeviceAddress ?: "", connection?.device?.name)
         BondingErrorDialog(
             cameraName = cameraName,
             onDismiss = onDismissBondingError
@@ -483,6 +488,7 @@ fun MainScreen(
                             ReorderableCameraList(
                                 connectedCameras = cameras,
                                 isReorderMode = isReorderMode,
+                                refreshTrigger = uiRefreshTrigger,
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .heightIn(max = maxCameraHeight)
@@ -490,7 +496,7 @@ fun MainScreen(
                                 service = service,
                                 onTriggerShutter = onTriggerShutter,
                                 onForgetDevice = onForgetDevice,
-                                onCameraSettings = onCameraSettings,
+                                onCameraSettings = handleCameraSettings,
                                 onRemoteCommand = onRemoteCommand,
                                 onLongPress = {
                                     if (!isReorderMode) {
@@ -513,13 +519,14 @@ fun MainScreen(
                     ReorderableCameraList(
                         connectedCameras = cameras,
                         isReorderMode = isReorderMode,
+                        refreshTrigger = uiRefreshTrigger,
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(16.dp),
                         service = service,
                         onTriggerShutter = onTriggerShutter,
                         onForgetDevice = onForgetDevice,
-                        onCameraSettings = onCameraSettings,
+                        onCameraSettings = handleCameraSettings,
                         onRemoteCommand = onRemoteCommand,
                         onLongPress = {
                             if (!isReorderMode) {

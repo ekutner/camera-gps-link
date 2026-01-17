@@ -34,11 +34,12 @@ import org.kutner.cameragpslink.RemoteControlCommand
 fun ReorderableCameraList(
     connectedCameras: List<CameraConnection>,
     isReorderMode: Boolean,
+    refreshTrigger: Int,  // Add this parameter
     modifier: Modifier = Modifier,
     service: CameraSyncService,
     onTriggerShutter: (String) -> Unit,
     onForgetDevice: (String) -> Unit,
-    onCameraSettings: (String, Int, Boolean, Int, Boolean) -> Unit,
+    onCameraSettings: (String, Int, Boolean, Int, Boolean, String?) -> Unit,
     onRemoteCommand: (String, RemoteControlCommand) -> Unit,
     onLongPress: () -> Unit
 ) {
@@ -107,10 +108,15 @@ fun ReorderableCameraList(
                     currentIndex.intValue = index
                 }
 
+                // Get camera name - refreshTrigger will cause this to update
+                val cameraName = remember(address, refreshTrigger) {
+                    AppSettingsManager.getCameraName(context, address, connection.device.name)
+                }
+
                 Column(modifier = itemModifier.fillMaxWidth()) {
                     ConnectedCameraCard(
                         modifier = Modifier.fillMaxWidth(),
-                        cameraName = connection.device.name ?: context.getString(R.string.unknown_camera_name),
+                        cameraName = cameraName,
                         cameraAddress = connection.device.address,
                         isBonded = connection.isBonded,
                         isConnected = connection.isConnected,
@@ -139,8 +145,8 @@ fun ReorderableCameraList(
                         },
                         onShutter = { onTriggerShutter(connection.device.address) },
                         onDisconnect = { onForgetDevice(connection.device.address) },
-                        onCameraSettings = { mode, qe, dur, af ->
-                            onCameraSettings(connection.device.address, mode, qe, dur, af)
+                        onCameraSettings = { mode, qe, dur, af, customName ->
+                            onCameraSettings(connection.device.address, mode, qe, dur, af, customName)
                         },
                         onRemoteCommand = onRemoteCommand,
                         onLongPress = onLongPress

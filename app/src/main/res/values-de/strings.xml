@@ -71,6 +71,7 @@
     <string name="dialog_search_fail_message">Keine Kameras gefunden</string>
 
     <string name="dialog_camera_settings_title">Kameraeinstellungen</string>
+    <string name="dialog_camera_settings_camera_name">Kameraname</string>
     <string name="dialog_camera_settings_connection_mode">Verbindungsmodus</string>
     <string name="dialog_camera_settings_mode1">Modus 1</string>
     <string name="dialog_camera_settings_mode2">Modus 2</string>

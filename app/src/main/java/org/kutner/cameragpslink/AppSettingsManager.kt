@@ -12,7 +12,8 @@ data class CameraSettings(
     val quickConnectEnabled: Boolean = false,
     val quickConnectDurationMinutes: Int = 5,
     val lastDisconnectTimestamp: Long? = null,
-    val enableHalfShutterPress: Boolean = false
+    val enableHalfShutterPress: Boolean = false,
+    val customName: String? = null
 )
 
 object AppSettingsManager {
@@ -67,17 +68,19 @@ object AppSettingsManager {
             quickConnectEnabled = settings.quickConnectEnabled,
             lastDisconnectTimestamp = settings.lastDisconnectTimestamp?.coerceAtLeast(0),
             enableHalfShutterPress = settings.enableHalfShutterPress,
-            protocolVersion = if (settings.protocolVersion == 0) Constants.PROTOCOL_VERSION_CREATORS_APP else settings.protocolVersion
+            protocolVersion = if (settings.protocolVersion == 0) Constants.PROTOCOL_VERSION_CREATORS_APP else settings.protocolVersion,
+            customName = settings.customName ?: ""
         )
     }
 
-    fun updateCameraSettings(context: Context, deviceAddress: String, mode: Int, quickConnectEnabled: Boolean, durationMinutes: Int, enableHalfShutterPress: Boolean) {
+    fun updateCameraSettings(context: Context, deviceAddress: String, mode: Int, quickConnectEnabled: Boolean, durationMinutes: Int, enableHalfShutterPress: Boolean, customName: String?) {
         val currentSettings = getCameraSettings(context, deviceAddress)
         val updatedSettings = currentSettings.copy(
             connectionMode = mode,
             quickConnectEnabled = quickConnectEnabled,
             quickConnectDurationMinutes = durationMinutes,
-            enableHalfShutterPress = enableHalfShutterPress
+            enableHalfShutterPress = enableHalfShutterPress,
+            customName = customName?.trim()
         )
         saveCameraSettings(context, updatedSettings)
     }
@@ -137,14 +140,6 @@ object AppSettingsManager {
                     map[settings.deviceAddress] = settings
                 }
 
-                // Add mock cameras for testing
-//                for (i in 55..60) {
-//                    val mockSettings = CameraSettings(
-//                        deviceAddress = "00:11:22:33:44:$i",
-//                        protocolVersion = Constants.PROTOCOL_VERSION_CREATORS_APP
-//                    )
-//                    map[mockSettings.deviceAddress] = mockSettings
-//                }
                 return map
             }
         } catch (e: Exception) {
@@ -214,5 +209,15 @@ object AppSettingsManager {
     fun setSelectedLanguage(context: Context, languageCode: String) {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         prefs.edit().putString(KEY_SELECTED_LANGUAGE, languageCode).apply()
+    }
+
+    // --- Camera Name Resolution ---
+    fun getCameraName(context: Context, deviceAddress: String, deviceName: String?): String {
+        val settings = getCameraSettings(context, deviceAddress)
+        return if (settings.customName != null)
+            settings.customName.ifEmpty { deviceName ?: context.getString(R.string.unknown_camera_name) }
+        else
+            deviceName ?: context.getString(R.string.unknown_camera_name)
+
     }
 }

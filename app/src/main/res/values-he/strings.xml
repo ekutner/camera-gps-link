@@ -73,6 +73,7 @@
     <string name="dialog_search_fail_message">לא נמצאו מצלמות</string>
 
     <string name="dialog_camera_settings_title">הגדרות מצלמה</string>
+    <string name="dialog_camera_settings_camera_name">שם המצלמה</string>
     <string name="dialog_camera_settings_connection_mode">מצב חיבור</string>
     <string name="dialog_camera_settings_mode1">מצב 1</string>
     <string name="dialog_camera_settings_mode2">מצב 2</string>
