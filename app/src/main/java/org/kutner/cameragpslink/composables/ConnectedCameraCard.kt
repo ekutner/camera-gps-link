@@ -3,97 +3,77 @@ package org.kutner.cameragpslink.composables
 import android.content.Context
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.content.MediaType.Companion.Image
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.ColorMatrix
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.PopupProperties
-import org.kutner.cameragpslink.AppSettingsManager
 import org.kutner.cameragpslink.R
-import org.kutner.cameragpslink.RemoteControlCommand
-import org.kutner.cameragpslink.CameraSyncService
+import org.kutner.cameragpslink.*
+
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ConnectedCameraCard(
     modifier: Modifier = Modifier,
-    cameraName: String,
-    cameraAddress: String,
-    isBonded: Boolean,
-    isConnected: Boolean,
-    isConnecting: Boolean,
-    context: Context,
+    connection: CameraConnection,
     service: CameraSyncService,
     isReorderMode: Boolean = false,
     isDragging: Boolean = false,
     elevation: Dp = 2.dp,
     dragModifier: Modifier = Modifier,
-    onShutter: () -> Unit,
-    onDisconnect: () -> Unit,
-    onCameraSettings: (Int, Boolean, Int, Boolean, String?) -> Unit,
-    onRemoteCommand: (String, RemoteControlCommand) -> Unit,
-    onLongPress: () -> Unit = {},
-    onAddToHomeScreen: (String, String) -> Unit
+    onLongPress: () -> Unit = {}
 ) {
+    val context = LocalContext.current
+    val address = connection.device.address
+
+    // Dummy settings version to force recomposition when settings change
+    var settingsVersion by remember { mutableIntStateOf(0) }
+
+    // Get camera name
+    val cameraName = remember(connection.device.address, settingsVersion) {
+        AppSettingsManager.getCameraName(context, address, connection.device.name)
+    }
+
+    // Observe state from service
+    val remoteEnabledMap by service.isRemoteControlEnabled.collectAsState()
+    val isRemoteControlEnabled = remoteEnabledMap[address] ?: false
+
+    val focusStates by service.isFocusAcquired.collectAsState()
+    val isFocused = focusStates[address] ?: false
+
+    // Local UI state
     var showMenu by remember { mutableStateOf(false) }
     var showCameraSettingsDialog by remember { mutableStateOf(false) }
     var showRemoteControlDialog by remember { mutableStateOf(false) }
 
-    // Observe Remote Control Enabled state
-    val remoteEnabledMap by service.isRemoteControlEnabled.collectAsState()
-    val isRemoteControlEnabled = remoteEnabledMap[cameraAddress] ?: false
-
-    // Observe Focus State
-    val focusStates by service.isFocusAcquired.collectAsState()
-    val isFocused = focusStates[cameraAddress] ?: false
-
-    // Handle back press to close menu when focusable is false
+    // Handle back press to close menu
     BackHandler(enabled = showMenu) {
         showMenu = false
     }
 
     // Automatically close RemoteControlDialog if camera disconnects
-    LaunchedEffect(isConnected) {
-        if (!isConnected) {
+    LaunchedEffect(connection.isConnected) {
+        if (!connection.isConnected) {
             showRemoteControlDialog = false
         }
     }
@@ -154,13 +134,13 @@ fun ConnectedCameraCard(
                                 .background(MaterialTheme.colorScheme.primaryContainer),
                             contentAlignment = Alignment.Center
                         ) {
-                            androidx.compose.foundation.Image(
+                            Image(
                                 painter = painterResource(id = R.mipmap.ic_launcher_foreground),
                                 contentDescription = "App Icon",
                                 modifier = Modifier.size(80.dp),
-                                colorFilter = if (!isConnected) {
+                                colorFilter = if (!connection.isConnected) {
                                     ColorFilter.colorMatrix(
-                                        androidx.compose.ui.graphics.ColorMatrix().apply {
+                                        ColorMatrix().apply {
                                             setToSaturation(0f)
                                         }
                                     )
@@ -173,16 +153,16 @@ fun ConnectedCameraCard(
                         Column {
                             Text(
                                 text = when {
-                                    !isBonded -> context.getString(R.string.camera_state_pairing_not_completed)
-                                    isConnected -> context.getString(R.string.camera_state_connected)
-                                    isConnecting -> context.getString(R.string.camera_state_connecting)
+                                    !connection.isBonded -> context.getString(R.string.camera_state_pairing_not_completed)
+                                    connection.isConnected -> context.getString(R.string.camera_state_connected)
+                                    connection.isConnecting -> context.getString(R.string.camera_state_connecting)
                                     else -> context.getString(R.string.camera_state_disconnected)
                                 },
                                 style = MaterialTheme.typography.labelSmall,
                                 color = when {
-                                    !isBonded -> MaterialTheme.colorScheme.error
-                                    isConnected -> Color(0xFF4CAF50)
-                                    isConnecting -> MaterialTheme.colorScheme.primary
+                                    !connection.isBonded -> MaterialTheme.colorScheme.error
+                                    connection.isConnected -> Color(0xFF4CAF50)
+                                    connection.isConnecting -> MaterialTheme.colorScheme.primary
                                     else -> MaterialTheme.colorScheme.error
                                 },
                                 fontWeight = FontWeight.Bold
@@ -193,7 +173,7 @@ fun ConnectedCameraCard(
                                 fontWeight = FontWeight.SemiBold
                             )
                             Text(
-                                text = cameraAddress,
+                                text = address,
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -202,43 +182,22 @@ fun ConnectedCameraCard(
 
                     // Hide menu in reorder mode
                     if (!isReorderMode) {
-                        Box {
-                            IconButton(onClick = { showMenu = true }) {
-                                Icon(Icons.Default.MoreVert, contentDescription = "Options")
+                        CameraMenu(
+                            showMenu = showMenu,
+                            onShowMenuChange = { showMenu = it },
+                            onShowSettings = { showCameraSettingsDialog = true },
+                            onAddToHomeScreen = {
+                                createRemoteControlShortcut(context, address, cameraName)
+                            },
+                            onRemoveCamera = {
+                                service.forgetDevice(address)
                             }
-                            DropdownMenu(
-                                expanded = showMenu,
-                                properties = PopupProperties(focusable = false),
-                                onDismissRequest = { showMenu = false }
-                            ) {
-                                DropdownMenuItem(
-                                    text = { Text(context.getString(R.string.menu_settings)) },
-                                    onClick = {
-                                        showCameraSettingsDialog = true
-                                        showMenu = false
-                                    }
-                                )
-                                DropdownMenuItem(
-                                    text = { Text(context.getString(R.string.menu_add_remote_to_home)) },
-                                    onClick = {
-                                        onAddToHomeScreen(cameraAddress, cameraName)
-                                        showMenu = false
-                                    }
-                                )
-                                DropdownMenuItem(
-                                    text = { Text(context.getString(R.string.menu_remove_camera)) },
-                                    onClick = {
-                                        onDisconnect()
-                                        showMenu = false
-                                    }
-                                )
-                            }
-                        }
+                        )
                     }
                 }
 
                 // Show buttons only when not in reorder mode AND connected
-                if (!isReorderMode && isConnected) {
+                if (!isReorderMode && connection.isConnected) {
                     Spacer(modifier = Modifier.height(12.dp))
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -249,12 +208,12 @@ fun ConnectedCameraCard(
                                 .weight(1f)
                                 .combinedClickable(
                                     onClick = { showRemoteControlDialog = true },
-                                    onLongClick = { /* Consume long press - do nothing */ }
+                                    onLongClick = { /* Consume long press */ }
                                 )
                         ) {
                             Button(
                                 onClick = { showRemoteControlDialog = true },
-                                enabled = isConnected,
+                                enabled = connection.isConnected,
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(56.dp),
@@ -274,13 +233,13 @@ fun ConnectedCameraCard(
                             modifier = Modifier
                                 .weight(1f)
                                 .combinedClickable(
-                                    onClick = onShutter,
-                                    onLongClick = { /* Consume long press - do nothing */ }
+                                    onClick = { service.triggerShutter(address) },
+                                    onLongClick = { /* Consume long press */ }
                                 )
                         ) {
                             Button(
-                                onClick = onShutter,
-                                enabled = isConnected && isRemoteControlEnabled,
+                                onClick = { service.triggerShutter(address) },
+                                enabled = connection.isConnected && isRemoteControlEnabled,
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(56.dp),
@@ -301,12 +260,15 @@ fun ConnectedCameraCard(
         }
     }
 
+    // Dialogs
     if (showCameraSettingsDialog) {
         CameraSettingsDialog(
-            cameraAddress = cameraAddress,
+            cameraAddress = address,
             onDismiss = { showCameraSettingsDialog = false },
-            onSave = { mode, enabled, duration, autoFocus, customName ->
-                onCameraSettings(mode, enabled, duration, autoFocus, customName)
+            onSave = { mode, enabled, duration, customName ->
+                AppSettingsManager.updateCameraSettings(context, address, mode = mode, quickConnectEnabled = enabled, durationMinutes = duration, customName = customName)
+                service.onSettingsChanged(address)
+                settingsVersion++
                 showCameraSettingsDialog = false
             }
         )
@@ -314,20 +276,65 @@ fun ConnectedCameraCard(
 
     if (showRemoteControlDialog) {
         RemoteControlDialog(
-            cameraAddress = cameraAddress,
+            cameraAddress = address,
             service = service,
+            connection = connection,
             onDismiss = { showRemoteControlDialog = false },
-            onRemoteCommand = onRemoteCommand,
+            onRemoteCommand = { address, cmd -> service.sendRemoteCommand(address, cmd) },
             onSaveAutoFocus = { autoFocus ->
-                val currentSettings = AppSettingsManager.getCameraSettings(context, cameraAddress)
-                onCameraSettings(
-                    currentSettings.connectionMode,
-                    currentSettings.quickConnectEnabled,
-                    currentSettings.quickConnectDurationMinutes,
-                    autoFocus,
-                    currentSettings.customName
-                )
+                AppSettingsManager.updateCameraSettings(context,address, enableHalfShutterPress = autoFocus)
             }
         )
+    }
+}
+
+@Composable
+private fun CameraMenu(
+    showMenu: Boolean,
+    onShowMenuChange: (Boolean) -> Unit,
+    onShowSettings: () -> Unit,
+    onAddToHomeScreen: () -> Unit,
+    onRemoveCamera: () -> Unit
+) {
+    val context = LocalContext.current
+
+    Box {
+        IconButton(onClick = { onShowMenuChange(true) }) {
+            Icon(Icons.Default.MoreVert, contentDescription = "Options")
+        }
+        DropdownMenu(
+            expanded = showMenu,
+            properties = PopupProperties(focusable = false),
+            onDismissRequest = { onShowMenuChange(false) }
+        ) {
+            DropdownMenuItem(
+                text = { Text(context.getString(R.string.menu_settings)) },
+                onClick = {
+                    onShowSettings()
+                    onShowMenuChange(false)
+                }
+            )
+            DropdownMenuItem(
+                text = { Text(context.getString(R.string.menu_add_remote_to_home)) },
+                onClick = {
+                    onAddToHomeScreen()
+                    onShowMenuChange(false)
+                }
+            )
+            DropdownMenuItem(
+                text = { Text(context.getString(R.string.menu_remove_camera)) },
+                onClick = {
+                    onRemoveCamera()
+                    onShowMenuChange(false)
+                }
+            )
+        }
+    }
+}
+
+private fun createRemoteControlShortcut(context: Context, cameraAddress: String, cameraName: String) {
+    // Call the MainActivity method if context is MainActivity
+    if (context is MainActivity) {
+        context.createRemoteControlShortcut(cameraAddress, cameraName)
     }
 }

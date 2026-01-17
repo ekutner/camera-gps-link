@@ -83,7 +83,7 @@
     <string name="dialog_camera_settings_quick_connect_period_always">Toujours utiliser le scan rapide</string>
     <string name="dialog_camera_settings_quick_connect_period_other">Utiliser le scan rapide pendant %1$s après la déconnexion de la caméra, puis revenir au mode de connexion normal pour économiser la batterie</string>
 
-    <string name="dialog_remote_control_title">Télécommande</string>
+    <string name="dialog_remote_control_title">Télécommande %s</string>
     <string name="dialog_remote_control_warning">\"Ctrl Bluetooth Distance\" doit être activé dans le menu de la caméra</string>
     <string name="dialog_remote_control_not_connected">L\'appareil photo n\'est pas connecté</string>
     <string name="dialog_remote_control_c1">C1</string>

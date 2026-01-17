@@ -37,6 +37,7 @@ import android.os.VibratorManager
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.kutner.cameragpslink.AppSettingsManager
+import org.kutner.cameragpslink.CameraConnection
 import org.kutner.cameragpslink.CameraSyncService
 import org.kutner.cameragpslink.RemoteControlCommand
 import org.kutner.cameragpslink.R
@@ -46,7 +47,7 @@ import kotlin.math.abs
 fun RemoteControlDialog(
     cameraAddress: String,
     service: CameraSyncService,
-    isConnected: Boolean = true,  // Initial state, but we'll observe actual state
+    connection: CameraConnection,
     onDismiss: () -> Unit,
     onRemoteCommand: (String, RemoteControlCommand) -> Unit,
     onSaveAutoFocus: (Boolean) -> Unit
@@ -97,10 +98,6 @@ fun RemoteControlDialog(
     val recordingMap by service.isRecordingVideo.collectAsState()
     val isRecording = recordingMap[cameraAddress] ?: false
 
-    LaunchedEffect(halfShutterEnabled) {
-        onSaveAutoFocus(halfShutterEnabled)
-    }
-
     // Shutter states
     var isButtonPressed by remember { mutableStateOf(false) }
     var isHalfPressed by remember { mutableStateOf(false) }
@@ -137,7 +134,7 @@ fun RemoteControlDialog(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = context.getString(R.string.dialog_remote_control_title),
+                        text = context.getString(R.string.dialog_remote_control_title, AppSettingsManager.getCameraName(context, cameraAddress, connection.device.name)),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold
                     )
@@ -494,7 +491,10 @@ fun RemoteControlDialog(
                         )
                         Switch(
                             checked = halfShutterEnabled,
-                            onCheckedChange = { halfShutterEnabled = it }
+                            onCheckedChange = {
+                                halfShutterEnabled = it
+                                onSaveAutoFocus(it)
+                            }
                         )
                     }
                 }

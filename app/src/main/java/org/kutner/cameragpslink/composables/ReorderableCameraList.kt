@@ -26,23 +26,15 @@ import kotlinx.coroutines.launch
 import org.kutner.cameragpslink.AppSettingsManager
 import org.kutner.cameragpslink.CameraConnection
 import org.kutner.cameragpslink.CameraSyncService
-import org.kutner.cameragpslink.R
-import org.kutner.cameragpslink.RemoteControlCommand
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ReorderableCameraList(
     connectedCameras: List<CameraConnection>,
     isReorderMode: Boolean,
-    refreshTrigger: Int,  // Add this parameter
     modifier: Modifier = Modifier,
     service: CameraSyncService,
-    onTriggerShutter: (String) -> Unit,
-    onForgetDevice: (String) -> Unit,
-    onCameraSettings: (String, Int, Boolean, Int, Boolean, String?) -> Unit,
-    onRemoteCommand: (String, RemoteControlCommand) -> Unit,
-    onLongPress: () -> Unit,
-    onAddToHomeScreen: (String, String) -> Unit
+    onLongPress: () -> Unit
 ) {
     val context = LocalContext.current
     val listState = rememberLazyListState()
@@ -109,20 +101,10 @@ fun ReorderableCameraList(
                     currentIndex.intValue = index
                 }
 
-                // Get camera name - refreshTrigger will cause this to update
-                val cameraName = remember(address, refreshTrigger) {
-                    AppSettingsManager.getCameraName(context, address, connection.device.name)
-                }
-
                 Column(modifier = itemModifier.fillMaxWidth()) {
                     ConnectedCameraCard(
                         modifier = Modifier.fillMaxWidth(),
-                        cameraName = cameraName,
-                        cameraAddress = connection.device.address,
-                        isBonded = connection.isBonded,
-                        isConnected = connection.isConnected,
-                        isConnecting = connection.isConnecting,
-                        context = context,
+                        connection = connection,
                         service = service,
                         isReorderMode = isReorderMode,
                         isDragging = dragging,
@@ -144,14 +126,7 @@ fun ReorderableCameraList(
                         } else {
                             Modifier
                         },
-                        onShutter = { onTriggerShutter(connection.device.address) },
-                        onDisconnect = { onForgetDevice(connection.device.address) },
-                        onCameraSettings = { mode, qe, dur, af, customName ->
-                            onCameraSettings(connection.device.address, mode, qe, dur, af, customName)
-                        },
-                        onRemoteCommand = onRemoteCommand,
-                        onLongPress = onLongPress,
-                        onAddToHomeScreen = onAddToHomeScreen
+                        onLongPress = onLongPress
                     )
                 }
             }
@@ -248,11 +223,8 @@ class DragDropState(
         }
 
         if (targetItem != null) {
-            // Determine if we need to preserve scroll position
             val needsScrollAdjustment = when {
-                // Moving from first position to second
                 draggingItem.index == 0 && targetItem.index == 1 -> true
-                // Moving from second position to first
                 draggingItem.index == 1 && targetItem.index == 0 -> true
                 else -> false
             }
@@ -266,7 +238,6 @@ class DragDropState(
             onMove.invoke(draggingItem.index, targetItem.index)
             draggingItemIndex = targetItem.index
 
-            // Restore scroll position if needed
             if (scrollOffsetBefore != null) {
                 scope.launch {
                     state.scrollToItem(
@@ -277,7 +248,6 @@ class DragDropState(
             }
         }
 
-        // Always handle overscroll for smooth edge scrolling
         val overscroll = when {
             draggingItemDraggedDelta > 0 ->
                 (endOffset - state.layoutInfo.viewportEndOffset).coerceAtLeast(0f)

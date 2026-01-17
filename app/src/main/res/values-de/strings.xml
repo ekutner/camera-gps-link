@@ -82,7 +82,7 @@
     <string name="dialog_camera_settings_quick_connect_period_always">Immer schnelles Scannen verwenden</string>
     <string name="dialog_camera_settings_quick_connect_period_other">Schnelles Scannen für %1$s nach Trennung der Kamera verwenden, dann zurück zum normalen Verbindungsmodus wechseln, um Akku zu sparen</string>
 
-    <string name="dialog_remote_control_title">Fernsteuerung</string>
+    <string name="dialog_remote_control_title">%s-Fernbedienung</string>
     <string name="dialog_remote_control_warning">\"Bluetooth-Fernsteuerung\" muss im Kameramenü aktiviert sein</string>
     <string name="dialog_remote_control_not_connected">Die Kamera ist nicht verbunden</string>
     <string name="dialog_remote_control_c1">C1</string>

@@ -83,7 +83,7 @@
     <string name="dialog_camera_settings_quick_connect_period_always">Usar siempre escaneo rápido</string>
     <string name="dialog_camera_settings_quick_connect_period_other">Usar escaneo rápido durante %1$s después de que la cámara se desconecte, luego volver al modo de conexión normal para ahorrar batería</string>
 
-    <string name="dialog_remote_control_title">Control Remoto</string>
+    <string name="dialog_remote_control_title">Control remoto %s</string>
     <string name="dialog_remote_control_warning">\"Control Remoto Bluetooth\" debe estar habilitado en el menú de la cámara</string>
     <string name="dialog_remote_control_not_connected">La cámara no está conectada</string>
     <string name="dialog_remote_control_c1">C1</string>

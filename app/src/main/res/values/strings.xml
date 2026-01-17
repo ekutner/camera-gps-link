@@ -82,7 +82,7 @@
     <string name="dialog_camera_settings_quick_connect_period_always">Always use fast scanning</string>
     <string name="dialog_camera_settings_quick_connect_period_other">Use fast scanning for %1$s after the camera disconnects, then switch back to regular connect mode to save battery</string>
 
-    <string name="dialog_remote_control_title">Remote Control</string>
+    <string name="dialog_remote_control_title">%s Remote Control</string>
     <string name="dialog_remote_control_warning">\"Bluetooth Rmt Ctrl\" must be enabled in the camera menu</string>
     <string name="dialog_remote_control_not_connected">The camera is not connected</string>
     <string name="dialog_remote_control_c1">C1</string>

@@ -19,44 +19,18 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Help
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckBox
 import androidx.compose.material.icons.filled.CheckBoxOutlineBlank
 import androidx.compose.material.icons.filled.DragHandle
+import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.Language
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -66,14 +40,8 @@ import androidx.compose.ui.window.PopupProperties
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import androidx.core.os.LocaleListCompat
-import kotlinx.coroutines.flow.StateFlow
-import org.kutner.cameragpslink.composables.BondingErrorDialog
-import org.kutner.cameragpslink.composables.LogCard
-import org.kutner.cameragpslink.composables.SearchDialog
+import org.kutner.cameragpslink.composables.*
 import org.kutner.cameragpslink.ui.theme.CameraGpsLinkTheme
-import org.kutner.cameragpslink.composables.LanguageSelectionDialog
-import org.kutner.cameragpslink.composables.ReorderableCameraList
-import org.kutner.cameragpslink.composables.RemoteControlDialog
 
 class MainActivity : AppCompatActivity() {
 
@@ -153,39 +121,8 @@ class MainActivity : AppCompatActivity() {
 
                 if (bound && service != null) {
                     MainScreen(
-                        log = service.log,
                         service = service,
-                        connectedCameras = service.connectedCameras,
-                        foundDevices = service.foundDevices,
-                        isManualScanning = service.isManualScanning,
-                        shutterErrorMessage = service.shutterErrorMessage,
-                        showBondingErrorDialog = service.showBondingErrorDialog,
                         deepLinkCameraAddress = deepLinkAddress,
-                        onStartScan = { service.startManualScan() },
-                        onCancelScan = { service.stopManualScan() },
-                        onConnectToDevice = {
-                            // Ensure the service is started as a service, not just bound
-                            startCameraService()
-                            service.stopManualScan()
-                            service.connectToDevice(it.device, it)
-                        },
-                        onTriggerShutter = { address -> service.triggerShutter(address) },
-                        onForgetDevice = { address -> service.forgetDevice(address) },
-                        onCameraSettings = { address, mode, enabled, duration, autoFocus, customName ->
-                            AppSettingsManager.updateCameraSettings(this, address, mode, enabled, duration, autoFocus, customName)
-                            service.onSettingsChanged(address)
-                        },
-                        onRemoteCommand = { address, command ->
-                            service.sendRemoteCommand(address, command)
-                        },
-                        onAddToHomeScreen = { address, cameraName ->
-                            createRemoteControlShortcut(address, cameraName)
-                        },
-                        onClearLog = { service.clearLog() },
-                        onShareLog = { shareLog(service.getLogAsString()) },
-                        onRateApp = { launchReviewFlow() },
-                        onDismissShutterError = { service.clearShutterError() },
-                        onDismissBondingError = { service.dismissBondingErrorDialog() },
                         onDismissDeepLink = { deepLinkCameraAddress.value = null }
                     )
                 } else {
@@ -225,7 +162,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun createRemoteControlShortcut(cameraAddress: String, cameraName: String) {
+    fun createRemoteControlShortcut(cameraAddress: String, cameraName: String) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val shortcutManager = getSystemService(ShortcutManager::class.java)
 
@@ -287,16 +224,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun shareLog(logText: String) {
-        val shareIntent = Intent(Intent.ACTION_SEND).apply {
-            type = "text/plain"
-            putExtra(Intent.EXTRA_SUBJECT, "Camera GPS Link Log")
-            putExtra(Intent.EXTRA_TEXT, logText)
-        }
-        startActivity(Intent.createChooser(shareIntent, "Share Log"))
-    }
-
-    private fun launchReviewFlow() {
+    fun launchReviewFlow() {
         try {
             // Try to open the Play Store app directly
             val intent = Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=$packageName"))
@@ -311,65 +239,40 @@ class MainActivity : AppCompatActivity() {
     }
 }
 
+// MainScreen composable and helper functions
 @OptIn(ExperimentalMaterial3Api::class)
 @SuppressLint("MissingPermission")
 @Composable
 fun MainScreen(
-    log: StateFlow<List<String>>,
     service: CameraSyncService,
-    connectedCameras: StateFlow<List<CameraConnection>>,
-    foundDevices: StateFlow<List<FoundDevice>>,
-    isManualScanning: StateFlow<Boolean>,
-    shutterErrorMessage: StateFlow<String?>,
-    showBondingErrorDialog: StateFlow<String?>,
     deepLinkCameraAddress: String?,
-    onStartScan: () -> Unit,
-    onCancelScan: () -> Unit,
-    onConnectToDevice: (FoundDevice) -> Unit,
-    onTriggerShutter: (String) -> Unit,
-    onForgetDevice: (String) -> Unit,
-    onCameraSettings: (String, Int, Boolean, Int, Boolean, String?) -> Unit,
-    onRemoteCommand: (String, RemoteControlCommand) -> Unit,
-    onAddToHomeScreen: (String, String) -> Unit,
-    onClearLog: () -> Unit,
-    onShareLog: () -> Unit,
-    onRateApp: () -> Unit,
-    onDismissShutterError: () -> Unit,
-    onDismissBondingError: () -> Unit,
     onDismissDeepLink: () -> Unit
 ) {
     val context = LocalContext.current
 
-    val logMessages by log.collectAsState()
-    val cameras by connectedCameras.collectAsState()
-    val scanning by isManualScanning.collectAsState()
-    val devices by foundDevices.collectAsState()
-    val errorMessage by shutterErrorMessage.collectAsState()
-    val bondingErrorDeviceAddress by showBondingErrorDialog.collectAsState()
+    // Observe state from service
+    val logMessages by service.log.collectAsState()
+    val cameras by service.connectedCameras.collectAsState()
+    val scanning by service.isManualScanning.collectAsState()
+    val devices by service.foundDevices.collectAsState()
+    val errorMessage by service.shutterErrorMessage.collectAsState()
+    val bondingErrorDeviceAddress by service.showBondingErrorDialog.collectAsState()
 
+    // Local UI state
     var showLog by remember { mutableStateOf(AppSettingsManager.isShowLogEnabled(context)) }
     var showMenu by remember { mutableStateOf(false) }
     var showSearchDialog by remember { mutableStateOf(false) }
     var showLanguageDialog by remember { mutableStateOf(false) }
     var isReorderMode by remember { mutableStateOf(false) }
 
-    var uiRefreshTrigger by remember { mutableStateOf(0) }
-
     // Handle deep link to show remote control dialog
     LaunchedEffect(deepLinkCameraAddress) {
         if (deepLinkCameraAddress != null) {
-            // Find if camera exists in saved cameras
             val hasSavedCamera = AppSettingsManager.hasSavedCamera(context, deepLinkCameraAddress)
-            if (hasSavedCamera) {
-                // Show remote control dialog for this camera
-                // This will be handled below
+            if (!hasSavedCamera) {
+                onDismissDeepLink()
             }
         }
-    }
-
-    val handleCameraSettings: (String, Int, Boolean, Int, Boolean, String?) -> Unit = { address, mode, enabled, duration, autoFocus, customName ->
-        onCameraSettings(address, mode, enabled, duration, autoFocus, customName)
-        uiRefreshTrigger++  // Trigger UI refresh after settings are saved
     }
 
     // Handle back press to close menu or exit reorder mode
@@ -383,46 +286,45 @@ fun MainScreen(
     // Show error dialog when there's an error message
     if (errorMessage != null) {
         AlertDialog(
-            onDismissRequest = onDismissShutterError,
+            onDismissRequest = { service.clearShutterError() },
             title = { Text(context.getString(R.string.error_shutter_title)) },
             text = { Text(errorMessage ?: "") },
             confirmButton = {
-                TextButton(onClick = onDismissShutterError) {
+                TextButton(onClick = { service.clearShutterError() }) {
                     Text(context.getString(R.string.button_ok))
                 }
             }
         )
     }
+
     if (bondingErrorDeviceAddress != null) {
         val connection = cameras.find { it.device.address == bondingErrorDeviceAddress }
         val cameraName = AppSettingsManager.getCameraName(context, bondingErrorDeviceAddress ?: "", connection?.device?.name)
         BondingErrorDialog(
             cameraName = cameraName,
-            onDismiss = onDismissBondingError
+            onDismiss = { service.dismissBondingErrorDialog() }
         )
     }
 
     // Deep link remote control dialog
     if (deepLinkCameraAddress != null) {
         val connection = cameras.find { it.device.address == deepLinkCameraAddress }
+        if (connection == null) {
+            onDismissDeepLink()
+            return
+        }
+
         val cameraName = AppSettingsManager.getCameraName(context, deepLinkCameraAddress, connection?.device?.name)
 
         RemoteControlDialog(
             cameraAddress = deepLinkCameraAddress,
             service = service,
-            isConnected = connection?.isConnected ?: false,
+            connection = connection,
             onDismiss = onDismissDeepLink,
-            onRemoteCommand = onRemoteCommand,
+            onRemoteCommand = { address, cmd -> service.sendRemoteCommand(deepLinkCameraAddress, cmd) },
             onSaveAutoFocus = { autoFocus ->
                 val currentSettings = AppSettingsManager.getCameraSettings(context, deepLinkCameraAddress)
-                handleCameraSettings(
-                    deepLinkCameraAddress,
-                    currentSettings.connectionMode,
-                    currentSettings.quickConnectEnabled,
-                    currentSettings.quickConnectDurationMinutes,
-                    autoFocus,
-                    currentSettings.customName ?: ""
-                )
+                AppSettingsManager.updateCameraSettings(context,deepLinkCameraAddress, enableHalfShutterPress = autoFocus)
             }
         )
     }
@@ -444,88 +346,27 @@ fun MainScreen(
                             )
                         }
                     } else {
-                        // Show normal menu
-                        IconButton(onClick = { showMenu = true }) {
-                            Icon(
-                                imageVector = Icons.Default.MoreVert,
-                                contentDescription = "Menu"
-                            )
-                        }
-                        DropdownMenu(
-                            expanded = showMenu,
-                            onDismissRequest = { showMenu = false },
-                            properties = PopupProperties(focusable = false)
-                        ) {
-                            if (cameras.size > 1) {
-                                DropdownMenuItem(
-                                    text = { Text(context.getString(R.string.menu_rearrange_cameras)) },
-                                    onClick = {
-                                        isReorderMode = true
-                                        showMenu = false
-                                    },
-                                    leadingIcon = {
-                                        Icon(
-                                            imageVector = Icons.Default.DragHandle,
-                                            contentDescription = null
-                                        )
-                                    }
-                                )
+                        TopBarMenu(
+                            showMenu = showMenu,
+                            onShowMenuChange = { showMenu = it },
+                            showLog = showLog,
+                            canRearrange = cameras.size > 1,
+                            onToggleLog = {
+                                showLog = !showLog
+                                AppSettingsManager.setShowLogEnabled(context, showLog)
+                            },
+                            onRearrange = { isReorderMode = true },
+                            onShowLanguage = { showLanguageDialog = true },
+                            onShowHelp = {
+                                val helpIntent = Intent(Intent.ACTION_VIEW, context.getString(R.string.help_page_url).toUri())
+                                context.startActivity(helpIntent)
+                            },
+                            onRateApp = {
+                                if (context is MainActivity) {
+                                    context.launchReviewFlow()
+                                }
                             }
-                            DropdownMenuItem(
-                                text = { Text(context.getString(R.string.menu_show_log)) },
-                                onClick = {
-                                    showLog = !showLog
-                                    AppSettingsManager.setShowLogEnabled(context, showLog)
-                                    showMenu = false
-                                },
-                                leadingIcon = {
-                                    Icon(
-                                        imageVector = if (showLog) Icons.Default.CheckBox else Icons.Default.CheckBoxOutlineBlank,
-                                        contentDescription = null
-                                    )
-                                }
-                            )
-                            DropdownMenuItem(
-                                text = { Text(context.getString(R.string.menu_language)) },
-                                onClick = {
-                                    showLanguageDialog = true
-                                    showMenu = false
-                                },
-                                leadingIcon = {
-                                    Icon(
-                                        imageVector = Icons.Default.Language,
-                                        contentDescription = null
-                                    )
-                                }
-                            )
-                            DropdownMenuItem(
-                                text = { Text(context.getString(R.string.menu_help)) },
-                                onClick = {
-                                    val helpIntent = Intent(Intent.ACTION_VIEW, context.getString(R.string.help_page_url).toUri())
-                                    context.startActivity(helpIntent)
-                                    showMenu = false
-                                },
-                                leadingIcon = {
-                                    Icon(
-                                        imageVector = Icons.AutoMirrored.Filled.Help,
-                                        contentDescription = null
-                                    )
-                                }
-                            )
-                            DropdownMenuItem(
-                                text = { Text(context.getString(R.string.menu_rate_app)) },
-                                onClick = {
-                                    showMenu = false
-                                    onRateApp()
-                                },
-                                leadingIcon = {
-                                    Icon(
-                                        imageVector = Icons.Default.Star,
-                                        contentDescription = null
-                                    )
-                                }
-                            )
-                        }
+                        )
                     }
                 }
             )
@@ -535,7 +376,7 @@ fun MainScreen(
                 FloatingActionButton(
                     onClick = {
                         showSearchDialog = true
-                        onStartScan()
+                        service.startManualScan()
                     },
                     containerColor = MaterialTheme.colorScheme.primary
                 ) {
@@ -554,121 +395,243 @@ fun MainScreen(
         ) {
             // Main content
             if (cameras.isEmpty()) {
-                // Empty state
-                Column(
-                    modifier = Modifier.fillMaxSize(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .then(if (showLog) Modifier.weight(1f) else Modifier.fillMaxSize())
-                            .fillMaxWidth(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "Press \"+\" to add a camera",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            textAlign = TextAlign.Center,
-                        )
-                    }
-                    if (showLog) {
-                        LogCard(
-                            logMessages = logMessages,
-                            modifier = Modifier.weight(1f),
-                            onClearLog = onClearLog,
-                            onShareLog = onShareLog
-                        )
-                    }
-                }
+                EmptyState(showLog = showLog, logMessages = logMessages, service = service)
             } else {
-                if (showLog) {
-                    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-                        val minLogHeight = 400.dp
-                        val maxCameraHeight = maxHeight - minLogHeight
-
-                        Column(modifier = Modifier.fillMaxSize()) {
-                            ReorderableCameraList(
-                                connectedCameras = cameras,
-                                isReorderMode = isReorderMode,
-                                refreshTrigger = uiRefreshTrigger,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .heightIn(max = maxCameraHeight)
-                                    .padding(16.dp),
-                                service = service,
-                                onTriggerShutter = onTriggerShutter,
-                                onForgetDevice = onForgetDevice,
-                                onCameraSettings = handleCameraSettings,
-                                onRemoteCommand = onRemoteCommand,
-                                onLongPress = {
-                                    if (!isReorderMode) {
-                                        isReorderMode = true
-                                    }
-                                },
-                                onAddToHomeScreen = onAddToHomeScreen
-                            )
-
-                            LogCard(
-                                logMessages = logMessages,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .fillMaxHeight(),
-                                onClearLog = onClearLog,
-                                onShareLog = onShareLog
-                            )
+                CameraListContent(
+                    cameras = cameras,
+                    showLog = showLog,
+                    isReorderMode = isReorderMode,
+                    logMessages = logMessages,
+                    service = service,
+                    onLongPress = {
+                        if (!isReorderMode) {
+                            isReorderMode = true
                         }
                     }
-                } else {
-                    ReorderableCameraList(
-                        connectedCameras = cameras,
-                        isReorderMode = isReorderMode,
-                        refreshTrigger = uiRefreshTrigger,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(16.dp),
-                        service = service,
-                        onTriggerShutter = onTriggerShutter,
-                        onForgetDevice = onForgetDevice,
-                        onCameraSettings = handleCameraSettings,
-                        onRemoteCommand = onRemoteCommand,
-                        onLongPress = {
-                            if (!isReorderMode) {
-                                isReorderMode = true
-                            }
-                        },
-                        onAddToHomeScreen = onAddToHomeScreen
-                    )
-                }
+                )
             }
 
-            // Search dialog
+            // Search dialog - handles its own events
             if (showSearchDialog) {
                 SearchDialog(
                     isScanning = scanning,
                     foundDevices = devices,
-                    onDismiss = { showSearchDialog = false },
-                    onConnect = { device ->
-                        onConnectToDevice(device)
+                    onDismiss = {
+                        service.stopManualScan()
                         showSearchDialog = false
                     },
-                    onCancelScan = onCancelScan,
+                    onConnect = { device ->
+                        service.connectToDevice(device.device, device)
+                        showSearchDialog = false
+                    },
+                    onCancelScan = { service.stopManualScan() },
                     onRefresh = { service.startManualScan() }
                 )
             }
 
-            // Language selection dialog
+            // Language selection dialog - handles its own events
             if (showLanguageDialog) {
                 LanguageSelectionDialog(
                     onDismiss = { showLanguageDialog = false },
                     onLanguageSelected = { languageCode ->
                         val serviceIntent = Intent(context, CameraSyncService::class.java)
                         context.stopService(serviceIntent)
-
                         LanguageManager.setLanguage(context, languageCode)
                     }
                 )
             }
         }
     }
+}
+
+@Composable
+private fun TopBarMenu(
+    showMenu: Boolean,
+    onShowMenuChange: (Boolean) -> Unit,
+    showLog: Boolean,
+    canRearrange: Boolean,
+    onToggleLog: () -> Unit,
+    onRearrange: () -> Unit,
+    onShowLanguage: () -> Unit,
+    onShowHelp: () -> Unit,
+    onRateApp: () -> Unit
+) {
+    val context = LocalContext.current
+
+    IconButton(onClick = { onShowMenuChange(true) }) {
+        Icon(
+            imageVector = Icons.Default.MoreVert,
+            contentDescription = "Menu"
+        )
+    }
+    DropdownMenu(
+        expanded = showMenu,
+        onDismissRequest = { onShowMenuChange(false) },
+        properties = PopupProperties(focusable = false)
+    ) {
+        if (canRearrange) {
+            DropdownMenuItem(
+                text = { Text(context.getString(R.string.menu_rearrange_cameras)) },
+                onClick = {
+                    onRearrange()
+                    onShowMenuChange(false)
+                },
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Default.DragHandle,
+                        contentDescription = null
+                    )
+                }
+            )
+        }
+        DropdownMenuItem(
+            text = { Text(context.getString(R.string.menu_show_log)) },
+            onClick = {
+                onToggleLog()
+                onShowMenuChange(false)
+            },
+            leadingIcon = {
+                Icon(
+                    imageVector = if (showLog) Icons.Default.CheckBox else Icons.Default.CheckBoxOutlineBlank,
+                    contentDescription = null
+                )
+            }
+        )
+        DropdownMenuItem(
+            text = { Text(context.getString(R.string.menu_language)) },
+            onClick = {
+                onShowLanguage()
+                onShowMenuChange(false)
+            },
+            leadingIcon = {
+                Icon(
+                    imageVector = Icons.Default.Language,
+                    contentDescription = null
+                )
+            }
+        )
+        DropdownMenuItem(
+            text = { Text(context.getString(R.string.menu_help)) },
+            onClick = {
+                onShowHelp()
+                onShowMenuChange(false)
+            },
+            leadingIcon = {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.Help,
+                    contentDescription = null
+                )
+            }
+        )
+        DropdownMenuItem(
+            text = { Text(context.getString(R.string.menu_rate_app)) },
+            onClick = {
+                onShowMenuChange(false)
+                onRateApp()
+            },
+            leadingIcon = {
+                Icon(
+                    imageVector = Icons.Default.Star,
+                    contentDescription = null
+                )
+            }
+        )
+    }
+}
+
+@Composable
+private fun EmptyState(
+    showLog: Boolean,
+    logMessages: List<String>,
+    service: CameraSyncService
+) {
+    val context = LocalContext.current
+
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Box(
+            modifier = Modifier
+                .then(if (showLog) Modifier.weight(1f) else Modifier.fillMaxSize())
+                .fillMaxWidth(),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = "Press \"+\" to add a camera",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+            )
+        }
+        if (showLog) {
+            LogCard(
+                logMessages = logMessages,
+                modifier = Modifier.weight(1f),
+                onClearLog = { service.clearLog() },
+                onShareLog = { shareLog(context, service.getLogAsString()) }
+            )
+        }
+    }
+}
+
+@Composable
+private fun CameraListContent(
+    cameras: List<CameraConnection>,
+    showLog: Boolean,
+    isReorderMode: Boolean,
+    logMessages: List<String>,
+    service: CameraSyncService,
+    onLongPress: () -> Unit
+) {
+    val context = LocalContext.current
+
+    if (showLog) {
+        BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+            val minLogHeight = 400.dp
+            val maxCameraHeight = maxHeight - minLogHeight
+
+            Column(modifier = Modifier.fillMaxSize()) {
+                ReorderableCameraList(
+                    connectedCameras = cameras,
+                    isReorderMode = isReorderMode,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = maxCameraHeight)
+                        .padding(16.dp),
+                    service = service,
+                    onLongPress = onLongPress
+                )
+
+                LogCard(
+                    logMessages = logMessages,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .fillMaxHeight(),
+                    onClearLog = { service.clearLog() },
+                    onShareLog = { shareLog(context, service.getLogAsString()) }
+                )
+            }
+        }
+    } else {
+        ReorderableCameraList(
+            connectedCameras = cameras,
+            isReorderMode = isReorderMode,
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            service = service,
+            onLongPress = onLongPress
+        )
+    }
+}
+
+// Extension function for sharing log
+fun shareLog(context: android.content.Context, logText: String) {
+    val shareIntent = Intent(Intent.ACTION_SEND).apply {
+        type = "text/plain"
+        putExtra(Intent.EXTRA_SUBJECT, "Camera GPS Link Log")
+        putExtra(Intent.EXTRA_TEXT, logText)
+    }
+    context.startActivity(Intent.createChooser(shareIntent, "Share Log"))
 }

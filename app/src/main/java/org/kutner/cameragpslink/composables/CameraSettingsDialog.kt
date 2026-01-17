@@ -54,7 +54,7 @@ fun CameraSettingsDialog(
     cameraAddress: String,
     onDismiss: () -> Unit,
     // Callback now includes Mode, Enabled, Duration, AutoFocus, CustomName
-    onSave: (Int, Boolean, Int, Boolean, String) -> Unit
+    onSave: (Int, Boolean, Int, String) -> Unit
 ) {
     val context = LocalContext.current
     val currentSettings: CameraSettings = remember {
@@ -73,7 +73,6 @@ fun CameraSettingsDialog(
     var connectionMode by remember { mutableStateOf(currentSettings.connectionMode) }
     var quickConnectEnabled by remember { mutableStateOf(currentSettings.quickConnectEnabled) }
     var durationMinutes by remember { mutableStateOf(currentSettings.quickConnectDurationMinutes) }
-    var enableHalfShutterPress by remember { mutableStateOf(currentSettings.enableHalfShutterPress) }
 
     val durationOptions = listOf(0, 1, 5, 10, 30, 60, 120, 180, 240, 360, 720)
     val scrollState = rememberScrollState()
@@ -243,7 +242,7 @@ fun CameraSettingsDialog(
                     // OK Button
                     Button(
                         onClick = {
-                            onSave(connectionMode, quickConnectEnabled, durationMinutes, enableHalfShutterPress, customName)
+                            onSave(connectionMode, quickConnectEnabled, durationMinutes, customName)
                         },
                         modifier = Modifier
                             .align(Alignment.End)

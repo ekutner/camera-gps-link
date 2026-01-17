@@ -73,14 +73,15 @@ object AppSettingsManager {
         )
     }
 
-    fun updateCameraSettings(context: Context, deviceAddress: String, mode: Int, quickConnectEnabled: Boolean, durationMinutes: Int, enableHalfShutterPress: Boolean, customName: String?) {
+    fun updateCameraSettings(context: Context, deviceAddress: String, mode: Int? = null, quickConnectEnabled: Boolean? = null,
+                             durationMinutes: Int? = null, enableHalfShutterPress: Boolean? = null, customName: String? = null) {
         val currentSettings = getCameraSettings(context, deviceAddress)
         val updatedSettings = currentSettings.copy(
-            connectionMode = mode,
-            quickConnectEnabled = quickConnectEnabled,
-            quickConnectDurationMinutes = durationMinutes,
-            enableHalfShutterPress = enableHalfShutterPress,
-            customName = customName?.trim()
+            connectionMode = mode ?: currentSettings.connectionMode,
+            quickConnectEnabled = quickConnectEnabled ?: currentSettings.quickConnectEnabled,
+            quickConnectDurationMinutes = durationMinutes ?: currentSettings.quickConnectDurationMinutes,
+            enableHalfShutterPress = enableHalfShutterPress ?: currentSettings.enableHalfShutterPress,
+            customName = customName?.trim()?.ifBlank { null }
         )
         saveCameraSettings(context, updatedSettings)
     }

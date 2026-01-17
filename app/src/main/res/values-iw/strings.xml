@@ -83,7 +83,7 @@
     <string name="dialog_camera_settings_quick_connect_period_always">השתמש תמיד בסריקה מהירה</string>
     <string name="dialog_camera_settings_quick_connect_period_other">השתמש בסריקה מהירה למשך %1$s לאחר ניתוק המצלמה, ולאחר מכן חזור למצב חיבור רגיל כדי לחסוך בסוללה</string>
 
-    <string name="dialog_remote_control_title">שלט רחוק</string>
+    <string name="dialog_remote_control_title">שלט רחוק ל-\u2066%s\u2069</string>
     <string name="dialog_remote_control_warning">יש להפעיל \"Bluetooth Rmt Ctrl\" בתפריט המצלמה</string>
     <string name="dialog_remote_control_not_connected">המצלמה לא מחוברת</string>
     <string name="dialog_remote_control_c1">C1</string>
@@ -97,7 +97,7 @@
     <string name="dialog_remote_control_enable_half_shutter">אפשר חצי לחיצה על התריס</string>
     <string name="dialog_remote_control_refresh">רענן</string>
 
-    <string name="shortcut_remote_control_short">%sשלט ל-</string>
-    <string name="shortcut_remote_control_long">%sשלט רחוק ל-</string>
+    <string name="shortcut_remote_control_short">שלט ל-\u2066%s\u2069</string>
+    <string name="shortcut_remote_control_long">שלט רחוק ל-\u2066%s\u2069</string>
 
 </resources>
