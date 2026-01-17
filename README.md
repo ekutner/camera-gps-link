@@ -179,6 +179,11 @@ app is running in the background, waiting to connect with the camera
   remote control and location linking to be enabled at the same time. If you enable one
   the other one gets automatically disabled.
 
+* **I press the "half-shutter" in Remote Control but nothing happens**
+  As noted, the remote control does the same thing as pressing the corresponding button
+  on the camera. If you disabled the "AF w/ Shutter" option in the camera then it won't
+  auto focus when you half press the shutter on the camera and not when using the remote. 
+
 ### Acknowledgements
 This app is inspired by previous work done by:  
 [@whc2001](https://github.com/whc2001/ILCE7M3ExternalGps/blob/main/PROTOCOL_EN.md)  
