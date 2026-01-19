@@ -21,6 +21,8 @@ object AppSettingsManager {
     private const val CAMERA_SETTINGS_KEY = "camera_settings"
     private const val KEY_SHOW_LOG = "show_log"
     private const val KEY_SELECTED_LANGUAGE = "selected_language"
+    private const val KEY_INSTALL_TIME = "install_time"
+    private const val KEY_RATING_PROMPT_TIME = "last_rating_prompt_time"
 
     private val gson = Gson()
 
@@ -220,5 +222,29 @@ object AppSettingsManager {
         else
             deviceName ?: context.getString(R.string.unknown_camera_name)
 
+    }
+
+    // --- Rating Prompt Storage ---
+    fun getInstallTime(context: Context): Long {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val savedTime = prefs.getLong(KEY_INSTALL_TIME, 0L)
+
+        return if (savedTime == 0L) {
+            val currentTime = System.currentTimeMillis()
+            prefs.edit().putLong(KEY_INSTALL_TIME, currentTime).apply()
+            currentTime
+        } else {
+            savedTime
+        }
+    }
+
+    fun setRatingPromptTime(context: Context, time: Long) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putLong(KEY_RATING_PROMPT_TIME, time).apply()
+    }
+
+    fun getRatingPromptTime(context: Context): Long {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getLong(KEY_RATING_PROMPT_TIME, 0L)
     }
 }
