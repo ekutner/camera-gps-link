@@ -35,22 +35,24 @@ of Sony's RMT-P1BT and RMT-VP2 remotes.
 ### Pairing the camera with the app
 1. Start by unpairing the phone from the camera, both on the phone's Bluetooth menu and
    in the camera menu. **DO NOT PAIR AGAIN FROM THE PHONE's BLUETOOTH MENU**
-2. On Cameras using the old menu system (cameras that use Imaging Edge Mobile app)
+2. Disable Location Information Linkage in Creator's App and Imaging Mobile Edge 
+   if they are installed on your phone
+3. On Cameras using the old menu system (cameras that use Imaging Edge Mobile app)
    Location Information Linking must be enabled in the camera menu before pairing:
    MENU → Network → Location Info. Link Set. → Location Info. Link - set to "On"
-3. On cameras using the new menu system:
+4. On cameras using the new menu system:
    * Go to MENU → Network → Bluetooth → Bluetooth Function - Set to "On"
    * Go to MENU → Network → Bluetooth → Pairing - The camera will enter pairing mode
    On cameras using the old menu system:
    * Go to MENU → Network → Bluetooth Settings → Bluetooth Function - Set to "On"
    * Go to MENU → Network → Bluetooth Settings → Pairing
-4. In the app:
+5. In the app:
    * Press the "+" button to start searching for cameras
    * when the camera is discovered press the "Connect" button to connect to it   
-5. Confirm the pairing request on both the camera and the phone
-6. Once paired the app will continuously look for the camera and
+6. Confirm the pairing request on both the camera and the phone
+7. Once paired the app will continuously look for the camera and
    will automatically connect to it when it is near by
-7. After restarting the phone you have to open the app once for it to work properly.
+8. After restarting the phone you have to open the app once for it to work properly.
    The app will show a notification reminding you to open it, which will disappear once you do. 
 
 ### Remote Control
@@ -93,12 +95,19 @@ Select the "Settings" option from the option from the three dots menu (aka kebab
 
 #### Available Options
 ![](assets/camera-settings-dialog.jpg)
+* **Camera Name**
+  Set a custom name for the camera instead of the name received from the Bluetooth device.
 
 * **Connection Mode**
-  The implements two different connection modes supported by Android. The technical differences between 
-  these modes are not important but what is important is that it seems that Mode 2 connects faster
-  for certain camera/phone combinations. It is therefor recommended to just try and see if mode 2
-  connects faster for you and if it doesn't just stay with the recommended Mode 1.
+  The app implements two different connection modes supported by Android.
+  In general Mode 1 is the more advanced and recommended mode.
+  However, for some users Mode 2 seems to connect faster with their specific
+  phone and camera combinations. So it's best to just test it and if you don't see
+  a significant difference just use Mode 1 (be sure to test Mode 1 with Quick Connect enabled).
+  Notes:  
+  * Quick Connect is only supported in Mode 1.
+  * Do not use Mode 2 if you enabled the "Cnct. while Power Off" in the camera. 
+    See the FAQ below for more information.
 
 * **Quick Connect**
   This feature is only supported when in Mode 1 and will be disabled in Mode 2.
@@ -155,6 +164,8 @@ app is running in the background, waiting to connect with the camera
   On cameras that work with Imaging Edge Mobile location linking has to be enabled
   in the camera menu. The menu option is at: 
   *Location Info. Link Set.* > *Location Info. Link* > On
+  Also, make sure this is enabled in Creator's App and Imaging Edge Mobile if you 
+  have them installed.
 
 * **I enabled Bluetooth remote control but the app still tells me to enable it**  
   If you just enabled it then turn the camera off and then on again. This would allow
@@ -182,7 +193,15 @@ app is running in the background, waiting to connect with the camera
 * **I press the "half-shutter" in Remote Control but nothing happens**
   As noted, the remote control does the same thing as pressing the corresponding button
   on the camera. If you disabled the "AF w/ Shutter" option in the camera then it won't
-  auto focus when you half press the shutter on the camera and not when using the remote. 
+  auto focus when you half press the shutter on the camera and not when using the remote.
+
+* **The camera is turning on even when I power it off**
+  You probably have "Cnct. while Power Off" enabled in the camera menu and you've
+  set the connection mode in the app to Mode 2. In that mode the app can't detect 
+  that Connect while power off is enabled in the camera and will cause it to wake up
+  every few seconds. Either disable that feature in the camera, or use Mode 1 in the app.  
+  In general, enabling this feature wastes battery power both on the Camera and the phone
+  so don't enable it unless you actually need it.
 
 ### Acknowledgements
 This app is inspired by previous work done by:  
