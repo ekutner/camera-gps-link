@@ -94,7 +94,7 @@ Select the "Settings" option from the option from the three dots menu (aka kebab
 
 
 #### Available Options
-![](assets/camera-settings-dialog.jpg)
+![](assets/camera-settings-dialog.jpg?v=2)
 * **Camera Name**
   Set a custom name for the camera instead of the name received from the Bluetooth device.
 
