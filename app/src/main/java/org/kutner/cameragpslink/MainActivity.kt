@@ -68,14 +68,23 @@ class MainActivity : AppCompatActivity() {
 
     private val permissionLauncher = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissions ->
         if (permissions.values.all { it }) {
-            // After getting permissions, check battery optimization
-            checkAndRequestBatteryOptimization()
+            // After standard permissions, check battery optimization
+            if (!isBatteryOptimizationDisabled(this)) {
+                showBatteryOptimizationInstructionDialog()
+            } else {
+                proceedWithServiceSetup()
+            }
         }
     }
 
     private val batteryOptimizationLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-        // After returning from battery optimization settings, proceed with app setup
+        // After returning from battery settings, proceed with setup
+        proceedWithServiceSetup()
+    }
+
+    private fun proceedWithServiceSetup() {
         bindToService()
+        // Only start service if we have saved cameras
         val savedCameras = AppSettingsManager.getSavedCameras(this)
         if (savedCameras.isNotEmpty()) {
             startCameraService()
@@ -87,8 +96,12 @@ class MainActivity : AppCompatActivity() {
         NotificationHelper(context = this).clearBootNotification()
 
         if (hasRequiredPermissions()) {
-            // Check battery optimization after permissions are granted
-            checkAndRequestBatteryOptimization()
+            bindToService()
+            // Only start service if we have saved cameras
+            val savedCameras = AppSettingsManager.getSavedCameras(this)
+            if (savedCameras.isNotEmpty()) {
+                startCameraService()
+            }
         } else {
             requestRequiredPermissions()
         }
@@ -195,100 +208,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun checkAndRequestBatteryOptimization() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if (!isBatteryOptimizationDisabled(this)) {
-                // Always show instruction dialog first
-                showBatteryOptimizationInstructionDialog()
-                return
-            }
-        }
-
-        // Battery optimization is already disabled or not applicable, proceed
-        bindToService()
-        val savedCameras = AppSettingsManager.getSavedCameras(this)
-        if (savedCameras.isNotEmpty()) {
-            startCameraService()
-        }
-    }
-
-    private fun requestBatteryOptimizationExemption() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            try {
-                val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
-                    data = Uri.parse("package:$packageName")
-                }
-                batteryOptimizationLauncher.launch(intent)
-                cameraSyncService?.log("Requesting battery optimization exemption")
-            } catch (e: Exception) {
-                cameraSyncService?.log("Direct battery exemption not available: ${e.message}")
-                // If direct intent fails, open general settings
-                openGeneralBatterySettings()
-            }
-        }
-    }
-
-    private fun showBatteryOptimizationInstructionDialog() {
-        androidx.appcompat.app.AlertDialog.Builder(this)
-            .setTitle(R.string.battery_optimization_instruction_title)
-            .setMessage(R.string.battery_optimization_instruction_message)
-            .setPositiveButton(R.string.button_continue) { dialog, _ ->
-                dialog.dismiss()
-                requestBatteryOptimizationExemption()
-            }
-            .setNegativeButton(R.string.button_skip) { dialog, _ ->
-                dialog.dismiss()
-                // Proceed anyway
-                bindToService()
-                val savedCameras = AppSettingsManager.getSavedCameras(this)
-                if (savedCameras.isNotEmpty()) {
-                    startCameraService()
-                }
-            }
-            .setCancelable(false)
-            .show()
-    }
-
-    private fun openGeneralBatterySettings() {
-        try {
-            val intent = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
-            batteryOptimizationLauncher.launch(intent)
-            cameraSyncService?.log("Opened general battery settings")
-        } catch (e: Exception) {
-            cameraSyncService?.log("Failed to open battery settings: ${e.message}")
-            // Proceed anyway
-            bindToService()
-            val savedCameras = AppSettingsManager.getSavedCameras(this)
-            if (savedCameras.isNotEmpty()) {
-                startCameraService()
-            }
-        }
-    }
-
-    fun openBatteryOptimizationSettings() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            try {
-                val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
-                    data = Uri.parse("package:$packageName")
-                }
-                startActivity(intent)
-                cameraSyncService?.log("Opening battery optimization settings")
-            } catch (e: Exception) {
-                cameraSyncService?.log("Failed to open battery settings: ${e.message}")
-                // Fallback to general battery optimization settings
-                try {
-                    val intent = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
-                    startActivity(intent)
-                    cameraSyncService?.log("Opened general battery settings")
-                } catch (e2: Exception) {
-                    cameraSyncService?.log("Failed to open general battery settings: ${e2.message}")
-                }
-            }
-        } else {
-            cameraSyncService?.log("Battery optimization settings not available on this Android version")
-        }
-    }
-
     private fun startCameraService() {
         val serviceIntent = Intent(this, CameraSyncService::class.java)
         startForegroundService(serviceIntent)
@@ -305,7 +224,12 @@ class MainActivity : AppCompatActivity() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             permissions.add(Manifest.permission.POST_NOTIFICATIONS)
         }
-        return permissions.all { ContextCompat.checkSelfPermission(this, it) == PackageManager.PERMISSION_GRANTED }
+
+        val hasStandardPermissions = permissions.all {
+            ContextCompat.checkSelfPermission(this, it) == PackageManager.PERMISSION_GRANTED
+        }
+
+        return hasStandardPermissions && isBatteryOptimizationDisabled(this)
     }
 
     private fun requestRequiredPermissions() {
@@ -320,6 +244,47 @@ class MainActivity : AppCompatActivity() {
             permissions.add(Manifest.permission.POST_NOTIFICATIONS)
         }
         permissionLauncher.launch(permissions.toTypedArray())
+    }
+
+    private fun showBatteryOptimizationInstructionDialog() {
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle(R.string.battery_optimization_instruction_title)
+            .setMessage(R.string.battery_optimization_instruction_message)
+            .setPositiveButton(R.string.button_continue) { dialog, _ ->
+                dialog.dismiss()
+                requestBatteryOptimizationExemption()
+            }
+            .setNegativeButton(R.string.button_skip) { dialog, _ ->
+                dialog.dismiss()
+                proceedWithServiceSetup()
+            }
+            .setCancelable(false)
+            .show()
+    }
+
+    private fun requestBatteryOptimizationExemption() {
+        try {
+            val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                data = Uri.parse("package:$packageName")
+            }
+            batteryOptimizationLauncher.launch(intent)
+            cameraSyncService?.log("Requesting battery optimization exemption")
+        } catch (e: Exception) {
+            cameraSyncService?.log("Direct battery exemption not available: ${e.message}")
+            // If direct intent fails, open general settings
+            openGeneralBatterySettings()
+        }
+    }
+
+    private fun openGeneralBatterySettings() {
+        try {
+            val intent = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
+            batteryOptimizationLauncher.launch(intent)
+            cameraSyncService?.log("Opened general battery settings")
+        } catch (e: Exception) {
+            cameraSyncService?.log("Failed to open battery settings: ${e.message}")
+            proceedWithServiceSetup()
+        }
     }
 
     private fun bindToService() {
@@ -379,12 +344,8 @@ class MainActivity : AppCompatActivity() {
 
 // Helper function to check if battery optimization is ignored
 fun isBatteryOptimizationDisabled(context: Context): Boolean {
-    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-        val powerManager = context.getSystemService(Context.POWER_SERVICE) as PowerManager
-        powerManager.isIgnoringBatteryOptimizations(context.packageName)
-    } else {
-        true // Not applicable for older versions
-    }
+    val powerManager = context.getSystemService(Context.POWER_SERVICE) as PowerManager
+    return powerManager.isIgnoringBatteryOptimizations(context.packageName)
 }
 
 // MainScreen composable and helper functions

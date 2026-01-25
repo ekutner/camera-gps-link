@@ -57,7 +57,7 @@
     <string name="button_skip">דלג</string>
 
     <string name="battery_optimization_instruction_title">אופטימיזציית סוללה</string>
-    <string name="battery_optimization_instruction_message">כדי לאפשר פעולה אמינה של האפליקציה של לאפשר מצב סוללה "בלתי מוגבל" במסך הבא</string>
+    <string name="battery_optimization_instruction_message">כדי לאפשר פעולה אמינה של האפליקציה יש לאפשר מצב סוללה \"בלתי מוגבל\" במסך הבא</string>
 
 
     <string name="dialog_found_camera_not_pairing">המצלמה אינה במצב pairing</string>

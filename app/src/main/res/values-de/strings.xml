@@ -56,7 +56,7 @@
     <string name="button_skip">Überspringen</string>
 
     <string name="battery_optimization_instruction_title">Akku-Optimierung</string>
-    <string name="battery_optimization_instruction_message">Um einen zuverlässigen Betrieb der App zu ermöglichen, erlauben Sie bitte „Uneingeschränkt" für die Akkuverwendung im nächsten Bildschirm.</string>
+    <string name="battery_optimization_instruction_message">Um einen zuverlässigen Betrieb der App zu ermöglichen, erlauben Sie bitte „Uneingeschränkt\" für die Akkuverwendung im nächsten Bildschirm.</string>
 
     <string name="dialog_found_camera_not_pairing">Die Kamera ist nicht im Kopplungsmodus</string>
     <string name="dialog_found_camera_location_linking_disabled">Die Verknüpfung von Standortinformationen ist in der Kamera nicht aktiviert</string>
