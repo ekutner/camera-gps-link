@@ -159,8 +159,14 @@ app is running in the background, waiting to connect with the camera
   4. Pair again. First go to the pairing menu in the camera and then add the camera in 
      the app using the "+" button.
   5. Confirm the pairing request on both the camera and the phone.
-  
-* **The camera doesn't receive the location information**  
+
+* **The camera doesn't receive the location information while the phone is locked**  
+  The app is being restricted by Android's "battery optimization" feature. Go to the
+  Android system settings > Apps > search for Camera GPS Link > Battery > Set to "Unrestricted" 
+  If you had to do this please let me know. If I see this is a common issue I'll add 
+  a friendlier way of opening that setting page.
+
+* **The camera doesn't receive the location information at all**  
   On cameras that work with Imaging Edge Mobile location linking has to be enabled
   in the camera menu. The menu option is at: 
   *Location Info. Link Set.* > *Location Info. Link* > On
