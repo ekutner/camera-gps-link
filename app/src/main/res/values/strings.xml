@@ -52,6 +52,11 @@
     <string name="button_connect">Connect</string>
     <string name="button_refresh">Refresh</string>
     <string name="button_searching">Searching…</string>
+    <string name="button_continue">Continue</string>
+    <string name="button_skip">Skip</string>
+
+    <string name="battery_optimization_instruction_title">Battery Optimization</string>
+    <string name="battery_optimization_instruction_message">To enable reliable operation of the app, please allow "Unrestricted" battery usage in the next screen.</string>
 
     <string name="dialog_found_camera_not_pairing">The camera is not in pairing mode</string>
     <string name="dialog_found_camera_location_linking_disabled">Location Information Linking is not enabled in the camera</string>

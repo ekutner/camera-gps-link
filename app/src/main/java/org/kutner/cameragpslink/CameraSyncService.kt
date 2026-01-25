@@ -1358,7 +1358,7 @@ class CameraSyncService : Service() {
 
 
     @SuppressLint("MissingPermission")
-    private fun log(message: String) {
+    fun log(message: String) {
         Log.d(TAG, message)
         val currentLog = _log.value.toMutableList()
         currentLog.add(0, "[${SimpleDateFormat("HH:mm:ss.SSS", Locale.getDefault()).format(Date())}] $message")

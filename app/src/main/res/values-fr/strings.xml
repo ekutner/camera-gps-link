@@ -53,6 +53,11 @@
     <string name="button_connect">Connecter</string>
     <string name="button_refresh">Actualiser</string>
     <string name="button_searching">Recherche…</string>
+    <string name="button_continue">Continuer</string>
+    <string name="button_skip">Ignorer</string>
+
+    <string name="battery_optimization_instruction_title">Optimisation de la batterie</string>
+    <string name="battery_optimization_instruction_message">Pour permettre un fonctionnement fiable de l\'application, veuillez autoriser l\'utilisation de la batterie « Sans restriction » dans l\'écran suivant.</string>
 
     <string name="dialog_found_camera_not_pairing">La caméra n\'est pas en mode de jumelage</string>
     <string name="dialog_found_camera_location_linking_disabled">La liaison d\'informations de localisation n\'est pas activée dans la caméra</string>

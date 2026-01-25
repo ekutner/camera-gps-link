@@ -53,6 +53,12 @@
     <string name="button_connect">התחבר</string>
     <string name="button_refresh">רענן</string>
     <string name="button_searching">מחפש…</string>
+    <string name="button_continue">המשך</string>
+    <string name="button_skip">דלג</string>
+
+    <string name="battery_optimization_instruction_title">אופטימיזציית סוללה</string>
+    <string name="battery_optimization_instruction_message">כדי לאפשר פעולה אמינה של האפליקציה של לאפשר מצב סוללה "בלתי מוגבל" במסך הבא</string>
+
 
     <string name="dialog_found_camera_not_pairing">המצלמה אינה במצב pairing</string>
     <string name="dialog_found_camera_location_linking_disabled">יש להפעיל Location Information Linking במצלמה</string>
