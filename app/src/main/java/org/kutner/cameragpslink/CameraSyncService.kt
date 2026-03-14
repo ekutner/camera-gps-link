@@ -93,7 +93,7 @@ class CameraSyncService : Service() {
     private lateinit var fusedLocationClient: FusedLocationProviderClient
 
     // --- Multiple camera connections ---
-    private val cameraConnections = mutableMapOf<String, CameraConnection>()
+    private val cameraConnections = Collections.synchronizedMap(mutableMapOf<String, CameraConnection>())
     private val autoScanCallbacks = mutableMapOf<String, ScanCallback>()
 
     // --- State for UI ---
@@ -141,6 +141,27 @@ class CameraSyncService : Service() {
     }
 
     override fun onBind(intent: Intent): IBinder = binder
+
+    // --- Broadcast Receiver for Bluetooth State ---
+    private val bluetoothStateReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (intent?.action == BluetoothAdapter.ACTION_STATE_CHANGED) {
+                val state = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, BluetoothAdapter.ERROR)
+                if (state == BluetoothAdapter.STATE_ON) {
+                    log("Bluetooth turned on, initializing BLE scanner...")
+                    bluetoothAdapter.bluetoothLeScanner?.let {
+                        bleScanner = it
+                        log("BLE scanner initialized. Restarting scans for saved cameras...")
+                        cameraConnections.values.forEach { connection ->
+                            if (!connection.isConnected && !connection.isConnecting) {
+                                startAutoScan(connection.device.address)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     // --- Broadcast Receiver for Bonding ---
     private val bondStateReceiver = object : BroadcastReceiver() {
@@ -197,6 +218,10 @@ class CameraSyncService : Service() {
         val filter = IntentFilter(BluetoothDevice.ACTION_BOND_STATE_CHANGED)
         registerReceiver(bondStateReceiver, filter)
 
+        // Register the Bluetooth State Receiver (to recover if BT was off at startup)
+        val btStateFilter = IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED)
+        registerReceiver(bluetoothStateReceiver, btStateFilter)
+
         initializeBluetoothAndLocation()
         loadSavedCameras()
         if (cameraConnections.isNotEmpty()) {
@@ -248,9 +273,14 @@ class CameraSyncService : Service() {
     @SuppressLint("MissingPermission")
     override fun onDestroy() {
         super.onDestroy()
-        // Unregister the Bond State Receiver
+        // Unregister broadcast receivers
         try {
             unregisterReceiver(bondStateReceiver)
+        } catch (e: IllegalArgumentException) {
+            // Receiver not registered or already unregistered
+        }
+        try {
+            unregisterReceiver(bluetoothStateReceiver)
         } catch (e: IllegalArgumentException) {
             // Receiver not registered or already unregistered
         }
@@ -1186,7 +1216,9 @@ class CameraSyncService : Service() {
     private fun initializeBluetoothAndLocation() {
         bluetoothManager = getSystemService(BLUETOOTH_SERVICE) as BluetoothManager
         bluetoothAdapter = bluetoothManager.adapter
-        bleScanner = bluetoothAdapter.bluetoothLeScanner
+        bluetoothAdapter.bluetoothLeScanner?.let {
+            bleScanner = it
+        } ?: log("BLE scanner unavailable - Bluetooth may be disabled")
 
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
         // Define the callback that will receive location updates
@@ -1212,8 +1244,12 @@ class CameraSyncService : Service() {
         // Fetch last known location so we have something immediately and then start fetching more accurate updates
         if (lastKnownLocation == null) {
             fusedLocationClient.getLastLocation().addOnSuccessListener { location ->
-                lastKnownLocation = location
-                log("Pre-fetched last location: Lat=${"%.2f".format(location.latitude)}, Lon=${"%.2f".format(location.longitude)}")
+                if (location != null) {
+                    lastKnownLocation = location
+                    log("Pre-fetched last location: Lat=${"%.2f".format(location.latitude)}, Lon=${"%.2f".format(location.longitude)}")
+                } else {
+                    log("No last known location available yet")
+                }
             }
         }
         log("Starting background location fetching")
