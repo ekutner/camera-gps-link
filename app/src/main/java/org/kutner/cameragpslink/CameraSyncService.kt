@@ -390,6 +390,7 @@ class CameraSyncService : Service() {
 
     @SuppressLint("MissingPermission")
     fun startAutoScan(deviceAddress: String) {
+        if (!isAdapterAndScannerReady()) return
         val connection = cameraConnections[deviceAddress] ?: return
         if (connection.gatt != null) {
 

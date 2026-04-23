@@ -12,7 +12,7 @@ Camera GPS Link — an Android app that connects to Sony cameras via Bluetooth L
 # Build debug APK
 ./gradlew assembleDebug
 
-# Build release APK (requires signing config via environment vars or local keystore)
+# Build release APK (requires signing config via keystore.properties or environment vars)
 ./gradlew assembleRelease
 
 # Run unit tests
@@ -33,7 +33,10 @@ Camera GPS Link — an Android app that connects to Sony cameras via Bluetooth L
 - **Build system:** Gradle with Kotlin DSL + Version Catalog (`gradle/libs.versions.toml`)
 - **compileSdk / targetSdk:** 36, **minSdk:** 26
 - **Kotlin Compose plugin** enabled; UI is entirely Jetpack Compose with Material 3
+- **Java/Kotlin target:** JVM 11
 - **Proguard:** disabled for release builds
+- **Signing:** Release keystore configured via `keystore.properties` (local) or environment variables `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD` (CI)
+- **CI:** GitHub Actions (`.github/workflows/android-build.yml`) — builds debug + release APKs on push/PR, uses JDK 17
 
 ## Architecture
 
@@ -41,9 +44,9 @@ Single-module app (`org.kutner.cameragpslink`). No dependency injection framewor
 
 ### Key files
 
-- **CameraSyncService.kt** — Core foreground service: BLE scanning, GATT connections, location tracking (FusedLocationProviderClient), GPS/time sync, remote control commands. Exposes UI state via `StateFlow`.
+- **CameraSyncService.kt** (~1400 lines) — Core foreground service: BLE scanning, GATT connections, location tracking (FusedLocationProviderClient), GPS/time sync, remote control commands. Exposes UI state via `StateFlow`. This is the largest and most critical file.
 - **MainActivity.kt** — Compose UI host. Binds to `CameraSyncService` via `ServiceConnection`, handles permissions, deep links (`cameragpslink://remote`), in-app review prompts.
-- **Constants.kt** (`Consttants.kt`) — Sony camera BLE UUIDs, remote control command enums, camera status response codes, notification constants.
+- **Consttants.kt** (note: filename has intentional double-t) — Sony camera BLE UUIDs, remote control command enums, camera status response codes, notification constants.
 - **AppSettingsManager.kt** — SharedPreferences wrapper with LinkedHashMap cache for ordered camera settings. Uses Gson for JSON serialization.
 - **NotificationHelper.kt** — Notification channels (High/Low/Error/Boot) and foreground service notification management.
 - **LanguageManager.kt** — Runtime locale switching (EN, ES, FR, DE, HE, system default).
@@ -59,7 +62,7 @@ Compose dialogs and cards: `RemoteControlDialog`, `ConnectedCameraCard`, `FoundC
 
 ## Bluetooth Protocol
 
-Sony-specific BLE protocol. UUIDs and command definitions are in `Constants.kt`. Additional protocol documentation in `sony-camera-bt-info.md`.
+Sony-specific BLE protocol. UUIDs and command definitions are in `Consttants.kt`. Additional protocol documentation in `sony-camera-bt-info.md`.
 
 ## Localization
 
