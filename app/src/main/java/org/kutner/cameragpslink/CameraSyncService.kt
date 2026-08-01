@@ -43,7 +43,10 @@ data class CameraConnection(
     var isRcProbeErrorReceived: Boolean = false,
     var retries: Long = 0,
     var isRemoteControlEnabled: Boolean = false,
-    var bondAttempts: Int = 0
+    var bondAttempts: Int = 0,
+    var timeSyncAttempts: Int = 0,
+    var isInitialLocationWritePending: Boolean = false,
+    var isLocationStreamStartPending: Boolean = false
 ) {
     // Override equals and hashCode to ensure updates are detected
     override fun equals(other: Any?): Boolean {
@@ -548,6 +551,9 @@ class CameraSyncService : Service() {
                     connection.isConnected = true
                     connection.isConnecting = false
                     connection.retries = 0
+                    connection.timeSyncAttempts = 0
+                    connection.isInitialLocationWritePending = false
+                    connection.isLocationStreamStartPending = false
                     updateStatusMap(_isFocusAcquired, deviceAddress, false)
                     updateStatusMap(_isShutterReady, deviceAddress, false)
                     updateStatusMap(_isRecordingVideo, deviceAddress, false)
@@ -690,16 +696,23 @@ class CameraSyncService : Service() {
                         }
                         Constants.ENABLE_LOCATION_UPDATES_UUID -> {
                             log("Location updates enabled for ${getDeviceDisplayString(gatt.device)} -> Syncing time...")
-                            // The first location update is sometimes ignored by the camera so we
-                            // start the update schedule at a 500ms delay, which will send another update
-                            sendLocationData(deviceAddress)
-                            handler.postDelayed({ startLocationUpdates(deviceAddress) }, 500)
-                            synchronizeTime(gatt, deviceAddress)
+                            // CC13 must complete before DD11 is written. Android only permits one
+                            // outstanding GATT write and rejects an overlapping request as BUSY.
+                            connection.timeSyncAttempts = 0
+                            synchronizeTimeWithRetry(gatt, deviceAddress)
                         }
-//                        Constants.TIME_CHARACTERISTIC_UUID -> {
-//                            log("Time synced for ${getDeviceDisplayString(deviceAddress)}. Starting location data stream.")
-//                            startLocationUpdates(deviceAddress)
-//                        }
+                        Constants.TIME_CHARACTERISTIC_UUID -> {
+                            log("Time synced for ${getDeviceDisplayString(gatt.device)} -> Sending initial location data...")
+                            connection.timeSyncAttempts = 0
+                            sendInitialLocationData(deviceAddress)
+                        }
+                        Constants.LOCATION_CHARACTERISTIC_UUID -> {
+                            if (connection.isInitialLocationWritePending) {
+                                connection.isInitialLocationWritePending = false
+                                log("Initial location data confirmed for ${getDeviceDisplayString(gatt.device)} -> Starting location stream...")
+                                scheduleLocationStreaming(deviceAddress)
+                            }
+                        }
                     }
                 } else {
                     log("Write failed for ${characteristic.uuid} on ${getDeviceDisplayString(gatt.device)} with status $status")
@@ -715,6 +728,16 @@ class CameraSyncService : Service() {
                             if (connection.retries < Constants.MAX_BT_RETRIES) {
                                 handler.postDelayed({ lockLocationEndpoint(gatt, deviceAddress) },500 * connection.retries)
                                 connection.retries++
+                            }
+                        }
+                        Constants.TIME_CHARACTERISTIC_UUID -> {
+                            retryTimeSyncOrContinue(gatt, deviceAddress)
+                        }
+                        Constants.LOCATION_CHARACTERISTIC_UUID -> {
+                            if (connection.isInitialLocationWritePending) {
+                                connection.isInitialLocationWritePending = false
+                                log("Initial location write failed; starting periodic stream for ${getDeviceDisplayString(gatt.device)}")
+                                scheduleLocationStreaming(deviceAddress)
                             }
                         }
                         Constants.REMOTE_CONTROL_CHARACTERISTIC_UUID -> {
@@ -1029,17 +1052,19 @@ class CameraSyncService : Service() {
     }
 
     @SuppressLint("MissingPermission")
-    private fun synchronizeTime(gatt: BluetoothGatt, deviceAddress: String) {
+    private fun synchronizeTime(gatt: BluetoothGatt, deviceAddress: String): Boolean {
         val timeChar = gatt.getService(Constants.TIME_SERVICE_UUID)?.getCharacteristic(Constants.TIME_CHARACTERISTIC_UUID)
         if (timeChar == null) {
             log("Time characteristic not found for ${getDeviceDisplayString(gatt.device)} -> Skipping sync.")
-            return
+            return false
         }
         log("Syncing time for ${getDeviceDisplayString(gatt.device)} ...")
 
-        val cal = Calendar.getInstance()
         val localTimezone = TimeZone.getDefault()
         val currentTimeMillis = System.currentTimeMillis()
+        val cal = Calendar.getInstance().apply {
+            timeInMillis = currentTimeMillis
+        }
         val dstActive = if (localTimezone.inDaylightTime(Date(currentTimeMillis))) {
             1.toShort()
         } else {
@@ -1063,7 +1088,39 @@ class CameraSyncService : Service() {
             .put(tzOffsetMinutes.toByte())
             .array()
 
-        writeCharacteristic(gatt, timeChar, payload, BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT)
+        return writeCharacteristic(gatt, timeChar, payload, BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT)
+    }
+
+    private fun synchronizeTimeWithRetry(gatt: BluetoothGatt, deviceAddress: String) {
+        if (cameraConnections[deviceAddress] == null) return
+        if (synchronizeTime(gatt, deviceAddress)) return
+
+        retryTimeSyncOrContinue(gatt, deviceAddress)
+    }
+
+    private fun retryTimeSyncOrContinue(gatt: BluetoothGatt, deviceAddress: String) {
+        val connection = cameraConnections[deviceAddress] ?: return
+        if (connection.timeSyncAttempts < Constants.MAX_BT_RETRIES) {
+            connection.timeSyncAttempts++
+            val delayMillis = 100L * connection.timeSyncAttempts
+            log(
+                "Time write was not completed for ${getDeviceDisplayString(gatt.device)}; " +
+                    "retrying in ${delayMillis}ms (${connection.timeSyncAttempts}/${Constants.MAX_BT_RETRIES})"
+            )
+            handler.postDelayed(
+                {
+                    val currentConnection = cameraConnections[deviceAddress]
+                    if (currentConnection?.isConnected == true && currentConnection.gatt === gatt) {
+                        synchronizeTimeWithRetry(gatt, deviceAddress)
+                    }
+                },
+                delayMillis
+            )
+        } else {
+            log("Time sync retries exhausted for ${getDeviceDisplayString(gatt.device)}; continuing with location data")
+            connection.timeSyncAttempts = 0
+            sendInitialLocationData(deviceAddress)
+        }
     }
 
     fun getRawUtcOffset(): Pair<Int, Int> {
@@ -1093,6 +1150,16 @@ class CameraSyncService : Service() {
             return
         }
 
+        if (!connection.isConnected || connection.gatt == null) {
+            log("Cannot start location updates: Camera ${getDeviceDisplayString(deviceAddress)} not connected")
+            return
+        }
+
+        if (connection.locationUpdateRunnable != null) {
+            log("Location data stream already active for ${getDeviceDisplayString(deviceAddress)}")
+            return
+        }
+
         log("Starting to stream location data to ${getDeviceDisplayString(deviceAddress)} ...")
 
         val runnable = object : Runnable {
@@ -1106,27 +1173,56 @@ class CameraSyncService : Service() {
         handler.post(runnable)
     }
 
+    private fun sendInitialLocationData(deviceAddress: String) {
+        val connection = cameraConnections[deviceAddress] ?: return
+        connection.isInitialLocationWritePending = true
+        if (!sendLocationData(deviceAddress)) {
+            connection.isInitialLocationWritePending = false
+            log("Initial location data was not queued for ${getDeviceDisplayString(deviceAddress)}; starting periodic stream")
+            scheduleLocationStreaming(deviceAddress)
+        }
+    }
+
+    private fun scheduleLocationStreaming(deviceAddress: String) {
+        val connection = cameraConnections[deviceAddress] ?: return
+        if (connection.locationUpdateRunnable != null || connection.isLocationStreamStartPending) return
+
+        connection.isLocationStreamStartPending = true
+        // The first location update is sometimes ignored, so begin the periodic stream
+        // after the initial DD11 callback and send a second update after this short delay.
+        handler.postDelayed(
+            {
+                val currentConnection = cameraConnections[deviceAddress] ?: return@postDelayed
+                currentConnection.isLocationStreamStartPending = false
+                if (currentConnection.isConnected) {
+                    startLocationUpdates(deviceAddress)
+                }
+            },
+            500
+        )
+    }
+
     @SuppressLint("MissingPermission")
-    private fun sendLocationData(deviceAddress: String) {
+    private fun sendLocationData(deviceAddress: String): Boolean {
         val  location = lastKnownLocation
         if (location == null) {
             log("No pre-fetched location data to send to ${getDeviceDisplayString(deviceAddress)} skipping location update.")
-            return
+            return false
         }
 
         val connection = cameraConnections[deviceAddress] ?: let {
             log("Cannot send location data: Camera ${getDeviceDisplayString(deviceAddress)} not in connections list")
-            return
+            return false
         }
         val gatt = connection.gatt ?: let {
             log("Cannot send location data: Camera ${getDeviceDisplayString(deviceAddress)} GATT not connected")
-            return
+            return false
         }
 
         val locationChar = gatt.getService(Constants.PICT_SERVICE_UUID)?.getCharacteristic(Constants.LOCATION_CHARACTERISTIC_UUID)
         if (locationChar == null) {
             log("Location characteristic not found for ${getDeviceDisplayString(deviceAddress)}.")
-            return
+            return false
         }
 
         val buffer = ByteBuffer.allocate(95).order(ByteOrder.BIG_ENDIAN)
@@ -1157,8 +1253,13 @@ class CameraSyncService : Service() {
 
         val payload = buffer.array()
 
-        writeCharacteristic(gatt, locationChar, payload, BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT)
-        log("Location data sent to ${getDeviceDisplayString(deviceAddress)}")
+        val accepted = writeCharacteristic(gatt, locationChar, payload, BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT)
+        if (accepted) {
+            log("Location data sent to ${getDeviceDisplayString(deviceAddress)}")
+        } else {
+            log("Location data write was not accepted for ${getDeviceDisplayString(deviceAddress)}")
+        }
+        return accepted
     }
 
     @SuppressLint("MissingPermission")
@@ -1200,9 +1301,9 @@ class CameraSyncService : Service() {
     }
 
     @SuppressLint("MissingPermission")
-    private fun writeCharacteristic(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic, payload: ByteArray, writeType: Int) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            gatt.writeCharacteristic(characteristic, payload, writeType)
+    private fun writeCharacteristic(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic, payload: ByteArray, writeType: Int): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            gatt.writeCharacteristic(characteristic, payload, writeType) == BluetoothStatusCodes.SUCCESS
         } else {
             @Suppress("DEPRECATION")
             characteristic.value = payload
@@ -1374,6 +1475,9 @@ class CameraSyncService : Service() {
             handler.removeCallbacks(it)
             connection.locationUpdateRunnable = null
         }
+        connection.timeSyncAttempts = 0
+        connection.isInitialLocationWritePending = false
+        connection.isLocationStreamStartPending = false
     }
 
     @SuppressLint("MissingPermission")
