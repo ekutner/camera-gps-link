@@ -715,7 +715,13 @@ class CameraSyncService : Service() {
                         }
                     }
                 } else {
-                    log("Write failed for ${characteristic.uuid} on ${getDeviceDisplayString(gatt.device)} with status $status")
+                    log(
+                        "GATT write callback failed " +
+                            "type=${characteristicLabel(characteristic.uuid)} " +
+                            "status=$status " +
+                            "statusName=${gattStatusName(status)} " +
+                            "device=${getDeviceDisplayString(gatt.device)}"
+                    )
 
                     when (characteristic.uuid) {
                         Constants.ENABLE_LOCATION_UPDATES_UUID -> {
@@ -1065,6 +1071,7 @@ class CameraSyncService : Service() {
         val cal = Calendar.getInstance().apply {
             timeInMillis = currentTimeMillis
         }
+        logTimeState(currentTimeMillis, localTimezone)
         val dstActive = if (localTimezone.inDaylightTime(Date(currentTimeMillis))) {
             1.toShort()
         } else {
@@ -1302,17 +1309,104 @@ class CameraSyncService : Service() {
 
     @SuppressLint("MissingPermission")
     private fun writeCharacteristic(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic, payload: ByteArray, writeType: Int): Boolean {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            gatt.writeCharacteristic(characteristic, payload, writeType) == BluetoothStatusCodes.SUCCESS
+        val accepted = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val result = gatt.writeCharacteristic(characteristic, payload, writeType)
+            if (result != BluetoothStatusCodes.SUCCESS) {
+                log(
+                    "GATT write rejected " +
+                        "type=${characteristicLabel(characteristic.uuid)} " +
+                        "result=$result " +
+                        "resultName=${bluetoothStatusName(result)} " +
+                        "device=${getDeviceDisplayString(gatt.device)}"
+                )
+            }
+            result == BluetoothStatusCodes.SUCCESS
         } else {
             @Suppress("DEPRECATION")
             characteristic.value = payload
             @Suppress("DEPRECATION")
             characteristic.writeType = writeType
             @Suppress("DEPRECATION")
-            gatt.writeCharacteristic(characteristic)
+            val result = gatt.writeCharacteristic(characteristic)
+            if (!result) {
+                log(
+                    "GATT write rejected " +
+                        "type=${characteristicLabel(characteristic.uuid)} " +
+                        "accepted=false " +
+                        "device=${getDeviceDisplayString(gatt.device)}"
+                )
+            }
+            result
         }
+        return accepted
     }
+
+    private fun logTimeState(now: Long, timeZone: TimeZone) {
+        val rawOffsetMinutes = timeZone.rawOffset / 60_000
+        val effectiveOffsetMinutes = timeZone.getOffset(now) / 60_000
+        val dstOffsetMinutes = effectiveOffsetMinutes - rawOffsetMinutes
+        val localFormatter = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX", Locale.US).apply {
+            this.timeZone = timeZone
+        }
+        val utcFormatter = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US).apply {
+            this.timeZone = TimeZone.getTimeZone("UTC")
+        }
+
+        log(
+            "Time state " +
+                "zone=${timeZone.id} " +
+                "local=${localFormatter.format(Date(now))} " +
+                "utc=${utcFormatter.format(Date(now))} " +
+                "rawOffsetMinutes=$rawOffsetMinutes " +
+                "effectiveOffsetMinutes=$effectiveOffsetMinutes " +
+                "dstOffsetMinutes=$dstOffsetMinutes " +
+                "dstActive=${timeZone.inDaylightTime(Date(now))}"
+        )
+    }
+
+    private fun characteristicLabel(uuid: UUID): String =
+        when (uuid) {
+            Constants.LOCK_LOCATION_ENDPOINT_UUID -> "DD30_LOCK_LOCATION_ENDPOINT"
+            Constants.ENABLE_LOCATION_UPDATES_UUID -> "DD31_ENABLE_LOCATION_UPDATES"
+            Constants.LOCATION_CHARACTERISTIC_UUID -> "DD11_LOCATION"
+            Constants.TIME_CHARACTERISTIC_UUID -> "CC13_TIME"
+            Constants.REMOTE_CONTROL_CHARACTERISTIC_UUID -> "FF01_REMOTE_CONTROL"
+            else -> uuid.toString()
+        }
+
+    private fun bluetoothStatusName(status: Int): String =
+        when (status) {
+            BluetoothStatusCodes.SUCCESS -> "SUCCESS"
+            BluetoothStatusCodes.ERROR_BLUETOOTH_NOT_ENABLED -> "ERROR_BLUETOOTH_NOT_ENABLED"
+            BluetoothStatusCodes.ERROR_BLUETOOTH_NOT_ALLOWED -> "ERROR_BLUETOOTH_NOT_ALLOWED"
+            BluetoothStatusCodes.ERROR_DEVICE_NOT_BONDED -> "ERROR_DEVICE_NOT_BONDED"
+            BluetoothStatusCodes.ERROR_MISSING_BLUETOOTH_CONNECT_PERMISSION ->
+                "ERROR_MISSING_BLUETOOTH_CONNECT_PERMISSION"
+            BluetoothStatusCodes.ERROR_PROFILE_SERVICE_NOT_BOUND -> "ERROR_PROFILE_SERVICE_NOT_BOUND"
+            BluetoothStatusCodes.FEATURE_NOT_SUPPORTED -> "FEATURE_NOT_SUPPORTED"
+            BluetoothStatusCodes.ERROR_GATT_WRITE_NOT_ALLOWED -> "ERROR_GATT_WRITE_NOT_ALLOWED"
+            BluetoothStatusCodes.ERROR_GATT_WRITE_REQUEST_BUSY -> "ERROR_GATT_WRITE_REQUEST_BUSY"
+            BluetoothStatusCodes.ERROR_UNKNOWN -> "ERROR_UNKNOWN"
+            else -> "UNKNOWN_$status"
+        }
+
+    private fun gattStatusName(status: Int): String =
+        when (status) {
+            BluetoothGatt.GATT_SUCCESS -> "GATT_SUCCESS"
+            BluetoothGatt.GATT_READ_NOT_PERMITTED -> "GATT_READ_NOT_PERMITTED"
+            BluetoothGatt.GATT_WRITE_NOT_PERMITTED -> "GATT_WRITE_NOT_PERMITTED"
+            BluetoothGatt.GATT_INSUFFICIENT_AUTHENTICATION -> "GATT_INSUFFICIENT_AUTHENTICATION"
+            BluetoothGatt.GATT_REQUEST_NOT_SUPPORTED -> "GATT_REQUEST_NOT_SUPPORTED"
+            BluetoothGatt.GATT_INVALID_OFFSET -> "GATT_INVALID_OFFSET"
+            BluetoothGatt.GATT_INSUFFICIENT_AUTHORIZATION -> "GATT_INSUFFICIENT_AUTHORIZATION"
+            BluetoothGatt.GATT_INVALID_ATTRIBUTE_LENGTH -> "GATT_INVALID_ATTRIBUTE_LENGTH"
+            BluetoothGatt.GATT_INSUFFICIENT_ENCRYPTION -> "GATT_INSUFFICIENT_ENCRYPTION"
+            BluetoothGatt.GATT_CONNECTION_CONGESTED -> "GATT_CONNECTION_CONGESTED"
+            BluetoothGatt.GATT_CONNECTION_TIMEOUT -> "GATT_CONNECTION_TIMEOUT"
+            BluetoothGatt.GATT_FAILURE -> "GATT_FAILURE"
+            133 -> "GATT_ERROR_133"
+            else -> "UNKNOWN_$status"
+        }
 
 
     private fun initializeBluetoothAndLocation() {
