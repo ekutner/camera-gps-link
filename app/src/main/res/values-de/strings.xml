@@ -24,6 +24,7 @@
     <string name="notification_connected_to">Verbunden mit %s</string>
     <string name="notification_shutter_failed">Auslöser fehlgeschlagen - %s</string>
     <string name="notification_boot_message">Tippen Sie, um %s nach dem Neustart des Telefons zu aktivieren</string>
+    <string name="notification_service_stopped_message">%s wurde vom System beendet. Tippen Sie, um es wieder zu aktivieren</string>
     <string name="notification_searching_title">Suche nach Kameras…</string>
     <string name="notification_searching_message">Entfernen Sie diese Benachrichtigung nicht!</string>
     <string name="notification_search_long_message">Entfernen Sie diese Benachrichtigung nicht!\nSie wird benötigt, damit sich die App im Hintergrund mit der Kamera verbinden kann.</string>

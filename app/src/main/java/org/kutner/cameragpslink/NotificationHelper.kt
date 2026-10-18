@@ -237,7 +237,7 @@ class NotificationHelper(private val context: Context) {
         notificationManager.cancel(notificationId)
     }
 
-    fun showBootNotification() {
+    fun showBootNotification(messageResId: Int = R.string.notification_boot_message) {
         // Intent to open MainActivity and start the service
         val openAppIntent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
@@ -253,7 +253,7 @@ class NotificationHelper(private val context: Context) {
 
         // Use string resource for title and message, formatting the message with app_name
         val appName = context.getString(R.string.app_name)
-        val bootMessage = context.getString(R.string.notification_boot_message, appName)
+        val bootMessage = context.getString(messageResId, appName)
 
         val notification = NotificationCompat.Builder(context, Constants.NOTIFICATION_CHANNEL_BOOT)
             .setContentTitle(appName)

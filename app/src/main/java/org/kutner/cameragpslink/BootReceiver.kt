@@ -11,6 +11,7 @@ class BootReceiver : BroadcastReceiver() {
         if (intent.action == Intent.ACTION_BOOT_COMPLETED) {
             // Check if we have saved cameras using CameraSettingsManager
             val savedCameras = AppSettingsManager.getSavedCameras(context)
+            DiagnosticsLog.append(context, "Boot completed (saved cameras: ${savedCameras.size}).")
 
             if (savedCameras.isNotEmpty()) {
                 // Instead of starting the service, show a notification

@@ -25,6 +25,7 @@
     <string name="notification_connected_to">Connecté à %s</string>
     <string name="notification_shutter_failed">Déclencheur échoué - %s</string>
     <string name="notification_boot_message">Appuyez pour activer %s après le redémarrage du téléphone</string>
+    <string name="notification_service_stopped_message">%s a été arrêté par le système. Appuyez pour le réactiver</string>
     <string name="notification_searching_title">Recherche de caméras…</string>
     <string name="notification_searching_message">Ne supprimez pas cette notification !</string>
     <string name="notification_search_long_message">Ne supprimez pas cette notification !\nElle est requise pour que l\'application se connecte à la caméra en arrière-plan.</string>

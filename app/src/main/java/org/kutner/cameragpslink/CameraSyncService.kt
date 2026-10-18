@@ -211,6 +211,10 @@ class CameraSyncService : Service() {
 
     override fun onCreate() {
         super.onCreate()
+        DiagnosticsLog.installCrashHandler(this)
+        DiagnosticsLog.logProcessExitReasons(this)
+        DiagnosticsLog.logEnvironment(this)
+        diag("Service onCreate (pid=${android.os.Process.myPid()}).")
         val localizedContext = LanguageManager.wrapContext(baseContext)
         notificationHelper = NotificationHelper(localizedContext)
 
@@ -231,10 +235,17 @@ class CameraSyncService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        log("Service received start command.")
+        diag("Service received start command (action=${intent?.action}, flags=$flags, startId=$startId${if (intent == null) ", restarted by system" else ""}).")
 
         // Always start foreground immediately to avoid ANR
-        startService()
+        if (!startService()) {
+            // Without a location foreground service the app can't sync GPS, so instead of
+            // running uselessly (or crashing and being restarted again), ask the user to reopen it.
+            diag("Cannot run in the background, stopping and notifying the user.")
+            notificationHelper.showBootNotification(R.string.notification_service_stopped_message)
+            stopSelf()
+            return START_NOT_STICKY
+        }
 
         // Handle shutter action from notification
         if (intent?.action == Constants.ACTION_TRIGGER_SHUTTER) {
@@ -248,7 +259,7 @@ class CameraSyncService : Service() {
         }
 
         if (!hasRequiredPermissions()) {
-            log("Permissions not granted. Stopping.")
+            diag("Permissions not granted. Stopping.")
             stopService()
             return START_NOT_STICKY
         }
@@ -262,7 +273,7 @@ class CameraSyncService : Service() {
             }
         } else {
             // No saved cameras, stop the service
-            log("No saved cameras, stopping service.")
+            diag("No saved cameras, stopping service.")
             stopService()
             return START_NOT_STICKY
         }
@@ -293,23 +304,50 @@ class CameraSyncService : Service() {
         }
         cameraConnections.clear()
         stopService()
-        log("Service destroyed.")
+        diag("Service destroyed.")
     }
 
-    private fun startService() {
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        super.onTaskRemoved(rootIntent)
+        diag("Task removed (app swiped away from recents).")
+    }
+
+    override fun onTrimMemory(level: Int) {
+        super.onTrimMemory(level)
+        diag("onTrimMemory(level=$level).")
+    }
+
+    @Deprecated("Deprecated in Java")
+    override fun onLowMemory() {
+        @Suppress("DEPRECATION")
+        super.onLowMemory()
+        diag("onLowMemory.")
+    }
+
+    /** Returns false if the system doesn't allow the foreground service to start. */
+    private fun startService(): Boolean {
         if (!isForegroundServiceStarted) {
             log("Starting foreground service...")
-            startForeground(Constants.NOTIFICATION_ID_FOREGROUND_SERVICE, notificationHelper.createSearchingNotification())
+            try {
+                startForeground(Constants.NOTIFICATION_ID_FOREGROUND_SERVICE, notificationHelper.createSearchingNotification())
+            } catch (e: Exception) {
+                // A location foreground service can't be started from the background while location
+                // is only granted "while using the app", e.g. when the system restarts the sticky service.
+                diag("Failed to start foreground service: $e")
+                return false
+            }
             isForegroundServiceStarted = true
+            diag("Foreground service started.")
         }
         else {
             log("Foreground service already started.")
         }
+        return true
     }
 
     private fun stopService() {
         if (isForegroundServiceStarted) {
-            log("Stopping foreground service...")
+            diag("Stopping foreground service...")
             stopBackgroundLocationFetching()
             stopForeground(STOP_FOREGROUND_REMOVE)
             isForegroundServiceStarted = false
@@ -1343,6 +1381,7 @@ class CameraSyncService : Service() {
             )
         }
         _connectedCameras.value = newList
+        DiagnosticsLog.setProcessStateSummary(this, "fgs=$isForegroundServiceStarted cams=${newList.size} connected=${newList.count { it.isConnected }}")
         log("Updated connections list: ${cameraConnections.size} cameras, connected: ${newList.count { it.isConnected }}, details: ${newList.map { "${it.device.address}: connected=${it.isConnected}, connecting=${it.isConnecting}" }}")
     }
 
@@ -1405,12 +1444,19 @@ class CameraSyncService : Service() {
         _log.value = currentLog
     }
 
+    /** Logs to the activity log and also to the persistent diagnostics log. */
+    private fun diag(message: String) {
+        log(message)
+        DiagnosticsLog.append(this, message)
+    }
+
     fun clearLog() {
         _log.value = emptyList()
         log("Log cleared.")
     }
 
     fun getLogAsString(): String {
-        return _log.value.joinToString("\n")
+        return _log.value.joinToString("\n") +
+                "\n\n--- Diagnostics ---\n" + DiagnosticsLog.read(this)
     }
 }

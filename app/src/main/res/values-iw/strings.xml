@@ -25,6 +25,7 @@
     <string name="notification_connected_to">מחובר ל-%s</string>
     <string name="notification_shutter_failed">תריס נכשל - %s</string>
     <string name="notification_boot_message">הקש כדי להפעיל את %s לאחר אתחול הטלפון</string>
+    <string name="notification_service_stopped_message">%s הופסק על ידי המערכת. הקש כדי להפעיל מחדש</string>
     <string name="notification_searching_title">מחפש מצלמות…</string>
     <string name="notification_searching_message">אל תסיר התראה זו!</string>
     <string name="notification_search_long_message">אל תסיר התראה זו!\nהיא נדרשת כדי שהאפליקציה תוכל להתחבר למצלמה כשהיא ברקע.</string>

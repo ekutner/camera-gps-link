@@ -24,6 +24,7 @@
     <string name="notification_connected_to">Connected to %s</string>
     <string name="notification_shutter_failed">Shutter Failed - %s</string>
     <string name="notification_boot_message">Tap to activate %s after the phone has rebooted</string>
+    <string name="notification_service_stopped_message">%s was stopped by the system. Tap to reactivate</string>
     <string name="notification_searching_title">Searching for cameras…</string>
     <string name="notification_searching_message">Do not remove this notification!</string>
     <string name="notification_search_long_message">Do not remove this notification!\nIt is required for the app to connect to the camera while in the background.</string>

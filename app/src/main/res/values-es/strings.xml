@@ -25,6 +25,7 @@
     <string name="notification_connected_to">Conectado a %s</string>
     <string name="notification_shutter_failed">Obturador falló - %s</string>
     <string name="notification_boot_message">Toca para activar %s después de reiniciar el teléfono</string>
+    <string name="notification_service_stopped_message">El sistema detuvo %s. Toca para reactivarlo</string>
     <string name="notification_searching_title">Buscando cámaras…</string>
     <string name="notification_searching_message">¡No elimines esta notificación!</string>
     <string name="notification_search_long_message">¡No elimines esta notificación!\nEs necesaria para que la aplicación se conecte a la cámara en segundo plano.</string>
